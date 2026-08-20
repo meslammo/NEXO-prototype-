@@ -1,0 +1,62 @@
+# NEXO App — Technical & Feature Reference
+
+## Overview
+**NEXO** is a social/economy web app with a mobile-app-style interface. It includes real-time chat, voice/video calls, an in-app economy (energy, points, trade materials), simple mining mini-games, a trading marketplace, and a real user account system.
+
+## Technical Architecture
+- **Backend**: Plain Node.js (no Express) — single file `server.js`
+- **Database**: PostgreSQL (hosted on Railway)
+- **Frontend**: One large HTML page (`index.html`) with inline CSS and JavaScript, styled to look like a mobile app (fake phone frame on screen)
+- **Hosting**: Railway.app (a Web Service + a separate PostgreSQL Database, linked via the `DATABASE_URL` variable)
+- **Real-time layer**: Raw WebSocket (hand-written, no library) used for chat and call signaling
+- **Calls**: WebRTC with a public STUN server (no TURN server yet)
+
+## Authentication System
+- Register (`/api/auth/register`): username + password + display name
+- Login (`/api/auth/login`)
+- Sessions: Bearer tokens (not JWT — a random token stored in the `sessions` table with a 30-day expiry)
+- Passwords are hashed with `scrypt` + salt
+- The first 100 registered users receive 5,000 points and 5,000 energy as a welcome bonus (instead of the default 0 and 120)
+- The homepage (`/`) and static files are accessible without login, but all real API routes require a Bearer token
+
+## Database Tables
+- `users` — accounts (username, password hash, wallet_points, energy, role, status)
+- `sessions` — login sessions (token hash, user_id, expiry)
+- `messages` — chat messages (tied to a room)
+- `friends` — friendship relations
+- `inventory` — each user's items
+- `market_listings` — open marketplace listings
+- `gifts`, `trades` — gifts and trade transactions
+- `payments` — a demo payment ledger only (not a real payment processor)
+- `push_subscriptions` — notification subscriptions (structure ready, but needs real VAPID/FCM keys)
+- `reports`, `audit_logs`, `anti_cheat_events` — reports and security logs
+
+## Main Frontend Features
+1. **Home**: wallet (energy/points/materials), quick-access buttons (chat/voice/video/VIP), stories, live rooms, mining games, economy shortcuts, marketplace previews
+2. **Chat**: chat rooms, real-time messages over WebSocket, virtual seats, emoji picker
+3. **VIP Room**: a private room with more seats and effects
+4. **Calls**: voice/video via WebRTC, signaling (offer/answer/ICE) over the same WebSocket
+5. **Economy**: Energy (consumed by activities), NEXO Points, Trade Materials
+6. **Mining games**: 3 games (Mine Rush, Crystal Match, Mine Explorer) that produce resources
+7. **Crafting**: turning materials into items
+8. **Trade Hub**: direct trading between two users (both sides must confirm)
+9. **Open Market**: list/buy items even while the seller is offline
+10. **Store**: buy crystals, mining gear, etc.
+11. **Profile**: level, XP, badges, achievements, inventory
+12. **Tasks**: daily and weekly tasks with rewards
+13. **Settings**: privacy, notifications, language, admin panel
+14. **Cosmetics (name color/glow)**: visual effects on the display name (Cyan, Gold, Violet, Prism)
+
+## Feature Status (Important)
+| Feature | Status |
+|---|---|
+| Account registration / login | ✅ Real, connected to the database |
+| Text chat | ✅ Real, over WebSocket |
+| Voice/video calls | ⚠️ Works, but has no TURN server — may fail on certain networks |
+| Economy (energy/points/materials) | ⚠️ Partly stored in the browser's localStorage (not the server) — not synced across devices |
+| Payments | ❌ Demo ledger only, no real payment gateway integration (Stripe/Fawry/etc.) |
+| Push notifications | ❌ Structure is ready but needs real VAPID/FCM keys |
+| Most store/admin buttons | ❌ Prototype-only (toast messages) or stored locally only |
+
+## Important Note for Future Development
+A large part of the "economy" (points, energy, inventory) is currently stored in the **browser's localStorage**, not in the real database. This means if a user clears their browser data or logs in from another device, that data will be lost or out of sync. If you want to develop the app further, the next important step is moving the entire economy to be server-persisted (the `users` table already has `wallet_points` and `energy` columns, but not every screen reads/writes them yet).
