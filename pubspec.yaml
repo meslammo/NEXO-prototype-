@@ -40,28 +40,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
-  build_runner: ^2.4.0
-  json_serializable: ^6.7.0
 
 flutter:
   uses-material-design: true
-
   assets:
-    - assets/images/
-    - assets/icons/
-    - assets/emojis/
-    - assets/backgrounds/
-    - assets/avatars/
-    - assets/logos/
-    - assets/animations/
-    - assets/sounds/
-
-  fonts:
-    - family: Inter
-      fonts:
-        - asset: assets/fonts/Inter-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Inter-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/Inter-SemiBold.ttf
-          weight: 600
+    - 001.jpg
