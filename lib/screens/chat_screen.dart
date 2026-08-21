@@ -119,7 +119,9 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF00d4ff),
-        onPressed: () {},
+        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('New message composer coming soon')),
+        ),
         child: const Icon(Icons.message, color: Colors.black),
       ),
     );
