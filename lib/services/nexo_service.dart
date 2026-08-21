@@ -19,7 +19,7 @@ class NexoService extends ChangeNotifier {
       id: '1',
       username: 'NEXO_KING',
       displayName: 'NEXO Player',
-      avatar: 'assets/avatars/default.png',
+      avatar: '001.jpg',
       level: 12,
       experience: 45000,
       nexoScore: 8250,
