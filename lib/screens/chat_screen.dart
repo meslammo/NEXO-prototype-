@@ -107,7 +107,9 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                         fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('VIP rooms coming soon')),
+                  ),
                   child: const Text('Join VIP Room'),
                 ),
               ],
