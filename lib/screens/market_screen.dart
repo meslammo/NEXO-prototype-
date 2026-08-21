@@ -179,7 +179,9 @@ class _MarketScreenState extends State<MarketScreen>
                         color: Color(0xFF90a4ae), fontSize: 12)),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Crafting coming soon')),
+                ),
                   child: const Text('Open Crafting'),
                 ),
               ],
