@@ -38,6 +38,7 @@ dependencies:
 
   # يستخدمها energy_storage_service.dart لحفظ رصيد الطاقة محليًا
   shared_preferences: ^2.2.3
+  provider: ^6.1.2
 
 dev_dependencies:
   flutter_test:
