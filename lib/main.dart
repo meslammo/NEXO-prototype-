@@ -1,4 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+// استيراد باقي الملفات بعد تقسيمها
+// import 'navigation_container.dart'; 
+
+void main() {
+  runApp(const NexoApp());
+}
+
+class NexoApp extends StatelessWidget {
+  const NexoApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'NEXO - AISEP Capstone',
+      // إعدادات اللغة العربية والاتجاه من اليمين لليسار
+      localizationsDelegates: const [
+        GlobalCupertinoLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale("ar", "AE"), // العربية
+      ],
+      locale: const Locale("ar", "AE"),
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF0A0A12),
+        fontFamily: 'system-ui',
+      ),
+      home: const MainNavigationContainer(),
+    );
+  }
+}import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'theme/nexo_theme.dart';
