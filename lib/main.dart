@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'theme/nexo_theme.dart';
 import 'widgets/adaptive_scaffold.dart';
 import 'screens/home_screen.dart';
@@ -10,6 +11,11 @@ import 'screens/inventory_screen.dart';
 import 'screens/recharge_screen.dart';
 import 'screens/more_screen.dart';
 import 'services/energy_storage_service.dart';
+import 'services/economy_service.dart';
+import 'services/mining_service.dart';
+import 'services/nexo_service.dart';
+import 'services/social_engine.dart';
+import 'services/trade_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +26,18 @@ void main() async {
     systemNavigationBarColor: NexoColors.surface,
     systemNavigationBarIconBrightness: Brightness.light,
   ));
-  runApp(const NexoApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => EconomyService()),
+        ChangeNotifierProvider(create: (_) => MiningService()),
+        ChangeNotifierProvider(create: (_) => NexoService()),
+        ChangeNotifierProvider(create: (_) => SocialEngine()),
+        ChangeNotifierProvider(create: (_) => TradeService()),
+      ],
+      child: const NexoApp(),
+    ),
+  );
 }
 
 class NexoApp extends StatelessWidget {
