@@ -1,96 +1,107 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'config/theme.dart';
+import 'package:flutter/services.dart';
+import 'theme/nexo_theme.dart';
+import 'widgets/adaptive_scaffold.dart';
 import 'screens/home_screen.dart';
 import 'screens/chat_screen.dart';
-import 'screens/games_screen.dart';
-import 'screens/market_screen.dart';
-import 'screens/profile_screen.dart';
-import 'services/nexo_service.dart';
-import 'services/social_engine.dart';
-import 'services/economy_service.dart';
+import 'screens/trade_screen.dart';
+import 'screens/craft_screen.dart';
+import 'screens/inventory_screen.dart';
+import 'screens/recharge_screen.dart';
+import 'screens/more_screen.dart';
+import 'services/energy_storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await EnergyStorageService.loadOnStartup();
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: NexoColors.surface,
+    systemNavigationBarIconBrightness: Brightness.light,
+  ));
   runApp(const NexoApp());
 }
 
 class NexoApp extends StatelessWidget {
-  const NexoApp({Key? key}) : super(key: key);
+  const NexoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => NexoService()),
-        ChangeNotifierProvider(create: (_) => SocialEngine()),
-        ChangeNotifierProvider(create: (_) => EconomyService()),
-      ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'NEXO',
-        theme: AppTheme.darkTheme,
-        home: const MainApp(),
-      ),
+    return MaterialApp(
+      title: 'NEXO',
+      debugShowCheckedModeBanner: false,
+      theme: NexoTheme.darkTheme,
+      // Support Arabic RTL
+      locale: const Locale('ar'),
+      builder: (context, child) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: child!,
+        );
+      },
+      home: const MainShell(),
     );
   }
 }
 
-class MainApp extends StatefulWidget {
-  const MainApp({Key? key}) : super(key: key);
+class MainShell extends StatefulWidget {
+  const MainShell({super.key});
 
   @override
-  State<MainApp> createState() => _MainAppState();
+  State<MainShell> createState() => _MainShellState();
 }
 
-class _MainAppState extends State<MainApp> {
+class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const ChatScreen(),
-    const GamesScreen(),
-    const MarketScreen(),
-    const ProfileScreen(),
+  final List<Widget> _screens = const [
+    HomeScreen(),
+    ChatScreen(),
+    TradeScreen(),
+    CraftScreen(),
+    MoreScreen(),
+  ];
+
+  final List<NavigationDestination> _destinations = const [
+    NavigationDestination(
+      icon: Icon(Icons.home_outlined),
+      selectedIcon: Icon(Icons.home_rounded),
+      label: 'الرئيسية',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.chat_bubble_outline),
+      selectedIcon: Icon(Icons.chat_bubble_rounded),
+      label: 'الشات',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.swap_horiz_outlined),
+      selectedIcon: Icon(Icons.swap_horiz_rounded),
+      label: 'التداول',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.handyman_outlined),
+      selectedIcon: Icon(Icons.handyman_rounded),
+      label: 'التصنيع',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.apps_outlined),
+      selectedIcon: Icon(Icons.apps_rounded),
+      label: 'المزيد',
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFF0a1929),
-        selectedItemColor: const Color(0xFF00d4ff),
-        unselectedItemColor: const Color(0xFF546e7a),
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message),
-            label: 'Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.games),
-            label: 'Games',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag),
-            label: 'Market',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+    return AdaptiveScaffold(
+      selectedIndex: _selectedIndex,
+      onDestinationSelected: (index) {
+        setState(() => _selectedIndex = index);
+      },
+      destinations: _destinations,
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
       ),
     );
   }
