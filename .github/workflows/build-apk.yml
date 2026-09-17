@@ -25,15 +25,7 @@ jobs:
         run: flutter create --platforms=android --project-name nexo_app --org com.example .
       - name: Patch network and call permissions
         run: |
-          python3 - <<'PY'
-from pathlib import Path
-p=Path("android/app/src/main/AndroidManifest.xml")
-s=p.read_text()
-marker="</manifest>"
-perms="  <uses-permission android:name=\"android.permission.INTERNET\"/>\\n  <uses-permission android:name=\"android.permission.RECORD_AUDIO\"/>\\n  <uses-permission android:name=\"android.permission.CAMERA\"/>\\n"
-s=s.replace(marker, perms + marker)
-p.write_text(s)
-PY
+          python3 -c 'from pathlib import Path; p=Path("android/app/src/main/AndroidManifest.xml"); s=p.read_text(); perms="  <uses-permission android:name=\"android.permission.INTERNET\"/>\\n  <uses-permission android:name=\"android.permission.RECORD_AUDIO\"/>\\n  <uses-permission android:name=\"android.permission.CAMERA\"/>\\n"; p.write_text(s.replace("</manifest>", perms+"</manifest>"))'
       - name: Build APK
         run: flutter build apk --release --dart-define=NEXO_API_URL=https://nexo-api-production-05d3.up.railway.app
       - name: Upload APK
