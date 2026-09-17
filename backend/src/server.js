@@ -90,6 +90,14 @@ function publicUser(u) {
 }
 
 app.get('/health', async () => ({ ok:true, service:'nexo-api', time:new Date().toISOString() }));
+app.get('/rtc/config',{preHandler:auth},async(req)=>{
+  let servers;
+  try { servers=JSON.parse(process.env.RTC_ICE_SERVERS_JSON||'[{"urls":["stun:stun.l.google.com:19302"]}]'); }
+  catch(_){ servers=[{urls:['stun:stun.l.google.com:19302']}]; }
+  return {iceServers:servers};
+});
+
+
 
 app.post('/auth/guest', async (req, reply) => {
   const deviceId=String((req.body||{}).deviceId||'').trim().slice(0,60);
