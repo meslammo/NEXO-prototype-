@@ -16,10 +16,20 @@ import 'services/nexo_service.dart';
 import 'services/social_engine.dart';
 import 'services/trade_service.dart';
 import 'services/power_service.dart';
+import 'services/api_client.dart';
+import 'services/auth_service.dart';
+import 'services/realtime_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EnergyStorageService.loadOnStartup();
+
+  final apiClient = ApiClient();
+  final authService = AuthService(apiClient);
+  await authService.initialize();
+  final realtimeService = RealtimeService(apiClient);
+  await realtimeService.connect();
+  await realtimeService.setPresence(true);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
@@ -30,6 +40,9 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
+        Provider<ApiClient>.value(value: apiClient),
+        ChangeNotifierProvider<AuthService>.value(value: authService),
+        Provider<RealtimeService>.value(value: realtimeService),
         ChangeNotifierProvider(create: (_) => EconomyService()),
         ChangeNotifierProvider(create: (_) => MiningService()),
         ChangeNotifierProvider(create: (_) => NexoService()),
