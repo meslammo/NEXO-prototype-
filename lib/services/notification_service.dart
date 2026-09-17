@@ -54,7 +54,7 @@ class NotificationService extends ChangeNotifier {
   Future<void> markRead(String id) async {
     try{await api.postJson('/notifications/$id/read',{});}catch(_){return;}
     final i=_items.indexWhere((x)=>x.id==id);
-    if(i>=0){_items[i]=NexoNotification(id:x.id,kind:x.kind,title:x.title,body:x.body,read:true);notifyListeners();}
+    if(i>=0){final x=_items[i];_items[i]=NexoNotification(id:x.id,kind:x.kind,title:x.title,body:x.body,read:true);notifyListeners();}
   }
 
   Future<void> markAllRead() async {
