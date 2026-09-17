@@ -10,7 +10,8 @@ class NexoPurchaseService {
   SharedPreferences? _prefs;
 
   Stream<PurchaseDetails> get updates => _updates.stream;
-  bool get isAvailable => _iap.isAvailable;
+  bool _storeAvailable = false;
+  bool get isAvailable => _storeAvailable;
   bool hasProduct(String id) => _products.containsKey(id);
 
   Future<void> initialize() async {
@@ -21,6 +22,7 @@ class NexoPurchaseService {
       }
     });
     final available = await _iap.isAvailable();
+    _storeAvailable = available;
     if (!available) return;
     const ids = {
       'starter_499',
