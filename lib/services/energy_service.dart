@@ -11,7 +11,7 @@ class EnergyService {
   // ---------- إعدادات الخوارزمية ----------
 
   /// الحد الأقصى للطاقة
-  static const double maxEnergy = 500;
+  static const double maxEnergy = 100;
 
   /// نقاط الطاقة من كل مصدر
   static const double miningReward = 2;
@@ -22,7 +22,7 @@ class EnergyService {
 
   /// تكلفة الطاقة بالدقيقة
   static const double voiceCostPerMinute = 1;
-  static const double videoCostPerMinute = 3;
+  static const double videoCostPerMinute = 4;
 
   // ---------- الحالة ----------
 
