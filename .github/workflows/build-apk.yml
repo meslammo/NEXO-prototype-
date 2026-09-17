@@ -23,6 +23,48 @@ jobs:
         run: flutter analyze || true
       - name: Regenerate supported Android host project
         run: flutter create --platforms=android --project-name nexo_app --org com.example .
+      - name: Configure stable release signing when secrets are available
+        env:
+          NEXO_KEYSTORE_BASE64: ${{ secrets.NEXO_KEYSTORE_BASE64 }}
+          NEXO_KEY_ALIAS: ${{ secrets.NEXO_KEY_ALIAS }}
+          NEXO_KEY_PASSWORD: ${{ secrets.NEXO_KEY_PASSWORD }}
+          NEXO_STORE_PASSWORD: ${{ secrets.NEXO_STORE_PASSWORD }}
+        run: |
+          if [ -n "$NEXO_KEYSTORE_BASE64" ]; then
+            echo "$NEXO_KEYSTORE_BASE64" | base64 --decode > android/app/nexo-release.jks
+            cat > android/key.properties <<EOF
+storePassword=$NEXO_STORE_PASSWORD
+keyPassword=$NEXO_KEY_PASSWORD
+keyAlias=$NEXO_KEY_ALIAS
+storeFile=nexo-release.jks
+EOF
+            python3 - <<'PY'
+from pathlib import Path
+p=Path("android/app/build.gradle")
+s=p.read_text()
+prefix='''def keystorePropertiesFile = rootProject.file("key.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) { keystoreProperties.load(new FileInputStream(keystorePropertiesFile)) }
+'''
+s=prefix+s
+s=s.replace("android {", '''android {
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            }
+        }
+    }''',1)
+s=s.replace("signingConfig signingConfigs.debug","signingConfig (keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug)")
+p.write_text(s)
+PY
+          else
+            echo "No NEXO release keystore secrets configured; using CI debug signing for test builds."
+          fi
+
       - name: Patch network and call permissions
         run: |
           python3 -c 'from pathlib import Path; p=Path("android/app/src/main/AndroidManifest.xml"); s=p.read_text(); perms="  <uses-permission android:name=\"android.permission.INTERNET\"/>\\n  <uses-permission android:name=\"android.permission.RECORD_AUDIO\"/>\\n  <uses-permission android:name=\"android.permission.CAMERA\"/>\\n"; p.write_text(s.replace("</manifest>", perms+"</manifest>"))'
