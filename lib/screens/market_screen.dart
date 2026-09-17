@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/economy_service.dart';
+import 'trade_screen.dart';
+import 'craft_screen.dart';
+import 'inventory_screen.dart';
 
 class MarketItem {
   final String name;
@@ -11,19 +14,17 @@ class MarketItem {
 
 class MarketScreen extends StatefulWidget {
   const MarketScreen({super.key});
-
   @override
   State<MarketScreen> createState() => _MarketScreenState();
 }
 
-class _MarketScreenState extends State<MarketScreen>
-    with SingleTickerProviderStateMixin {
+class _MarketScreenState extends State<MarketScreen> with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
   static const items = <MarketItem>[
-    MarketItem('⛏ Pickaxe', 'Common', 100),
-    MarketItem('💎 Rare Ore', 'Rare', 500),
-    MarketItem('👑 Legendary Ore', 'Legendary', 2000),
+    MarketItem('💎 Starter Gift', 'Common', 100),
+    MarketItem('✨ Galaxy Aura', 'Rare', 500),
+    MarketItem('👑 Royal Crown', 'Legendary', 2000),
   ];
 
   @override
@@ -31,43 +32,38 @@ class _MarketScreenState extends State<MarketScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
   }
-
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
 
-  void _buyItem(int index, BuildContext context) {
-    final economy = Provider.of<EconomyService>(context, listen: false);
-    final item = items[index];
-
-    if (economy.spendTickets(item.price)) {
-      economy.addItem(item.name, 1);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('✅ Purchased ${item.name}'),
-          backgroundColor: NexoColorsLike.primary,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Not enough tickets!'),
-          backgroundColor: Colors.red,
-        ),
-      );
+  void _buyItem(MarketItem item, BuildContext context) {
+    final economy = context.read<EconomyService>();
+    if (!economy.spendGems(item.price)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ Gems غير كافية')));
+      return;
     }
+    economy.addItem(item.name, 1);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ اشتريت ${item.name} بـ ${item.price} Gems')));
   }
 
   @override
   Widget build(BuildContext context) {
+    final gems = context.watch<EconomyService>().gems;
     return Scaffold(
+      backgroundColor: const Color(0xFF0A1929),
       appBar: AppBar(
         title: const Text('🛒 Market'),
         centerTitle: true,
         backgroundColor: const Color(0xFF0A1929),
         elevation: 0,
+        actions: [
+          Center(child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text('💎 $gems', style: const TextStyle(color: Color(0xFF66E0FF), fontWeight: FontWeight.bold)),
+          )),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: const Color(0xFF00D4FF),
@@ -78,112 +74,47 @@ class _MarketScreenState extends State<MarketScreen>
         controller: _tabController,
         children: [
           ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 8),
             itemCount: items.length,
             itemBuilder: (context, index) {
               final item = items[index];
               return Padding(
-                padding: const EdgeInsets.all(12),
-                child: GestureDetector(
-                  onTap: () => _buyItem(index, context),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF132F4C),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: const Color(0xFF7C3AED), width: 1.5),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(item.name,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold)),
-                            Container(
-                              margin: const EdgeInsets.only(top: 4),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF7C3AED),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(item.rarity,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 10)),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF00D4FF),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text('🎫 ${item.price}',
-                              style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                  ),
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+                child: ListTile(
+                  onTap: () => _buyItem(item, context),
+                  tileColor: const Color(0xFF132F4C),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  leading: CircleAvatar(backgroundColor: const Color(0x3300D4FF), child: Text(item.name.characters.first)),
+                  title: Text(item.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  subtitle: Text(item.rarity, style: const TextStyle(color: Color(0xFF90A4AE))),
+                  trailing: Text('💎 ${item.price}', style: const TextStyle(color: Color(0xFF66E0FF), fontWeight: FontWeight.bold)),
                 ),
               );
             },
           ),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('🤝 Trade Hub',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Trade directly with other players\nor use the marketplace.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Color(0xFF90A4AE), fontSize: 12),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Trading hub coming soon')),
-                    ),
-                    child: const Text('Start Trading'),
-                  ),
-                ],
+          ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _TradeHubCard(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TradeScreen())),
               ),
-            ),
+              const SizedBox(height: 12),
+              const _InfoCard(icon: Icons.shield_rounded, title: 'Escrow', text: 'الحجز + تأكيد الطرفين + إلغاء/نزاع + 5% رسوم.'),
+              const SizedBox(height: 12),
+              const _InfoCard(icon: Icons.grid_view_rounded, title: '4 Slots', text: 'مساحة عرض واضحة للعناصر في كل طرف من الصفقة.'),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InventoryScreen())),
+                icon: const Icon(Icons.inventory_2_outlined),
+                label: const Text('فتح Inventory'),
+              ),
+            ],
           ),
           Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('🔨 Crafting',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                const Text('Combine materials to create items',
-                    style: TextStyle(color: Color(0xFF90A4AE), fontSize: 12)),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Crafting coming soon')),
-                  ),
-                  child: const Text('Open Crafting'),
-                ),
-              ],
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CraftScreen())),
+              icon: const Icon(Icons.handyman_outlined),
+              label: const Text('فتح Crafting'),
             ),
           ),
         ],
@@ -192,6 +123,49 @@ class _MarketScreenState extends State<MarketScreen>
   }
 }
 
-class NexoColorsLike {
-  static const primary = Color(0xFF00D4FF);
+class _TradeHubCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _TradeHubCard({required this.onTap});
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(18),
+    child: Ink(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Color(0xFF142F52), Color(0xFF132F4C)]),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF00D4FF).withOpacity(0.45)),
+      ),
+      child: const Row(
+        children: [
+          CircleAvatar(radius: 26, backgroundColor: Color(0x3300D4FF), child: Icon(Icons.swap_horiz_rounded, color: Color(0xFF00D4FF))),
+          SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Trade Hub', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            SizedBox(height: 4),
+            Text('تبادل عناصر وGems مع لاعب آخر', style: TextStyle(color: Color(0xFF90A4AE), fontSize: 12)),
+          ])),
+          Icon(Icons.chevron_left_rounded, color: Color(0xFF00D4FF)),
+        ],
+      ),
+    ),
+  );
+}
+
+class _InfoCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String text;
+  const _InfoCard({required this.icon, required this.title, required this.text});
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(color: const Color(0xFF132F4C), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF243C52))),
+    child: Row(children: [
+      Icon(icon, color: const Color(0xFF00E676)),
+      const SizedBox(width: 10),
+      Expanded(child: Text('$title\n$text', style: const TextStyle(color: Colors.white70, fontSize: 12))),
+    ]),
+  );
 }
