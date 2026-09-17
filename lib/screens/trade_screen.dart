@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../theme/nexo_theme.dart';
 import '../models/trade_models.dart';
 import '../services/escrow_service.dart';
+import '../services/api_client.dart';
+import '../services/auth_service.dart';
+import '../config/api_config.dart';
 import 'trade_security_sheet.dart';
 import 'dispute_resolution_screen.dart';
 
@@ -28,20 +31,114 @@ class _TradeScreenState extends State<TradeScreen> {
   Duration _remaining = Duration.zero;
 
   final List<TradeItem> myItems = const [
-    TradeItem(id: 'i1', name: 'Crown Shine', iconName: 'crown', colorValue: 0xFFFFD700, qty: 1, unitValue: 900),
-    TradeItem(id: 'i2', name: 'Neon Heart', iconName: 'heart', colorValue: 0xFFFF6B9D, qty: 1, unitValue: 450),
+    TradeItem(id: 'crown-shine', name: 'Crown Shine', iconName: 'crown', colorValue: 0xFFFFD700, qty: 1, unitValue: 900),
+    TradeItem(id: 'neon-heart', name: 'Neon Heart', iconName: 'heart', colorValue: 0xFFFF6B9D, qty: 1, unitValue: 15),
   ];
 
   final List<TradeItem> theirItems = const [
-    TradeItem(id: 'i3', name: 'Galaxy Aura', iconName: 'star', colorValue: 0xFFFFB300, qty: 1, unitValue: 700),
-    TradeItem(id: 'i4', name: 'Shadow Flame', iconName: 'flame', colorValue: 0xFF9C27B0, qty: 1, unitValue: 550),
+    TradeItem(id: 'galaxy-aura', name: 'Galaxy Aura', iconName: 'star', colorValue: 0xFFFFB300, qty: 1, unitValue: 280),
+    TradeItem(id: 'shadow-flame', name: 'Shadow Flame', iconName: 'flame', colorValue: 0xFF9C27B0, qty: 1, unitValue: 80),
   ];
 
+
+  bool get _remoteMode => NexoApiConfig.configured && context.read<AuthService>().online;
+
   @override
-  void initState() {
-    super.initState();
-    _startEscrowTrade();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_trade == null) {
+      Future.microtask(_startTrade);
+    }
   }
+
+  Future<void> _startTrade() async {
+    if (_remoteMode) {
+      await _startRemoteTrade();
+    } else {
+      _startEscrowTrade();
+    }
+  }
+
+  Future<void> _startRemoteTrade() async {
+    final peer = widget.peerId;
+    if (peer == null || peer.trim().isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('لا يوجد مستخدم مستهدف للـTrade.')));
+      return;
+    }
+    try {
+      final api = context.read<ApiClient>();
+      final created = await api.postJson('/trades', {
+        'toUserId': peer,
+        'fromItems': myItems.map((x) => {'itemId': x.id, 'quantity': x.qty}).toList(),
+        'fromGems': 0,
+      });
+      await _loadRemoteTrade(created['id']?.toString() ?? '');
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إنشاء الـTrade الحقيقي: $e'), backgroundColor: Colors.redAccent));
+    }
+  }
+
+  Future<void> _loadRemoteTrade(String id) async {
+    if (id.isEmpty) return;
+    try {
+      final raw = await context.read<ApiClient>().getJson('/trades/$id');
+      final trade = _tradeFromServer(raw);
+      if (!mounted) return;
+      setState(() { _trade = trade; _remaining = trade.remainingTime; });
+      _startTimer();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تحميل حالة الـTrade: $e'), backgroundColor: Colors.redAccent));
+    }
+  }
+
+  Trade _tradeFromServer(Map<String,dynamic> raw) {
+    final fromItems = _itemsFromServer(raw['from_items']);
+    final toItems = _itemsFromServer(raw['to_items']);
+    final fromGems = (raw['from_gems'] as num?)?.toInt() ?? 0;
+    final toGems = (raw['to_gems'] as num?)?.toInt() ?? 0;
+    final fee = (raw['fee_gems'] as num?)?.toInt() ?? 0;
+    final status = TradeStatus.values.firstWhere((x) => x.name == raw['status']?.toString(), orElse: () => TradeStatus.locked);
+    final created = DateTime.tryParse(raw['created_at']?.toString() ?? '') ?? DateTime.now();
+    final expires = DateTime.tryParse(raw['expires_at']?.toString() ?? '') ?? created.add(const Duration(hours: 24));
+    return Trade(
+      id: raw['id']?.toString() ?? '',
+      fromUserId: raw['from_user_id']?.toString() ?? currentUserId,
+      fromUserName: raw['fromUserName']?.toString() ?? raw['from_username']?.toString() ?? currentUserName,
+      toUserId: raw['to_user_id']?.toString() ?? widget.peerId ?? otherUserId,
+      toUserName: raw['toUserName']?.toString() ?? raw['to_username']?.toString() ?? widget.peerName ?? otherUserName,
+      fromItems: fromItems,
+      toItems: toItems,
+      totalValue: fromItems.fold(0, (sum, x) => sum + x.totalValue) + toItems.fold(0, (sum, x) => sum + x.totalValue) + fromGems + toGems,
+      appFee: fee,
+      netAmount: fromGems + toGems - fee,
+      status: status,
+      createdAt: created,
+      expiresAt: expires,
+      fromConfirmed: raw['from_confirmed'] == true,
+      toConfirmed: raw['to_confirmed'] == true,
+      disputeReason: raw['dispute_reason']?.toString(),
+    );
+  }
+
+  List<TradeItem> _itemsFromServer(dynamic raw) {
+    if (raw is! List) return const <TradeItem>[];
+    return raw.whereType<Map>().map((m) {
+      final id=m['itemId']?.toString() ?? '';
+      final qty=(m['quantity'] as num?)?.toInt() ?? 1;
+      return _serverCatalog[id]?.copyWith(qty: qty) ?? TradeItem(id:id,name:id,iconName:'item',colorValue:0xFF00D4FF,qty:qty,unitValue:0);
+    }).toList();
+  }
+
+  static const Map<String,TradeItem> _serverCatalog = {
+    'neon-heart': TradeItem(id:'neon-heart',name:'Neon Heart',iconName:'heart',colorValue:0xFFFF6B9D,qty:1,unitValue:15),
+    'shadow-flame': TradeItem(id:'shadow-flame',name:'Shadow Flame',iconName:'flame',colorValue:0xFF9C27B0,qty:1,unitValue:80),
+    'galaxy-aura': TradeItem(id:'galaxy-aura',name:'Galaxy Aura',iconName:'star',colorValue:0xFFFFB300,qty:1,unitValue:280),
+    'crown-shine': TradeItem(id:'crown-shine',name:'Crown Shine',iconName:'crown',colorValue:0xFFFFD700,qty:1,unitValue:900),
+    'name-glow': TradeItem(id:'name-glow',name:'Name Glow',iconName:'star',colorValue:0xFF00D4FF,qty:1,unitValue:120),
+    'diamond-glow': TradeItem(id:'diamond-glow',name:'Diamond Glow',iconName:'diamond',colorValue:0xFFB8F3FF,qty:1,unitValue:220),
+    'rainbow-aura': TradeItem(id:'rainbow-aura',name:'Rainbow Aura',iconName:'auto_awesome',colorValue:0xFFAB47BC,qty:1,unitValue:350),
+    'fire-wings': TradeItem(id:'fire-wings',name:'Fire Wings',iconName:'flare',colorValue:0xFFFF7043,qty:1,unitValue:650),
+  };
 
   void _startEscrowTrade() {
     final trade = _escrow.createAndLockTrade(
@@ -105,8 +202,21 @@ class _TradeScreenState extends State<TradeScreen> {
     }
   }
 
-  void _confirmReceipt() {
+  Future<void> _confirmReceipt() async {
     if (_trade == null) return;
+    if (_remoteMode) {
+      try {
+        final raw = await context.read<ApiClient>().postJson('/trades/${_trade!.id}/confirm', {});
+        final next = _tradeFromServer(raw);
+        if (!mounted) return;
+        setState(() => _trade = next);
+        if (next.status == TradeStatus.completed) _timer?.cancel();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next.status == TradeStatus.completed ? 'تم إكمال الصفقة بنجاح!' : 'تم تسجيل تأكيدك وانتظار الطرف الآخر.')));
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تأكيد الـTrade: $e'), backgroundColor: Colors.redAccent));
+      }
+      return;
+    }
     try {
       final updated = _escrow.confirmReceipt(tradeId: _trade!.id, userId: currentUserId);
       setState(() => _trade = updated);
@@ -140,10 +250,23 @@ class _TradeScreenState extends State<TradeScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              final updated = _escrow.cancelTrade(tradeId: _trade!.id, userId: currentUserId, reason: 'إلغاء من المستخدم');
-              setState(() => _trade = updated);
-              _timer?.cancel();
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إلغاء الصفقة وإرجاع العناصر')));
+              if (_remoteMode) {
+                try {
+                  final raw = await context.read<ApiClient>().postJson('/trades/${_trade!.id}/cancel', {});
+                  final updated = _tradeFromServer(raw);
+                  if (!mounted) return;
+                  setState(() => _trade = updated);
+                  _timer?.cancel();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إلغاء الصفقة وإرجاع العناصر من السيرفر')));
+                } catch (e) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر الإلغاء: $e'), backgroundColor: Colors.redAccent));
+                }
+              } else {
+                final updated = _escrow.cancelTrade(tradeId: _trade!.id, userId: currentUserId, reason: 'إلغاء من المستخدم');
+                setState(() => _trade = updated);
+                _timer?.cancel();
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إلغاء الصفقة وإرجاع العناصر')));
+              }
             },
             child: const Text('تأكيد الإلغاء', style: TextStyle(color: Colors.redAccent)),
           ),
