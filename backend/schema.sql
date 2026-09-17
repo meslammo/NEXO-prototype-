@@ -73,6 +73,18 @@ CREATE TABLE IF NOT EXISTS nexo.game_room_scores (
   PRIMARY KEY (room_id,user_id)
 );
 
+CREATE TABLE IF NOT EXISTS nexo.payment_orders (
+  id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  package_id TEXT NOT NULL, gems BIGINT NOT NULL, amount_minor BIGINT NOT NULL, currency TEXT NOT NULL,
+  provider TEXT NOT NULL, provider_transaction_id TEXT UNIQUE, status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), completed_at TIMESTAMPTZ
+);
+CREATE TABLE IF NOT EXISTS nexo.payment_orders (
+  id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  package_id TEXT NOT NULL, gems BIGINT NOT NULL, amount_minor BIGINT NOT NULL, currency TEXT NOT NULL,
+  provider TEXT NOT NULL, provider_transaction_id TEXT UNIQUE, status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), completed_at TIMESTAMPTZ
+);
 CREATE TABLE IF NOT EXISTS nexo.purchase_tokens (
   purchase_token TEXT PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
@@ -81,12 +93,6 @@ CREATE TABLE IF NOT EXISTS nexo.purchase_tokens (
   verified_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS nexo.payment_orders (
-  id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
-  package_id TEXT NOT NULL, gems BIGINT NOT NULL, amount_minor BIGINT NOT NULL, currency TEXT NOT NULL,
-  provider TEXT NOT NULL, provider_transaction_id TEXT UNIQUE, status TEXT NOT NULL DEFAULT 'pending',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), completed_at TIMESTAMPTZ
-);
 CREATE TABLE IF NOT EXISTS nexo.presence (
   user_id UUID PRIMARY KEY REFERENCES nexo.users(id) ON DELETE CASCADE,
   online BOOLEAN NOT NULL DEFAULT FALSE, last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW()
