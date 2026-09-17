@@ -47,7 +47,8 @@ class _RechargeScreenState extends State<RechargeScreen> {
   }
 
   Future<void> _handlePurchase(PurchaseDetails purchase) async {
-    final orderId = _pendingOrders[purchase.productID];
+    final orderId = _pendingOrders[purchase.productID] ?? await _purchases.loadPendingOrder(purchase.productID);
+    if (orderId != null) _pendingOrders[purchase.productID] = orderId;
     if (purchase.status == PurchaseStatus.pending) return;
     if (purchase.status == PurchaseStatus.error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
