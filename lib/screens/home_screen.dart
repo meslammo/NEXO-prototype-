@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/nexo_theme.dart';
 import '../services/economy_service.dart';
+import '../services/notification_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -46,6 +47,51 @@ class HomeScreen extends StatelessWidget {
               )),
               const SliverToBoxAdapter(child: SizedBox(height: 90)),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showNotifications(BuildContext context) {
+    final notifications = context.read<NotificationService>();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: NexoColors.surface,
+      showDragHandle: true,
+      builder: (_) => SafeArea(
+        child: SizedBox(
+          height: 420,
+          child: Consumer<NotificationService>(
+            builder: (context, state, _) => Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+                  child: Row(
+                    children: [
+                      const Expanded(child: Text('Notifications', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
+                      TextButton(onPressed: state.unreadCount == 0 ? null : state.markAllRead, child: const Text('قراءة الكل')),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: state.items.isEmpty
+                    ? const Center(child: Text('مفيش إشعارات جديدة', style: TextStyle(color: NexoColors.textSecondary)))
+                    : ListView.builder(
+                        itemCount: state.items.length,
+                        itemBuilder: (_, i) {
+                          final n = state.items[i];
+                          return ListTile(
+                            leading: Icon(n.kind == 'gift' ? Icons.card_giftcard : n.kind == 'trade' ? Icons.swap_horiz : Icons.notifications_none, color: NexoColors.primary),
+                            title: Text(n.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                            subtitle: Text(n.body, style: const TextStyle(color: NexoColors.textSecondary)),
+                            onTap: () => notifications.markRead(n.id),
+                          );
+                        },
+                      ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -98,9 +144,29 @@ class _Header extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+              Consumer<NotificationService>(
+                builder: (context, notifications, _) => Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton(
+                      onPressed: () => _showNotifications(context),
+                      icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+                    ),
+                    if (notifications.unreadCount > 0)
+                      Positioned(
+                        right: 8,
+                        top: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(color: NexoColors.secondary, borderRadius: BorderRadius.circular(10)),
+                          child: Text(
+                            notifications.unreadCount > 99 ? '99+' : notifications.unreadCount.toString(),
+                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
