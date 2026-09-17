@@ -24,8 +24,8 @@ class WebRtcCallService {
       if (event['type'] != 'signal') return;
       final payload = Map<String, dynamic>.from((event['payload'] as Map?) ?? const {});
       final kind = payload['kind']?.toString();
-      final from = event['fromUserId']?.toString();
-      if (from != null && from != peerId) return;
+      // The backend already routes the signal to this authenticated socket.
+      // Do not compare the sender UUID with a username-based peer reference.
 
       try {
         if (kind == 'offer') {
