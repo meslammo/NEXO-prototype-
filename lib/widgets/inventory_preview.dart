@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/economy_service.dart';
 
 class InventoryPreviewWidget extends StatelessWidget {
-  const InventoryPreviewWidget({Key? key}) : super(key: key);
+  const InventoryPreviewWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +28,10 @@ class InventoryPreviewWidget extends StatelessWidget {
                 return Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF132f4c),
+                    color: const Color(0xFF132F4C),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFF00d4ff),
+                      color: const Color(0xFF00D4FF),
                       width: 1,
                     ),
                   ),
@@ -39,7 +39,7 @@ class InventoryPreviewWidget extends StatelessWidget {
                     child: Text(
                       'No items yet. Start mining or trading!',
                       style: TextStyle(
-                        color: Color(0xFF90a4ae),
+                        color: Color(0xFF90A4AE),
                         fontSize: 12,
                       ),
                     ),
@@ -59,7 +59,7 @@ class InventoryPreviewWidget extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final itemId = items.keys.toList()[index];
                   final quantity = items[itemId]!;
-                  final itemEmojis = {
+                  const itemEmojis = <String, String>{
                     'crown_shine': '👑',
                     'galaxy_aura': '✨',
                     'neon_heart': '❤️',
@@ -71,10 +71,10 @@ class InventoryPreviewWidget extends StatelessWidget {
 
                   return Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF132f4c),
+                      color: const Color(0xFF132F4C),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: const Color(0xFF7c3aed),
+                        color: const Color(0xFF7C3AED),
                         width: 1.5,
                       ),
                     ),
@@ -92,7 +92,7 @@ class InventoryPreviewWidget extends StatelessWidget {
                               Text(
                                 'x$quantity',
                                 style: const TextStyle(
-                                  color: Color(0xFF00d4ff),
+                                  color: Color(0xFF00D4FF),
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -106,7 +106,7 @@ class InventoryPreviewWidget extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF7c3aed),
+                              color: const Color(0xFF7C3AED),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -127,12 +127,14 @@ class InventoryPreviewWidget extends StatelessWidget {
             },
           ),
           const SizedBox(height: 12),
-          Center(
-            child: Text(
-              'Total Items: ${items.length}',
-              style: const TextStyle(
-                color: Color(0xFF90a4ae),
-                fontSize: 11,
+          Consumer<EconomyService>(
+            builder: (context, economy, _) => Center(
+              child: Text(
+                'Total Items: ${economy.inventory.length}',
+                style: const TextStyle(
+                  color: Color(0xFF90A4AE),
+                  fontSize: 11,
+                ),
               ),
             ),
           ),
