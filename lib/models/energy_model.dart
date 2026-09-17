@@ -21,7 +21,7 @@ class EnergyModel {
 
   const EnergyModel({
     required this.current,
-    this.max = 500,
+    this.max = 100,
     required this.lastUpdated,
     this.lastDailyClaim,
     this.consecutiveLoginDays = 0,
@@ -40,7 +40,7 @@ class EnergyModel {
   bool canStartVoiceCall({double costPerMinute = 1}) => current >= costPerMinute;
 
   /// هل ممكن يبدأ مكالمة فيديو (لازم دقيقة واحدة على الأقل)
-  bool canStartVideoCall({double costPerMinute = 3}) => current >= costPerMinute;
+  bool canStartVideoCall({double costPerMinute = 4}) => current >= costPerMinute;
 
   EnergyModel copyWith({
     double? current,
@@ -68,7 +68,7 @@ class EnergyModel {
 
   factory EnergyModel.fromJson(Map<String, dynamic> json) => EnergyModel(
         current: (json['current'] as num).toDouble(),
-        max: (json['max'] as num?)?.toDouble() ?? 500,
+        max: (json['max'] as num?)?.toDouble() ?? 100,
         lastUpdated: DateTime.parse(json['lastUpdated'] as String),
         lastDailyClaim: json['lastDailyClaim'] != null
             ? DateTime.parse(json['lastDailyClaim'] as String)
@@ -78,7 +78,7 @@ class EnergyModel {
 
   factory EnergyModel.initial() => EnergyModel(
         current: 50,
-        max: 500,
+        max: 100,
         lastUpdated: DateTime.now(),
       );
 }
