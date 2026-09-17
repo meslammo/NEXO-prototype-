@@ -2,159 +2,133 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/economy_service.dart';
 import '../services/social_engine.dart';
+import 'mining_screen.dart';
 
-class GamesScreen extends StatefulWidget {
-  const GamesScreen({Key? key}) : super(key: key);
+class GamesScreen extends StatelessWidget {
+  const GamesScreen({super.key});
 
-  @override
-  State<GamesScreen> createState() => _GamesScreenState();
-}
-
-class _GamesScreenState extends State<GamesScreen> {
-  final games = [
-    {
-      'title': '⛏ Mining Game I',
-      'description': 'Mining سريع للحصول على Reward.',
-      'icon': '⛏️',
-      'energyCost': 3,
-    },
-    {
-      'title': '💎 Mining Game II',
-      'description': 'ابحث عن Rare Ore.',
-      'icon': '💎',
-      'energyCost': 5,
-    },
-    {
-      'title': '⚡ Mining Game III',
-      'description': 'إدارة Energy والوقت.',
-      'icon': '⚡',
-      'energyCost': 8,
-    },
+  static const _games = [
+    ('🎯', 'Quick Challenge', 'لعبة سريعة مرتبطة بالمكافآت', 3, 20),
+    ('🧩', 'Mini Puzzle', 'حل لغز واحصل على Gems', 5, 35),
+    ('🏆', 'Daily Arena', 'منافسة يومية خفيفة', 8, 55),
   ];
-
-  void _playGame(int index, BuildContext context) {
-    final economy = Provider.of<EconomyService>(context, listen: false);
-    final social = Provider.of<SocialEngine>(context, listen: false);
-    final energyCost = games[index]['energyCost'] as int;
-
-    if (economy.spendEnergy(energyCost)) {
-      final reward = (15 + index * 10) + (index * 5);
-      economy.addTickets(reward);
-      social.logGameWin(reward);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('🎉 You won! +$reward Tickets'),
-          backgroundColor: const Color(0xFF00d4ff),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Not enough energy!'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0A1929),
       appBar: AppBar(
         title: const Text('🎮 Games'),
         centerTitle: true,
-        backgroundColor: const Color(0xFF0a1929),
+        backgroundColor: const Color(0xFF0A1929),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Column(
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        children: [
+          _MiningEntryCard(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MiningScreen()))),
+          const SizedBox(height: 14),
+          ...List.generate(_games.length, (index) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _GameCard(index: index),
+          )),
+          const _ArchitectureNote(),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiningEntryCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _MiningEntryCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(18),
+    child: Ink(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Color(0xFF173B4F), Color(0xFF132F4C)]),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF00D4FF).withOpacity(0.5)),
+      ),
+      child: const Row(
+        children: [
+          CircleAvatar(radius: 28, backgroundColor: Color(0x3300D4FF), child: Text('⛏️', style: TextStyle(fontSize: 26))),
+          SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Mining', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            SizedBox(height: 4),
+            Text('التعدين داخل Games — ليس زرًا مستقلًا في الـNavigation', style: TextStyle(color: Color(0xFF90A4AE), fontSize: 12)),
+          ])),
+          Icon(Icons.chevron_left_rounded, color: Color(0xFF00D4FF)),
+        ],
+      ),
+    ),
+  );
+}
+
+class _GameCard extends StatelessWidget {
+  final int index;
+  const _GameCard({required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    final g = GamesScreen._games[index];
+    return InkWell(
+      onTap: () => _play(context, g.$2, g.$4, g.$5),
+      borderRadius: BorderRadius.circular(16),
+      child: Ink(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF132F4C),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF7C3AED).withOpacity(0.6)),
+        ),
+        child: Row(
           children: [
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF132f4c),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF00d4ff), width: 2),
-                ),
-                child: const Column(
-                  children: [
-                    Text('🎮 Mining Games',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold)),
-                    SizedBox(height: 8),
-                    Text('ألعاب مرتبطة بنظام المكافآت والاقتصاد',
-                        style: TextStyle(
-                            color: Color(0xFF90a4ae), fontSize: 12)),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ...List.generate(
-              games.length,
-              (index) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: GestureDetector(
-                  onTap: () => _playGame(index, context),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF132f4c),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: const Color(0xFF7c3aed), width: 1.5),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(games[index]['icon'] as String,
-                            style: const TextStyle(fontSize: 32)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(games[index]['title'] as String,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold)),
-                              Text(games[index]['description'] as String,
-                                  style: const TextStyle(
-                                      color: Color(0xFF90a4ae),
-                                      fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF00d4ff),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text('Play',
-                              style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 30),
+            Text(g.$1, style: const TextStyle(fontSize: 34)),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(g.$2, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(g.$3, style: const TextStyle(color: Color(0xFF90A4AE), fontSize: 12)),
+              const SizedBox(height: 6),
+              Text('تكلفة: ${g.$4} Energy · ربح: ${g.$5} Gems', style: const TextStyle(color: Color(0xFF66E0FF), fontSize: 11)),
+            ])),
+            const Icon(Icons.play_circle_fill_rounded, color: Color(0xFF00D4FF), size: 30),
           ],
         ),
       ),
     );
   }
+
+  void _play(BuildContext context, String title, int cost, int reward) {
+    final economy = context.read<EconomyService>();
+    final social = context.read<SocialEngine>();
+    if (!economy.spendEnergy(cost)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ الطاقة غير كافية')));
+      return;
+    }
+    economy.addGems(reward);
+    social.logGameWin(reward);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('🎉 $title: +$reward Gems')));
+  }
+}
+
+class _ArchitectureNote extends StatelessWidget {
+  const _ArchitectureNote();
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(top: 4),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(color: const Color(0xFF0F2236), borderRadius: BorderRadius.circular(14)),
+    child: const Text(
+      'Games تضم Mini Games + Mining + Missions/Rewards. التعدين موجود في المعمارية ومكانه هنا.',
+      style: TextStyle(color: Color(0xFF90A4AE), fontSize: 12),
+      textAlign: TextAlign.center,
+    ),
+  );
 }
