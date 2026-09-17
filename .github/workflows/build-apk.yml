@@ -22,9 +22,20 @@ jobs:
       - name: Analyze (non-blocking)
         run: flutter analyze || true
       - name: Regenerate supported Android host project
-        run: flutter create --platforms=android --project-name nexo_app .
+        run: flutter create --platforms=android --project-name nexo_app --org com.example .
+      - name: Patch network and call permissions
+        run: |
+          python3 - <<'PY'
+from pathlib import Path
+p=Path("android/app/src/main/AndroidManifest.xml")
+s=p.read_text()
+marker="</manifest>"
+perms="  <uses-permission android:name=\"android.permission.INTERNET\"/>\\n  <uses-permission android:name=\"android.permission.RECORD_AUDIO\"/>\\n  <uses-permission android:name=\"android.permission.CAMERA\"/>\\n"
+s=s.replace(marker, perms + marker)
+p.write_text(s)
+PY
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release --dart-define=NEXO_API_URL=https://nexo-api-production-05d3.up.railway.app
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
