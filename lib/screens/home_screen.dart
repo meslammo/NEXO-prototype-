@@ -53,6 +53,34 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  void _showCreateSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: NexoColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Wrap(
+            runSpacing: 10,
+            children: const [
+              ListTile(leading: Icon(Icons.text_fields), title: Text('منشور نصي')),
+              ListTile(leading: Icon(Icons.image_outlined), title: Text('Story / صورة')),
+              ListTile(leading: Icon(Icons.card_giftcard_outlined), title: Text('هدية')),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  final EconomyService economy;
+  const _Header({required this.economy});
+
   void _showNotifications(BuildContext context) {
     final notifications = context.read<NotificationService>();
     showModalBottomSheet(
@@ -82,7 +110,10 @@ class HomeScreen extends StatelessWidget {
                         itemBuilder: (_, i) {
                           final n = state.items[i];
                           return ListTile(
-                            leading: Icon(n.kind == 'gift' ? Icons.card_giftcard : n.kind == 'trade' ? Icons.swap_horiz : Icons.notifications_none, color: NexoColors.primary),
+                            leading: Icon(
+                              n.kind == 'gift' ? Icons.card_giftcard : n.kind == 'trade' ? Icons.swap_horiz : Icons.notifications_none,
+                              color: NexoColors.primary,
+                            ),
                             title: Text(n.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                             subtitle: Text(n.body, style: const TextStyle(color: NexoColors.textSecondary)),
                             onTap: () => notifications.markRead(n.id),
@@ -97,34 +128,6 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
-  void _showCreateSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: NexoColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (_) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Wrap(
-            runSpacing: 10,
-            children: const [
-              ListTile(leading: Icon(Icons.text_fields), title: Text('منشور نصي')),
-              ListTile(leading: Icon(Icons.image_outlined), title: Text('Story / صورة')),
-              ListTile(leading: Icon(Icons.card_giftcard_outlined), title: Text('هدية')),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  final EconomyService economy;
-  const _Header({required this.economy});
 
   @override
   Widget build(BuildContext context) {
