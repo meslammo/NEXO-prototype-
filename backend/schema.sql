@@ -40,6 +40,17 @@ CREATE TABLE IF NOT EXISTS nexo.trades (
   to_confirmed BOOLEAN NOT NULL DEFAULT FALSE, dispute_reason TEXT, resolution TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), expires_at TIMESTAMPTZ NOT NULL
 );
+CREATE TABLE IF NOT EXISTS nexo.security_events (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL,
+  event_type TEXT NOT NULL,
+  severity TEXT NOT NULL DEFAULT 'info',
+  ip TEXT,
+  details JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS nexo_security_events_user_idx ON nexo.security_events(user_id,created_at DESC);
+
 CREATE TABLE IF NOT EXISTS nexo.notifications (
   id UUID PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
