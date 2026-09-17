@@ -100,7 +100,7 @@ app.post('/auth/register', async (req, reply) => {
   const hash=await bcrypt.hash(password,12);
   try{
     const r=await q('INSERT INTO nexo.users(id,username,email,password_hash,display_name) VALUES($1,$2,$3,$4,$5) RETURNING *',[randomUUID(),username,email,hash,username]);
-    const u=r.rows[0]; return {token:app.jwt.sign({sub:u.id,username:u.username}),user:publicUser(u)};
+    const u=r.rows[0]; return {token:app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'}),user:publicUser(u)};
   }catch(_){ return reply.code(409).send({error:'ACCOUNT_EXISTS'}); }
 });
 
