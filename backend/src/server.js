@@ -58,6 +58,13 @@ async function tx(fn) {
   finally { client.release(); }
 }
 
+async function securityEvent(req, eventType, severity='info', details={}) {
+  try {
+    await q('INSERT INTO nexo.security_events(id,user_id,event_type,severity,ip,details) VALUES($1,$2,$3,$4,$5,$6::jsonb)',
+      [randomUUID(),req.user?.sub || null,eventType,severity,req.ip,JSON.stringify(details)]);
+  } catch (_) {}
+}
+
 async function notify(userId, kind, title, body, data={}) {
   try {
     const id=randomUUID();
@@ -152,13 +159,13 @@ app.get('/inventory',{preHandler:auth},async req=> (await q('SELECT i.item_id AS
 
 app.post('/economy/energy/spend',{preHandler:auth},async(req,reply)=>{
   const amount=Number((req.body||{}).amount||0), key=String((req.body||{}).idempotencyKey||'');
-  if(!Number.isInteger(amount)||amount<1||amount>100||!key) return reply.code(400).send({error:'INVALID_INPUT'});
+  if(!Number.isInteger(amount)||amount<1||amount>100||!key){await securityEvent(req,'invalid_energy_spend','warning',{amount});return reply.code(400).send({error:'INVALID_INPUT'});}
   try{
     return await tx(async c=>{
       const prior=await c.query('SELECT balance_after FROM nexo.energy_ledger WHERE idempotency_key=$1',[key]);
       if(prior.rowCount)return {energy:prior.rows[0].balance_after};
       const u=await c.query('SELECT energy FROM nexo.users WHERE id=$1 FOR UPDATE',[uid(req)]);
-      if(!u.rowCount||u.rows[0].energy<amount) throw Object.assign(new Error('INSUFFICIENT_ENERGY'),{code:409});
+      if(!u.rowCount||u.rows[0].energy<amount){await securityEvent(req,'energy_abuse_attempt','warning',{amount});throw Object.assign(new Error('INSUFFICIENT_ENERGY'),{code:409});}
       const energy=u.rows[0].energy-amount;
       await c.query('UPDATE nexo.users SET energy=$1,last_active=NOW() WHERE id=$2',[energy,uid(req)]);
       await c.query('INSERT INTO nexo.energy_ledger(id,user_id,kind,amount,balance_after,idempotency_key) VALUES($1,$2,$3,$4,$5,$6)',[randomUUID(),uid(req),'spend',-amount,energy,key]);
@@ -254,7 +261,7 @@ async function lockTradeItems(c, tradeId, ownerId, items) {
     if (!own.rowCount || Number(own.rows[0].quantity) < quantity) {
       throw Object.assign(new Error('INSUFFICIENT_ITEM'), { code: 409 });
     }
-    if (!own.rows[0].tradeable) throw Object.assign(new Error('ITEM_NOT_TRADEABLE'), { code: 409 });
+    if (!own.rows[0].tradeable) { await securityEvent(req,'trade_nontradeable_item','warning',{itemId}); throw Object.assign(new Error('ITEM_NOT_TRADEABLE'), { code: 409 }); }
 
     await c.query('UPDATE nexo.inventory SET quantity=quantity-$1 WHERE user_id=$2 AND item_id=$3', [quantity, ownerId, itemId]);
     await c.query('INSERT INTO nexo.trade_locks(trade_id,user_id,item_id,quantity) VALUES($1,$2,$3,$4)', [tradeId, ownerId, itemId, quantity]);
