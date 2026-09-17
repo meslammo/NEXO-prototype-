@@ -89,7 +89,14 @@ function publicUser(u) {
   };
 }
 
-app.get('/health', async () => ({ ok:true, service:'nexo-api', time:new Date().toISOString() }));
+app.get('/health', async (req, reply) => {
+  try {
+    await q('SELECT 1');
+    return {ok:true,service:'nexo-api',database:'ok',time:new Date().toISOString()};
+  } catch (_) {
+    return reply.code(503).send({ok:false,service:'nexo-api',database:'down'});
+  }
+});
 app.get('/rtc/config',{preHandler:auth},async(req)=>{
   let servers;
   try { servers=JSON.parse(process.env.RTC_ICE_SERVERS_JSON||'[{"urls":["stun:stun.l.google.com:19302"]}]'); }
