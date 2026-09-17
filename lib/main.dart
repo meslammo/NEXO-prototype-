@@ -30,6 +30,28 @@ Future<void> main() async {
   final realtimeService = RealtimeService(apiClient);
   await realtimeService.connect();
   await realtimeService.setPresence(true);
+
+  final economyService = EconomyService();
+  if (authService.online) {
+    try {
+      final wallet = await apiClient.getJson('/wallet');
+      final inventoryResponse = await apiClient.getJson('/inventory');
+      final rows = inventoryResponse['data'];
+      final inventory = <String, int>{};
+      if (rows is List) {
+        for (final row in rows) {
+          if (row is Map && row['id'] != null) {
+            inventory[row['id'].toString()] = (row['quantity'] as num?)?.toInt() ?? 0;
+          }
+        }
+      }
+      economyService.hydrateFromServer(
+        gems: (wallet['gems'] as num?)?.toInt() ?? economyService.gems,
+        energy: (wallet['energy'] as num?)?.toInt() ?? economyService.energy,
+        inventory: inventory,
+      );
+    } catch (_) {}
+  }
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
@@ -43,7 +65,7 @@ Future<void> main() async {
         Provider<ApiClient>.value(value: apiClient),
         ChangeNotifierProvider<AuthService>.value(value: authService),
         Provider<RealtimeService>.value(value: realtimeService),
-        ChangeNotifierProvider(create: (_) => EconomyService()),
+        ChangeNotifierProvider<EconomyService>.value(value: economyService),
         ChangeNotifierProvider(create: (_) => MiningService()),
         ChangeNotifierProvider(create: (_) => NexoService()),
         ChangeNotifierProvider(create: (_) => SocialEngine()),
