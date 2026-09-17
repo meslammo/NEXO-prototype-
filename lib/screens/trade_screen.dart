@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import '../theme/nexo_theme.dart';
 import '../models/trade_models.dart';
@@ -108,7 +109,7 @@ class _TradeScreenState extends State<TradeScreen> {
       toUserName: raw['toUserName']?.toString() ?? raw['to_username']?.toString() ?? widget.peerName ?? otherUserName,
       fromItems: fromItems,
       toItems: toItems,
-      totalValue: fromItems.fold(0, (sum, x) => sum + x.totalValue) + toItems.fold(0, (sum, x) => sum + x.totalValue) + fromGems + toGems,
+      totalValue: fromItems.fold<int>(0, (sum, x) => sum + x.totalValue) + toItems.fold<int>(0, (sum, x) => sum + x.totalValue) + fromGems + toGems,
       appFee: fee,
       netAmount: fromGems + toGems - fee,
       status: status,
