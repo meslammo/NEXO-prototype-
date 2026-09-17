@@ -7,7 +7,9 @@ import 'trade_security_sheet.dart';
 import 'dispute_resolution_screen.dart';
 
 class TradeScreen extends StatefulWidget {
-  const TradeScreen({super.key});
+  final String? peerId;
+  final String? peerName;
+  const TradeScreen({super.key, this.peerId, this.peerName});
 
   @override
   State<TradeScreen> createState() => _TradeScreenState();
@@ -45,8 +47,8 @@ class _TradeScreenState extends State<TradeScreen> {
     final trade = _escrow.createAndLockTrade(
       fromUserId: currentUserId,
       fromUserName: currentUserName,
-      toUserId: otherUserId,
-      toUserName: otherUserName,
+      toUserId: widget.peerId ?? otherUserId,
+      toUserName: widget.peerName ?? otherUserName,
       fromItems: myItems,
       toItems: theirItems,
     );
