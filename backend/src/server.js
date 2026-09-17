@@ -209,119 +209,167 @@ app.post('/gifts/send',{preHandler:auth},async(req,reply)=>{
     });
   }catch(e){return reply.code(e.code||500).send({error:e.code||'GIFT_SEND_FAILED'});}
 });
-app.post('/trades',{preHandler:auth},async(req,reply)=>{
-  const b=req.body||{}, to=String(b.toUserId||''), items=Array.isArray(b.fromItems)?b.fromItems:[], fromGems=Math.max(0,Number(b.fromGems||0));
-  if(!to||to===uid(req))return reply.code(400).send({error:'INVALID_PEER'});
-  try{
+async function lockTradeItems(c, tradeId, ownerId, items) {
+  if (!Array.isArray(items) || items.length > 4) throw Object.assign(new Error('MAX_4_TRADE_SLOTS'), { code: 400 });
+  const seen = new Set();
+  for (const it of items) {
+    const itemId = String(it.itemId || '').trim();
+    const quantity = Number(it.quantity || 1);
+    if (!itemId || seen.has(itemId) || !Number.isInteger(quantity) || quantity < 1) {
+      throw Object.assign(new Error('INVALID_TRADE_ITEM'), { code: 400 });
+    }
+    seen.add(itemId);
+    const locked = await c.query(`SELECT 1 FROM nexo.trade_locks tl
+      JOIN nexo.trades t ON t.id=tl.trade_id
+      WHERE tl.user_id=$1 AND tl.item_id=$2
+        AND t.status IN ('locked','confirmedA','confirmedB','disputed') LIMIT 1`, [ownerId, itemId]);
+    if (locked.rowCount) throw Object.assign(new Error('ITEM_ALREADY_LOCKED'), { code: 409 });
+
+    const own = await c.query(`SELECT i.quantity,g.tradeable FROM nexo.inventory i
+      JOIN nexo.gifts g ON g.id=i.item_id WHERE i.user_id=$1 AND i.item_id=$2 FOR UPDATE`, [ownerId, itemId]);
+    if (!own.rowCount || Number(own.rows[0].quantity) < quantity) {
+      throw Object.assign(new Error('INSUFFICIENT_ITEM'), { code: 409 });
+    }
+    if (!own.rows[0].tradeable) throw Object.assign(new Error('ITEM_NOT_TRADEABLE'), { code: 409 });
+
+    await c.query('UPDATE nexo.inventory SET quantity=quantity-$1 WHERE user_id=$2 AND item_id=$3', [quantity, ownerId, itemId]);
+    await c.query('INSERT INTO nexo.trade_locks(trade_id,user_id,item_id,quantity) VALUES($1,$2,$3,$4)', [tradeId, ownerId, itemId, quantity]);
+  }
+}
+
+async function unlockTradeSide(c, tradeId, ownerId) {
+  const locks = await c.query('SELECT item_id,quantity FROM nexo.trade_locks WHERE trade_id=$1 AND user_id=$2 FOR UPDATE', [tradeId, ownerId]);
+  for (const item of locks.rows) {
+    await c.query(`INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES($1,$2,$3)
+      ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=nexo.inventory.quantity+EXCLUDED.quantity`,
+      [ownerId, item.item_id, item.quantity]);
+  }
+  await c.query('DELETE FROM nexo.trade_locks WHERE trade_id=$1 AND user_id=$2', [tradeId, ownerId]);
+}
+
+async function validateTradeGems(c, ownerId, amount) {
+  if (!Number.isInteger(amount) || amount < 0) throw Object.assign(new Error('INVALID_GEMS'), { code: 400 });
+  if (amount === 0) return;
+  const u = await c.query('SELECT gems FROM nexo.users WHERE id=$1 FOR UPDATE', [ownerId]);
+  if (!u.rowCount || Number(u.rows[0].gems) < amount) throw Object.assign(new Error('INSUFFICIENT_GEMS'), { code: 409 });
+}
+
+app.post('/trades', { preHandler: auth }, async (req, reply) => {
+  const b=req.body||{}, to=await resolveUserId({query:q},b.toUserId);
+  const items=Array.isArray(b.fromItems)?b.fromItems:[], gems=Math.max(0,Number(b.fromGems||0));
+  if(to===uid(req)) return reply.code(400).send({error:'INVALID_PEER'});
+  try {
     return await tx(async c=>{
-      const seen=new Set();
-      for(const it of items){
-        const id=String(it.itemId||''), qty=Number(it.quantity||1);
-        if(!id||seen.has(id)||!Number.isInteger(qty)||qty<1)throw Object.assign(new Error('INVALID_TRADE_ITEM'),{code:400});
-        seen.add(id);
-        const own=await c.query('SELECT i.quantity,g.tradeable FROM nexo.inventory i JOIN nexo.gifts g ON g.id=i.item_id WHERE i.user_id=$1 AND i.item_id=$2 FOR UPDATE',[uid(req),id]);
-        if(!own.rowCount||own.rows[0].quantity<qty)throw Object.assign(new Error('INSUFFICIENT_ITEM'),{code:409});
-        if(!own.rows[0].tradeable)throw Object.assign(new Error('ITEM_NOT_TRADEABLE'),{code:409});
-      }
-      if(fromGems>0){
-        const u=await c.query('SELECT gems FROM nexo.users WHERE id=$1 FOR UPDATE',[uid(req)]);
-        if(Number(u.rows[0].gems)<fromGems)throw Object.assign(new Error('INSUFFICIENT_GEMS'),{code:409});
-      }
-      const id=randomUUID(), fee=Math.ceil(fromGems*0.05);
-      await c.query('INSERT INTO nexo.trades(id,from_user_id,to_user_id,from_items,from_gems,fee_gems,expires_at) VALUES($1,$2,$3,$4::jsonb,$5,$6,NOW()+INTERVAL \'24 hours\')',[id,uid(req),to,JSON.stringify(items),fromGems,fee]);
-      for(const it of items) await c.query('UPDATE nexo.inventory SET quantity=quantity-$1 WHERE user_id=$2 AND item_id=$3',[Number(it.quantity||1),uid(req),it.itemId]);
-      if(fromGems) await c.query('UPDATE nexo.users SET gems=gems-$1 WHERE id=$2',[fromGems,uid(req)]);
+      await validateTradeGems(c,uid(req),gems);
+      const id=randomUUID();
+      await c.query(`INSERT INTO nexo.trades(id,from_user_id,to_user_id,from_items,from_gems,expires_at)
+        VALUES($1,$2,$3,'[]'::jsonb,$4,NOW()+INTERVAL '24 hours')`,[id,uid(req),to,gems]);
+      await lockTradeItems(c,id,uid(req),items);
+      await c.query('UPDATE nexo.trades SET from_items=$1::jsonb WHERE id=$2',[JSON.stringify(items),id]);
+      if(gems>0) await c.query('UPDATE nexo.users SET gems=gems-$1 WHERE id=$2',[gems,uid(req)]);
       emit(to,{type:'trade_created',tradeId:id});
-      return {id,status:'locked',feeGems:fee};
+      return {id,status:'locked',fromItems:items,fromGems:gems,toItems:[],toGems:0};
     });
-  }catch(e){return reply.code(e.code||500).send({error:e.code||'TRADE_CREATE_FAILED'});}
+  } catch(e) { return reply.code(e.code||500).send({error:e.code||'TRADE_CREATE_FAILED'}); }
 });
 
-app.post('/trades/:id/confirm',{preHandler:auth},async(req,reply)=>{
-  try{
+app.get('/trades/:id', { preHandler: auth }, async (req, reply) => {
+  try {
+    const r=await q('SELECT * FROM nexo.trades WHERE id=$1 AND (from_user_id=$2 OR to_user_id=$2)',[req.params.id,uid(req)]);
+    if(!r.rowCount)return reply.code(404).send({error:'TRADE_NOT_FOUND'});
+    const t=r.rows[0];
+    if(new Date(t.expires_at).getTime()<Date.now() && ['locked','confirmedA','confirmedB'].includes(t.status)){
+      await q('UPDATE nexo.trades SET status=\'expired\' WHERE id=$1',[t.id]);
+      await tx(async c=>{
+        await unlockTradeSide(c,t.id,t.from_user_id);
+        await unlockTradeSide(c,t.id,t.to_user_id);
+        if(Number(t.from_gems)>0)await c.query('UPDATE nexo.users SET gems=gems+$1 WHERE id=$2',[t.from_gems,t.from_user_id]);
+        if(Number(t.to_gems)>0)await c.query('UPDATE nexo.users SET gems=gems+$1 WHERE id=$2',[t.to_gems,t.to_user_id]);
+      });
+      t.status='expired';
+    }
+    return t;
+  } catch(e){return reply.code(e.code||500).send({error:e.code||'TRADE_GET_FAILED'});}
+});
+
+app.post('/trades/:id/offer',{ preHandler: auth }, async (req, reply) => {
+  try {
     return await tx(async c=>{
-      const r=await c.query('SELECT * FROM nexo.trades WHERE id=$1 FOR UPDATE',[req.params.id]); if(!r.rowCount)return reply.code(404).send({error:'TRADE_NOT_FOUND'});
-      const t=r.rows[0]; const from=t.from_user_id===uid(req), to=t.to_user_id===uid(req);
+      const r=await c.query('SELECT * FROM nexo.trades WHERE id=$1 FOR UPDATE',[req.params.id]);
+      if(!r.rowCount)return reply.code(404).send({error:'TRADE_NOT_FOUND'});
+      const t=r.rows[0];
+      if(t.to_user_id!==uid(req))throw Object.assign(new Error('FORBIDDEN'),{code:403});
+      if(!['locked','confirmedB'].includes(t.status))throw Object.assign(new Error('TRADE_NOT_EDITABLE'),{code:409});
+      if(new Date(t.expires_at).getTime()<Date.now())throw Object.assign(new Error('TRADE_EXPIRED'),{code:409});
+      if(t.to_confirmed)throw Object.assign(new Error('TRADE_ALREADY_CONFIRMED'),{code:409});
+
+      await unlockTradeSide(c,t.id,t.to_user_id);
+      const b=req.body||{}, items=Array.isArray(b.toItems)?b.toItems:[], gems=Math.max(0,Number(b.toGems||0));
+      await validateTradeGems(c,t.to_user_id,gems);
+      await lockTradeItems(c,t.id,t.to_user_id,items);
+      await c.query('UPDATE nexo.trades SET to_items=$1::jsonb,to_gems=$2,from_confirmed=false,to_confirmed=false,status=\'locked\' WHERE id=$3',[JSON.stringify(items),gems,t.id]);
+      if(gems>0)await c.query('UPDATE nexo.users SET gems=gems-$1 WHERE id=$2',[gems,t.to_user_id]);
+      emit(t.from_user_id,{type:'trade_update',tradeId:t.id,status:'locked'});
+      return {id:t.id,status:'locked',fromItems:t.from_items,fromGems:Number(t.from_gems),toItems:items,toGems:gems};
+    });
+  } catch(e){return reply.code(e.code||500).send({error:e.code||'TRADE_OFFER_FAILED'});}
+});
+
+app.post('/trades/:id/confirm', { preHandler: auth }, async (req, reply) => {
+  try {
+    return await tx(async c=>{
+      const r=await c.query('SELECT * FROM nexo.trades WHERE id=$1 FOR UPDATE',[req.params.id]);
+      if(!r.rowCount)return reply.code(404).send({error:'TRADE_NOT_FOUND'});
+      const t=r.rows[0], from=t.from_user_id===uid(req), to=t.to_user_id===uid(req);
       if(!from&&!to)throw Object.assign(new Error('FORBIDDEN'),{code:403});
-      if(from)t.from_confirmed=true; if(to)t.to_confirmed=true;
+      if(!Array.isArray(t.to_items)||t.to_items.length<0)throw Object.assign(new Error('INVALID_TRADE'),{code:409});
+      if(from)t.from_confirmed=true;if(to)t.to_confirmed=true;
       if(t.from_confirmed&&t.to_confirmed){
-        t.status='completed';
-        for(const it of t.from_items||[]) await c.query('INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES($1,$2,$3) ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=nexo.inventory.quantity+EXCLUDED.quantity',[t.to_user_id,it.itemId,Number(it.quantity||1)]);
-        if(Number(t.from_gems)>0) await c.query('UPDATE nexo.users SET gems=gems+$1 WHERE id=$2',[t.from_gems,t.to_user_id]);
-      }else t.status=from?'confirmedA':'confirmedB';
-      await c.query('UPDATE nexo.trades SET status=$1,from_confirmed=$2,to_confirmed=$3 WHERE id=$4',[t.status,t.from_confirmed,t.to_confirmed,t.id]);
-      emit(t.from_user_id,{type:'trade_update',tradeId:t.id,status:t.status}); emit(t.to_user_id,{type:'trade_update',tradeId:t.id,status:t.status});
+        const fee=Math.ceil((Number(t.from_gems)+Number(t.to_gems))*0.05);
+        const feeFrom=Math.min(fee,Number(t.from_gems)), feeTo=fee-feeFrom;
+        for(const it of t.from_items||[])await c.query(`INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES($1,$2,$3)
+          ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=nexo.inventory.quantity+EXCLUDED.quantity`,[t.to_user_id,it.itemId,Number(it.quantity||1)]);
+        for(const it of t.to_items||[])await c.query(`INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES($1,$2,$3)
+          ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=nexo.inventory.quantity+EXCLUDED.quantity`,[t.from_user_id,it.itemId,Number(it.quantity||1)]);
+        const creditTo=Math.max(0,Number(t.from_gems)-feeFrom), creditFrom=Math.max(0,Number(t.to_gems)-feeTo);
+        if(creditTo)await c.query('UPDATE nexo.users SET gems=gems+$1 WHERE id=$2',[creditTo,t.to_user_id]);
+        if(creditFrom)await c.query('UPDATE nexo.users SET gems=gems+$1 WHERE id=$2',[creditFrom,t.from_user_id]);
+        if(fee)await c.query('INSERT INTO nexo.treasury_ledger(id,trade_id,kind,amount) VALUES($1,$2,\'trade_fee\',$3)',[randomUUID(),t.id,fee]);
+        await c.query('DELETE FROM nexo.trade_locks WHERE trade_id=$1',[t.id]);
+        t.status='completed';t.fee_gems=fee;
+      } else t.status=from?'confirmedA':'confirmedB';
+      await c.query('UPDATE nexo.trades SET status=$1,from_confirmed=$2,to_confirmed=$3,fee_gems=$4 WHERE id=$5',[t.status,t.from_confirmed,t.to_confirmed,t.fee_gems||0,t.id]);
+      emit(t.from_user_id,{type:'trade_update',tradeId:t.id,status:t.status});
+      emit(t.to_user_id,{type:'trade_update',tradeId:t.id,status:t.status});
       return t;
     });
-  }catch(e){return reply.code(e.code||500).send({error:e.code||'TRADE_CONFIRM_FAILED'});}
+  } catch(e){return reply.code(e.code||500).send({error:e.code||'TRADE_CONFIRM_FAILED'});}
 });
 
-app.post('/trades/:id/cancel',{preHandler:auth},async(req,reply)=>{
-  try{
+app.post('/trades/:id/cancel', { preHandler: auth }, async (req, reply) => {
+  try {
     return await tx(async c=>{
-      const r=await c.query('SELECT * FROM nexo.trades WHERE id=$1 FOR UPDATE',[req.params.id]); if(!r.rowCount)return reply.code(404).send({error:'TRADE_NOT_FOUND'});
-      const t=r.rows[0]; if(t.from_user_id!==uid(req)&&t.to_user_id!==uid(req))throw Object.assign(new Error('FORBIDDEN'),{code:403});
-      if(!['locked','confirmedA','confirmedB'].includes(t.status))throw Object.assign(new Error('TRADE_NOT_CANCELABLE'),{code:409});
-      for(const it of t.from_items||[]) await c.query('INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES($1,$2,$3) ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=nexo.inventory.quantity+EXCLUDED.quantity',[t.from_user_id,it.itemId,Number(it.quantity||1)]);
-      if(Number(t.from_gems)>0) await c.query('UPDATE nexo.users SET gems=gems+$1 WHERE id=$2',[t.from_gems,t.from_user_id]);
-      await c.query('UPDATE nexo.trades SET status=\'cancelled\' WHERE id=$1',[t.id]); return {id:t.id,status:'cancelled'};
+      const r=await c.query('SELECT * FROM nexo.trades WHERE id=$1 FOR UPDATE',[req.params.id]);
+      if(!r.rowCount)return reply.code(404).send({error:'TRADE_NOT_FOUND'});
+      const t=r.rows[0];if(t.from_user_id!==uid(req)&&t.to_user_id!==uid(req))throw Object.assign(new Error('FORBIDDEN'),{code:403});
+      if(!['locked','confirmedA','confirmedB','disputed'].includes(t.status))throw Object.assign(new Error('TRADE_NOT_CANCELABLE'),{code:409});
+      await unlockTradeSide(c,t.id,t.from_user_id);await unlockTradeSide(c,t.id,t.to_user_id);
+      if(Number(t.from_gems)>0)await c.query('UPDATE nexo.users SET gems=gems+$1 WHERE id=$2',[t.from_gems,t.from_user_id]);
+      if(Number(t.to_gems)>0)await c.query('UPDATE nexo.users SET gems=gems+$1 WHERE id=$2',[t.to_gems,t.to_user_id]);
+      await c.query('UPDATE nexo.trades SET status=\'cancelled\' WHERE id=$1',[t.id]);
+      emit(t.from_user_id,{type:'trade_update',tradeId:t.id,status:'cancelled'});
+      emit(t.to_user_id,{type:'trade_update',tradeId:t.id,status:'cancelled'});
+      return {id:t.id,status:'cancelled'};
     });
-  }catch(e){return reply.code(e.code||500).send({error:e.code||'TRADE_CANCEL_FAILED'});}
+  } catch(e){return reply.code(e.code||500).send({error:e.code||'TRADE_CANCEL_FAILED'});}
 });
 
-app.post('/trades/:id/dispute',{preHandler:auth},async(req,reply)=>{
-  const reason=String((req.body||{}).reason||'').trim();
+app.post('/trades/:id/dispute', { preHandler: auth }, async (req, reply) => {
+  const reason=String((req.body||{}).reason||'').trim().slice(0,1000);
   if(!reason)return reply.code(400).send({error:'INVALID_REASON'});
   const r=await q('UPDATE nexo.trades SET status=\'disputed\',dispute_reason=$1 WHERE id=$2 AND status IN (\'locked\',\'confirmedA\',\'confirmedB\') AND (from_user_id=$3 OR to_user_id=$3) RETURNING *',[reason,req.params.id,uid(req)]);
   if(!r.rowCount)return reply.code(409).send({error:'TRADE_NOT_DISPUTABLE'});
-  const t=r.rows[0]; emit(t.from_user_id,{type:'trade_update',tradeId:t.id,status:t.status}); emit(t.to_user_id,{type:'trade_update',tradeId:t.id,status:t.status}); return t;
-});
-
-app.post('/economy/daily-claim',{preHandler:auth},async(req,reply)=>{
-  try{
-    return await tx(async c=>{
-      const today=(await c.query('SELECT CURRENT_DATE AS d')).rows[0].d;
-      const prev=await c.query('SELECT claim_date,streak FROM nexo.daily_claims WHERE user_id=$1 FOR UPDATE',[uid(req)]);
-      if(prev.rowCount && String(prev.rows[0].claim_date)===String(today))throw Object.assign(new Error('ALREADY_CLAIMED'),{code:409});
-      let streak=1;
-      if(prev.rowCount){
-        const d=new Date(prev.rows[0].claim_date); const td=new Date(today);
-        const diff=Math.round((td-d)/86400000);
-        streak=diff===1 ? Math.min(7,prev.rows[0].streak+1) : 1;
-      }
-      const reward=Math.min(50,20+(streak-1)*5);
-      const u=await c.query('SELECT energy FROM nexo.users WHERE id=$1 FOR UPDATE',[uid(req)]);
-      const energy=Math.min(100,Number(u.rows[0].energy)+reward);
-      await c.query('UPDATE nexo.users SET energy=$1 WHERE id=$2',[energy,uid(req)]);
-      await c.query(`INSERT INTO nexo.daily_claims(user_id,claim_date,streak) VALUES($1,$2,$3)
-        ON CONFLICT(user_id) DO UPDATE SET claim_date=EXCLUDED.claim_date,streak=EXCLUDED.streak`,[uid(req),today,streak]);
-      return {energy,reward,streak};
-    });
-  }catch(e){return reply.code(e.code||500).send({error:e.code||'DAILY_CLAIM_FAILED'});}
-});
-app.post('/economy/energy/convert',{preHandler:auth},async(req,reply)=>{
-  try{return await tx(async c=>{
-    const u=await c.query('SELECT energy FROM nexo.users WHERE id=$1 FOR UPDATE',[uid(req)]);
-    if(!u.rowCount||u.rows[0].energy<100)throw Object.assign(new Error('INSUFFICIENT_ENERGY'),{code:409});
-    const r=await c.query('UPDATE nexo.users SET energy=energy-100,gems=gems+25 WHERE id=$1 RETURNING energy,gems',[uid(req)]);
-    return r.rows[0];
-  });}catch(e){return reply.code(e.code||500).send({error:e.code||'ENERGY_CONVERSION_FAILED'});}
-});
-app.post('/games/play',{preHandler:auth},async(req,reply)=>{
-  const gameId=String((req.body||{}).gameId||''), key=String((req.body||{}).idempotencyKey||'');
-  const games={quick_challenge:{cost:3,reward:20},mini_puzzle:{cost:5,reward:35},daily_arena:{cost:8,reward:55}};
-  const game=games[gameId];
-  if(!game||!key)return reply.code(400).send({error:'INVALID_GAME'});
-  try{return await tx(async c=>{
-    const prior=await c.query('SELECT reward_gems FROM nexo.game_events WHERE idempotency_key=$1',[key]);
-    if(prior.rowCount)return {ok:true,idempotent:true,rewardGems:Number(prior.rows[0].reward_gems)};
-    const u=await c.query('SELECT energy,gems FROM nexo.users WHERE id=$1 FOR UPDATE',[uid(req)]);
-    if(Number(u.rows[0].energy)<game.cost)throw Object.assign(new Error('INSUFFICIENT_ENERGY'),{code:409});
-    const energy=Number(u.rows[0].energy)-game.cost, gems=Number(u.rows[0].gems)+game.reward;
-    await c.query('UPDATE nexo.users SET energy=$1,gems=$2 WHERE id=$3',[energy,gems,uid(req)]);
-    await c.query('INSERT INTO nexo.game_events(id,user_id,game_id,cost_energy,reward_gems,idempotency_key) VALUES($1,$2,$3,$4,$5,$6)',[randomUUID(),uid(req),gameId,game.cost,game.reward,key]);
-    return {ok:true,energy,gems,rewardGems:game.reward};
-  });}catch(e){return reply.code(e.code||500).send({error:e.code||'GAME_FAILED'});}
+  const t=r.rows[0];emit(t.from_user_id,{type:'trade_update',tradeId:t.id,status:t.status});emit(t.to_user_id,{type:'trade_update',tradeId:t.id,status:t.status});return t;
 });
 app.post('/payments/create-order',{preHandler:auth},async(req,reply)=>{
   const packs={starter_499:{gems:500,amountMinor:499},plus_999:{gems:1200,amountMinor:999},pro_1999:{gems:3000,amountMinor:1999},ultra_24999:{gems:8000,amountMinor:24999}};
