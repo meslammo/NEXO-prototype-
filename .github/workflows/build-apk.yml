@@ -21,6 +21,8 @@ jobs:
         run: flutter pub get
       - name: Analyze (non-blocking)
         run: flutter analyze || true
+      - name: Regenerate supported Android host project
+        run: flutter create --platforms=android .
       - name: Build APK
         run: flutter build apk --release
       - name: Upload APK
