@@ -109,7 +109,7 @@ class _TradeScreenState extends State<TradeScreen> {
       toUserName: raw['toUserName']?.toString() ?? raw['to_username']?.toString() ?? widget.peerName ?? otherUserName,
       fromItems: fromItems,
       toItems: toItems,
-      totalValue: fromItems.fold<int>(0, (sum, x) => sum + x.totalValue) + toItems.fold<int>(0, (sum, x) => sum + x.totalValue) + fromGems + toGems,
+      totalValue: (fromItems.fold<int>(0, (sum, x) => sum + x.totalValue) + toItems.fold<int>(0, (sum, x) => sum + x.totalValue) + fromGems + toGems).toInt(),
       appFee: fee,
       netAmount: fromGems + toGems - fee,
       status: status,
