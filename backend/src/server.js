@@ -78,7 +78,7 @@ app.post('/auth/guest', async (req, reply) => {
   const username='guest_'+(deviceId || randomUUID().slice(0,12));
   let r=await q('SELECT * FROM nexo.users WHERE username=$1',[username]);
   let u=r.rows[0];
-  if(!u){ r=await q('INSERT INTO nexo.users(id,username,display_name) VALUES($1,$2,$3) RETURNING *',[randomUUID(),username,'NEXO Guest']); u=r.rows[0]; }
+  if(!u){ r=await q('INSERT INTO nexo.users(id,username,display_name) VALUES($1,$2,$3) RETURNING *',[randomUUID(),username,'NEXO Guest']); u=r.rows[0]; await q(`INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES ($1,'neon-heart',2),($1,'shadow-flame',1),($1,'galaxy-aura',1),($1,'crown-shine',1) ON CONFLICT(user_id,item_id) DO NOTHING`,[u.id]); }
   const token=app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'});
   return { token, user:publicUser(u) };
 });
