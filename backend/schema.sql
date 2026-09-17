@@ -47,9 +47,38 @@ CREATE TABLE IF NOT EXISTS nexo.payment_orders (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), completed_at TIMESTAMPTZ
 );
 CREATE TABLE IF NOT EXISTS nexo.presence (
-  user_id UUID PRIMARY KEY REFERENCES nexo.users(id) ON DELETE CASCADE, online BOOLEAN NOT NULL DEFAULT FALSE,
-  last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  user_id UUID PRIMARY KEY REFERENCES nexo.users(id) ON DELETE CASCADE,
+  online BOOLEAN NOT NULL DEFAULT FALSE, last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE TABLE IF NOT EXISTS nexo.daily_claims (
+  user_id UUID PRIMARY KEY REFERENCES nexo.users(id) ON DELETE CASCADE,
+  claim_date DATE NOT NULL,
+  streak INT NOT NULL DEFAULT 1 CHECK (streak >= 1)
+);
+CREATE TABLE IF NOT EXISTS nexo.game_events (
+  id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  game_id TEXT NOT NULL, cost_energy INT NOT NULL, reward_gems INT NOT NULL,
+  idempotency_key TEXT UNIQUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS nexo.treasury_ledger (
+  id UUID PRIMARY KEY, trade_id UUID, kind TEXT NOT NULL, amount BIGINT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS nexo.trade_locks (
+  trade_id UUID NOT NULL REFERENCES nexo.trades(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  item_id TEXT NOT NULL REFERENCES nexo.gifts(id),
+  quantity INT NOT NULL CHECK (quantity > 0),
+  PRIMARY KEY (trade_id,user_id,item_id)
+);
+
+INSERT INTO nexo.users(id,username,email,password_hash,display_name,avatar,gems,energy) VALUES
+('00000000-0000-0000-0000-000000000101','shadoww',NULL,NULL,'Shadoww','002.jpg',1000,50),
+('00000000-0000-0000-0000-000000000102','galaxygirl',NULL,NULL,'GalaxyGirl','003.jpg',1000,50),
+('00000000-0000-0000-0000-000000000103','prince',NULL,NULL,'Prince_X','004.jpg',1000,50),
+('00000000-0000-0000-0000-000000000104','ahmed',NULL,NULL,'Ahmed','005.jpg',1000,50),
+('00000000-0000-0000-0000-000000000105','mdark',NULL,NULL,'M:Dark','006.jpg',1000,50)
+ON CONFLICT (username) DO NOTHING;
 
 INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline) VALUES
 ('neon-heart','Neon Heart','Common',15,true,'neon_heart.png','نبضة نيون لطيفة للشات'),
