@@ -540,7 +540,7 @@ class _TradeScreenState extends State<TradeScreen> {
           Row(children: [
             Text(value, style: TextStyle(color: color, fontSize: bold ? 18 : 15, fontWeight: bold ? FontWeight.bold : FontWeight.w600)),
             const SizedBox(width: 4),
-            Icon(Icons.confirmation_number, size: 16, color: color),
+            Icon(Icons.diamond_rounded, size: 16, color: color),
           ]),
         ],
       ),
