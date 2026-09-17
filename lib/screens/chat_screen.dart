@@ -1,9 +1,14 @@
 import 'dart:async';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/nexo_catalog.dart';
 import '../services/economy_service.dart';
 import '../services/social_engine.dart';
+import '../services/api_client.dart';
+import '../services/auth_service.dart';
+import '../services/webrtc_call_service.dart';
+import '../config/api_config.dart';
 import '../theme/nexo_theme.dart';
 import 'trade_screen.dart';
 
@@ -123,19 +128,84 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   Timer? _callTimer;
   String? _callKind;
   int _callMinutes = 0;
+  late final WebRtcCallService _callService;
+  StreamSubscription<MediaStream>? _remoteStreamSubscription;
+  MediaStream? _remoteStream;
+
+  bool get _remoteMode {
+    final auth = context.read<AuthService>();
+    return NexoApiConfig.configured && auth.online;
+  }
 
   List<_ChatLine> get _lines => _chatMessages[widget.person.id] ?? const <_ChatLine>[];
 
   @override
+  void initState() {
+    super.initState();
+    _callService = WebRtcCallService(context.read<RealtimeService>());
+    _remoteStreamSubscription = _callService.remoteStreams.listen((stream) {
+      if (mounted) setState(() => _remoteStream = stream);
+    });
+    Future.microtask(() async {
+      await _callService.listenForIncoming(widget.person.id);
+      await _loadRemoteHistory();
+    });
+  }
+
+  Future<void> _loadRemoteHistory() async {
+    if (!_remoteMode) return;
+    try {
+      final api = context.read<ApiClient>();
+      final response = await api.getJson('/chat/${widget.person.id}/messages');
+      final raw = response['data'];
+      if (raw is! List || !mounted) return;
+      final lines = <_ChatLine>[];
+      for (final row in raw) {
+        if (row is! Map) continue;
+        lines.add(_ChatLine(
+          row['sender_username']?.toString() ?? row['sender_id']?.toString() ?? 'User',
+          row['body']?.toString() ?? '',
+          giftId: row['gift_id']?.toString(),
+        ));
+      }
+      setState(() => _chatMessages[widget.person.id] = lines);
+    } catch (_) {}
+  }
+
+  @override
   void dispose() {
     _callTimer?.cancel();
+    _remoteStreamSubscription?.cancel();
+    _callService.dispose();
     _controller.dispose();
     super.dispose();
   }
 
-  void _sendText() {
+  Future<void> _sendText() async {
     final value = _controller.text.trim();
     if (value.isEmpty) return;
+    if (_remoteMode) {
+      try {
+        await context.read<ApiClient>().postJson(
+          '/chat/${widget.person.id}/messages',
+          {'body': value},
+        );
+        final me = context.read<AuthService>().user?['username']?.toString() ?? 'NEXO_KING';
+        setState(() {
+          (_chatMessages[widget.person.id] ??= []).add(_ChatLine(me, value));
+          _controller.clear();
+        });
+        context.read<SocialEngine>().logChatMessage();
+        return;
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تعذر إرسال الرسالة: $e'), backgroundColor: Colors.redAccent),
+          );
+        }
+        return;
+      }
+    }
     setState(() {
       (_chatMessages[widget.person.id] ??= []).add(_ChatLine('NEXO_KING', value));
       _controller.clear();
@@ -241,9 +311,27 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('رجوع')),
           ElevatedButton.icon(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
               final economy = context.read<EconomyService>();
+              if (_remoteMode) {
+                try {
+                  final result = await context.read<ApiClient>().postJson('/gifts/send', {
+                    'toUserId': widget.person.id,
+                    'giftId': gift.id,
+                    'idempotencyKey': 'gift-${gift.id}-${DateTime.now().microsecondsSinceEpoch}',
+                  });
+                  final wallet = await context.read<ApiClient>().getJson('/wallet');
+                  economy.setGems((wallet['gems'] as num?)?.toInt() ?? economy.gems);
+                  final me = context.read<AuthService>().user?['username']?.toString() ?? 'NEXO_KING';
+                  setState(() => (_chatMessages[widget.person.id] ??= []).add(_ChatLine(me, 'تم إرسال ${gift.name}', giftId: gift.id)));
+                  context.read<SocialEngine>().logGiftSend();
+                  return;
+                } catch (e) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إرسال الهدية: $e'), backgroundColor: Colors.redAccent));
+                  return;
+                }
+              }
               if (owned > 0) {
                 economy.removeItem(gift.id, 1);
               } else if (!economy.spendGems(gift.gems)) {
@@ -270,32 +358,41 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     _controller.value = TextEditingValue(text: text.replaceRange(start, end, emoji), selection: TextSelection.collapsed(offset: start + emoji.length));
   }
 
-  void _startCall(String kind) {
+  Future<void> _startCall(String kind) async {
     final economy = context.read<EconomyService>();
     final cost = kind == 'video' ? 4 : 1;
     if (!economy.spendEnergy(cost)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ الطاقة غير كافية')));
       return;
     }
-    _callTimer?.cancel();
-    setState(() { _callKind = kind; _callMinutes = 0; });
-    _callTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (!mounted || _callKind == null) return;
-      final extra = _callKind == 'video' ? 4 : 1;
-      if (!economy.spendEnergy(extra)) {
-        _endCall(showToast: true);
-        return;
+    try {
+      if (_remoteMode) {
+        await _callService.start(widget.person.id, video: kind == 'video');
       }
-      setState(() => _callMinutes++);
-    });
-    context.read<SocialEngine>().logActivity(kind == 'video' ? 'video_call' : 'voice_call');
+      _callTimer?.cancel();
+      setState(() { _callKind = kind; _callMinutes = 0; });
+      _callTimer = Timer.periodic(const Duration(minutes: 1), (_) async {
+        if (!mounted || _callKind == null) return;
+        final extra = _callKind == 'video' ? 4 : 1;
+        if (!economy.spendEnergy(extra)) {
+          _endCall(showToast: true);
+          return;
+        }
+        if (mounted) setState(() => _callMinutes++);
+      });
+      context.read<SocialEngine>().logActivity(kind == 'video' ? 'video_call' : 'voice_call');
+    } catch (e) {
+      if (_remoteMode) setState(() => economy.setEnergy(economy.energy + cost));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر بدء المكالمة: $e'), backgroundColor: Colors.redAccent));
+    }
   }
 
-  void _endCall({bool showToast = false}) {
+  Future<void> _endCall({bool showToast = false}) async {
     _callTimer?.cancel();
     _callTimer = null;
-    setState(() => _callKind = null);
-    if (showToast) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('انتهت المكالمة لأن الطاقة خلصت.')));
+    await _callService.stop();
+    if (mounted) setState(() { _callKind = null; _remoteStream = null; });
+    if (showToast && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('انتهت المكالمة لأن الطاقة خلصت.')));
   }
 
   void _openEmojiPanel() {
@@ -343,6 +440,18 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         ],
       ),
       body: Column(children: [
+        if (_callKind == 'video' && _remoteStream != null)
+          Container(
+            height: 220,
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: Colors.black),
+            child: RTCVideoView(
+              RTCVideoRenderer()..setSrcObject(_remoteStream),
+              objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+            ),
+          ),
         if (_callKind != null)
           Container(
             width: double.infinity,
