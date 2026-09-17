@@ -40,6 +40,14 @@ CREATE TABLE IF NOT EXISTS nexo.trades (
   to_confirmed BOOLEAN NOT NULL DEFAULT FALSE, dispute_reason TEXT, resolution TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), expires_at TIMESTAMPTZ NOT NULL
 );
+CREATE TABLE IF NOT EXISTS nexo.purchase_tokens (
+  purchase_token TEXT PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  product_id TEXT NOT NULL,
+  order_id UUID NOT NULL REFERENCES nexo.payment_orders(id) ON DELETE CASCADE,
+  verified_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS nexo.payment_orders (
   id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
   package_id TEXT NOT NULL, gems BIGINT NOT NULL, amount_minor BIGINT NOT NULL, currency TEXT NOT NULL,
