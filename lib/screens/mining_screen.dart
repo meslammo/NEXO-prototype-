@@ -3,8 +3,7 @@ import '../theme/nexo_theme.dart';
 import '../services/energy_service.dart';
 import '../widgets/energy_battery_widget.dart';
 
-/// شاشة التعدين - كل ضغطة ناجحة على الصخرة بتنادي
-/// EnergyService.instance.rewardMining() فتضيف طاقة فعلية للرصيد.
+/// شاشة التعدين - كل 4 ضغطات على الصخرة تكافئ طاقة.
 class MiningScreen extends StatefulWidget {
   const MiningScreen({super.key});
 
@@ -38,7 +37,7 @@ class _MiningScreenState extends State<MiningScreen>
     _shakeController.forward(from: 0);
 
     if (_hits >= _hitsNeeded) {
-      _hits = 0;
+      setState(() => _hits = 0);
       EnergyService.instance.rewardMining();
 
       final gained = EnergyService.miningReward.toInt();
@@ -55,40 +54,42 @@ class _MiningScreenState extends State<MiningScreen>
           ),
         ),
       );
-      setState(() {});
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final progress = _hits / _hitsNeeded;
+    final progress = (_hits / _hitsNeeded).clamp(0.0, 1.0);
 
     return Scaffold(
       backgroundColor: NexoColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
               child: Row(
                 children: [
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
-                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                    icon: const Icon(Icons.arrow_back_ios_new,
+                        color: Colors.white, size: 20),
                   ),
                   const Expanded(
                     child: Text(
                       'التعدين',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const EnergyBatteryWidget(),
                 ],
               ),
             ),
-
             Expanded(
               child: Center(
                 child: Column(
@@ -97,13 +98,15 @@ class _MiningScreenState extends State<MiningScreen>
                     AnimatedBuilder(
                       animation: _shakeController,
                       builder: (context, child) {
-                        final offset = (1 - _shakeController.value) *
-                            4 *
+                        final direction =
                             (_shakeController.value * 30).round().isEven
-                                ? 4.0
-                                : -4.0;
+                                ? 1.0
+                                : -1.0;
+                        final offset =
+                            (1 - _shakeController.value) * 4 * direction;
                         return Transform.translate(
-                          offset: Offset(_shakeController.isAnimating ? offset : 0, 0),
+                          offset: Offset(
+                              _shakeController.isAnimating ? offset : 0, 0),
                           child: child,
                         );
                       },
@@ -126,10 +129,12 @@ class _MiningScreenState extends State<MiningScreen>
                                 blurRadius: 25,
                               ),
                             ],
-                            border: Border.all(color: Colors.white.withOpacity(0.08)),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.08)),
                           ),
                           child: const Center(
-                            child: Icon(Icons.diamond, size: 64, color: Colors.white70),
+                            child: Icon(Icons.diamond,
+                                size: 64, color: Colors.white70),
                           ),
                         ),
                       ),
@@ -143,14 +148,16 @@ class _MiningScreenState extends State<MiningScreen>
                           value: progress,
                           minHeight: 10,
                           backgroundColor: NexoColors.card,
-                          valueColor: const AlwaysStoppedAnimation(NexoColors.gold),
+                          valueColor:
+                              const AlwaysStoppedAnimation(NexoColors.gold),
                         ),
                       ),
                     ),
                     const SizedBox(height: 10),
                     const Text(
                       'اضغط على الصخرة عشان تعدّن',
-                      style: TextStyle(color: NexoColors.textSecondary, fontSize: 12),
+                      style: TextStyle(
+                          color: NexoColors.textSecondary, fontSize: 12),
                     ),
                   ],
                 ),
