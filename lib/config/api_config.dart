@@ -1,5 +1,5 @@
 class NexoApiConfig {
-  static const String baseUrl = String.fromEnvironment('NEXO_API_URL', defaultValue: '');
+  static const String baseUrl = String.fromEnvironment('NEXO_API_URL', defaultValue: 'https://nexo-api-production-05d3.up.railway.app');
   static const String iceServersJson = String.fromEnvironment(
     'NEXO_ICE_SERVERS',
     defaultValue: '[{"urls":["stun:stun.l.google.com:19302"]}]',
