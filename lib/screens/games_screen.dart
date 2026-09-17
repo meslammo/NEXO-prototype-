@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/economy_service.dart';
 import '../services/social_engine.dart';
+import '../services/api_client.dart';
+import '../services/auth_service.dart';
+import '../config/api_config.dart';
 import 'mining_screen.dart';
 
 class GamesScreen extends StatelessWidget {
@@ -105,16 +108,45 @@ class _GameCard extends StatelessWidget {
     );
   }
 
-  void _play(BuildContext context, String title, int cost, int reward) {
+  Future<void> _play(BuildContext context, String title, int cost, int reward) async {
     final economy = context.read<EconomyService>();
     final social = context.read<SocialEngine>();
+    final auth = context.read<AuthService>();
+    const gameIds = {
+      'Quick Challenge': 'quick_challenge',
+      'Mini Puzzle': 'mini_puzzle',
+      'Daily Arena': 'daily_arena',
+    };
+    if (NexoApiConfig.configured && auth.online) {
+      try {
+        final api = context.read<ApiClient>();
+        final result = await api.postJson('/games/play', {
+          'gameId': gameIds[title] ?? 'quick_challenge',
+          'idempotencyKey': 'game-${DateTime.now().microsecondsSinceEpoch}',
+        });
+        economy.hydrateFromServer(
+          gems: (result['gems'] as num?)?.toInt() ?? economy.gems,
+          energy: (result['energy'] as num?)?.toInt() ?? economy.energy,
+        );
+        social.logGameWin((result['rewardGems'] as num?)?.toInt() ?? reward);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('🎉 $title: +${result['rewardGems'] ?? reward} Gems')),
+        );
+        return;
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('اللعبة لم تُقبل من السيرفر: $e'), backgroundColor: Colors.redAccent),
+        );
+        return;
+      }
+    }
     if (!economy.spendEnergy(cost)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ الطاقة غير كافية')));
       return;
     }
     economy.addGems(reward);
     social.logGameWin(reward);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('🎉 $title: +$reward Gems')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('🎉 $title: +$reward Gems محليًا')));
   }
 }
 
