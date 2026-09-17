@@ -375,11 +375,25 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     _controller.value = TextEditingValue(text: text.replaceRange(start, end, emoji), selection: TextSelection.collapsed(offset: start + emoji.length));
   }
 
-  Future<void> _startCall(String kind) async {
+  Future<bool> _spendCallEnergy(int amount) async {
     final economy = context.read<EconomyService>();
+    if (!_remoteMode) return economy.spendEnergy(amount);
+    try {
+      final result = await context.read<ApiClient>().postJson('/economy/energy/spend', {
+        'amount': amount,
+        'idempotencyKey': 'call-energy-${DateTime.now().microsecondsSinceEpoch}',
+      });
+      economy.setEnergy((result['energy'] as num?)?.toInt() ?? economy.energy);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _startCall(String kind) async {
     final cost = kind == 'video' ? 4 : 1;
-    if (!economy.spendEnergy(cost)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ الطاقة غير كافية')));
+    if (!await _spendCallEnergy(cost)) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ الطاقة غير كافية أو تعذر الاتصال بالسيرفر')));
       return;
     }
     try {
@@ -391,7 +405,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
       _callTimer = Timer.periodic(const Duration(minutes: 1), (_) async {
         if (!mounted || _callKind == null) return;
         final extra = _callKind == 'video' ? 4 : 1;
-        if (!economy.spendEnergy(extra)) {
+        if (!await _spendCallEnergy(extra)) {
           _endCall(showToast: true);
           return;
         }
@@ -399,7 +413,6 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
       });
       context.read<SocialEngine>().logActivity(kind == 'video' ? 'video_call' : 'voice_call');
     } catch (e) {
-      if (_remoteMode) setState(() => economy.setEnergy(economy.energy + cost));
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر بدء المكالمة: $e'), backgroundColor: Colors.redAccent));
     }
   }
