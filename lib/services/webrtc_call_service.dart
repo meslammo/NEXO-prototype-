@@ -85,10 +85,19 @@ class WebRtcCallService {
 
     _peerId = peerId;
     _video = video;
-    final rawServers = jsonDecode(NexoApiConfig.iceServersJson);
-    final servers = (rawServers as List)
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
+    List<Map<String,dynamic>> servers;
+    try {
+      final response = await realtime.api.getJson('/rtc/config');
+      final rawServers = response['iceServers'];
+      servers = rawServers is List
+          ? rawServers.map((e) => Map<String,dynamic>.from(e as Map)).toList()
+          : <Map<String,dynamic>>[];
+    } catch (_) {
+      final rawServers = jsonDecode(NexoApiConfig.iceServersJson);
+      servers = (rawServers as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    }
 
     _pc = await createPeerConnection({'iceServers': servers});
     _pc!.onIceCandidate = (candidate) {
