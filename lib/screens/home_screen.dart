@@ -1,37 +1,75 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/nexo_theme.dart';
-import 'trade_screen.dart';
-import 'craft_screen.dart';
-import 'rewards_screen.dart';
-import 'inventory_screen.dart';
-import 'recharge_screen.dart';
-import 'mining_screen.dart';
-import 'daily_missions_screen.dart';
+import '../services/economy_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _Header(),
-            const SizedBox(height: 18),
-            const _ProfileCard(),
-            const SizedBox(height: 16),
-            const _StatsRow(),
-            const SizedBox(height: 18),
-            const _FeatureGrid(),
-            const SizedBox(height: 18),
-            const _VipBanner(),
-            const SizedBox(height: 18),
-            const _DailyRewardsSection(),
-            const SizedBox(height: 24),
-          ],
+    return Scaffold(
+      backgroundColor: NexoColors.background,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showCreateSheet(context),
+        backgroundColor: NexoColors.primary,
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.add),
+      ),
+      body: SafeArea(
+        child: Consumer<EconomyService>(
+          builder: (context, economy, _) => CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(child: _Header(economy: economy)),
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              const SliverToBoxAdapter(child: _Stories()),
+              const SliverToBoxAdapter(child: SizedBox(height: 18)),
+              const SliverToBoxAdapter(child: _SectionTitle(title: 'آخر النشاطات')),
+              const SliverToBoxAdapter(child: SizedBox(height: 8)),
+              const SliverToBoxAdapter(child: _FeedPost(
+                name: 'Shadoww',
+                text: 'دخلنا Games النهارده 🎮',
+                meta: 'الآن',
+                icon: Icons.sports_esports_rounded,
+              )),
+              const SliverToBoxAdapter(child: _FeedPost(
+                name: 'GalaxyGirl',
+                text: 'هدية جديدة وصلتني 💜',
+                meta: 'منذ 8 دقائق',
+                icon: Icons.card_giftcard_rounded,
+              )),
+              const SliverToBoxAdapter(child: _FeedPost(
+                name: 'Prince_X',
+                text: 'Trade request جاهز في Market',
+                meta: 'منذ 17 دقيقة',
+                icon: Icons.swap_horiz_rounded,
+              )),
+              const SliverToBoxAdapter(child: SizedBox(height: 90)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCreateSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: NexoColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Wrap(
+            runSpacing: 10,
+            children: const [
+              ListTile(leading: Icon(Icons.text_fields), title: Text('منشور نصي')),
+              ListTile(leading: Icon(Icons.image_outlined), title: Text('Story / صورة')),
+              ListTile(leading: Icon(Icons.card_giftcard_outlined), title: Text('هدية')),
+            ],
+          ),
         ),
       ),
     );
@@ -39,316 +77,132 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header();
+  final EconomyService economy;
+  const _Header({required this.economy});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            colors: [Color(0xFF7B5CFF), Color(0xFF00D4FF)],
-          ).createShader(bounds),
-          child: const Text(
-            'NEXO',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2),
-          ),
-        ),
-        const Spacer(),
-        _Badge(icon: Icons.confirmation_number_rounded, value: '12,450', color: NexoColors.ticket),
-        const SizedBox(width: 8),
-        _Badge(icon: Icons.star_rounded, value: '8,250', color: NexoColors.social),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFFA000)]),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      child: Column(
+        children: [
+          Row(
             children: [
-              Icon(Icons.workspace_premium, size: 16, color: Colors.black87),
-              SizedBox(width: 4),
-              Text('VIP', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 12)),
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [Color(0xFF7B5CFF), Color(0xFF00D4FF)],
+                ).createShader(bounds),
+                child: const Text(
+                  'NEXO',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2),
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+              ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(child: _WalletChip(
+                icon: Icons.diamond_rounded,
+                label: 'Gems',
+                value: _fmt(economy.gems),
+                color: NexoColors.primary,
+              )),
+              const SizedBox(width: 10),
+              Expanded(child: _WalletChip(
+                icon: Icons.bolt_rounded,
+                label: 'Energy',
+                value: '${economy.energy}/100',
+                color: NexoColors.gold,
+              )),
+            ],
+          ),
+        ],
+      ),
     );
+  }
+
+  static String _fmt(int value) {
+    final s = value.toString();
+    final out = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) out.write(',');
+      out.write(s[i]);
+    }
+    return out.toString();
   }
 }
 
-class _Badge extends StatelessWidget {
+class _WalletChip extends StatelessWidget {
   final IconData icon;
+  final String label;
   final String value;
   final Color color;
-  const _Badge({required this.icon, required this.value, required this.color});
+  const _WalletChip({required this.icon, required this.label, required this.value, required this.color});
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: NexoColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 4),
-          Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProfileCard extends StatelessWidget {
-  const _ProfileCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: NexoColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: NexoColors.cardBorder),
-        boxShadow: [BoxShadow(color: NexoColors.primary.withOpacity(0.15), blurRadius: 20, offset: const Offset(0, 8))],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: NexoColors.primary, width: 2),
-              gradient: const LinearGradient(colors: [Color(0xFF7B5CFF), Color(0xFF00D4FF)]),
-            ),
-            child: const CircleAvatar(
-              radius: 30,
-              backgroundColor: NexoColors.surface,
-              child: Icon(Icons.person, size: 36, color: Colors.white70),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text('NEXO_KING', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 6),
-                    const Icon(Icons.workspace_premium, size: 18, color: NexoColors.gold),
-                    const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: NexoColors.gold.withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
-                      child: const Text('VIP', style: TextStyle(color: NexoColors.gold, fontSize: 10, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                const Text('Lv. 12', style: TextStyle(color: NexoColors.textSecondary, fontSize: 13)),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: const LinearProgressIndicator(
-                    value: 0.75,
-                    minHeight: 6,
-                    backgroundColor: NexoColors.cardBorder,
-                    valueColor: AlwaysStoppedAnimation<Color>(NexoColors.primary),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text('75%', style: TextStyle(color: NexoColors.textSecondary, fontSize: 11)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatsRow extends StatelessWidget {
-  const _StatsRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    decoration: BoxDecoration(
+      color: NexoColors.card,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: color.withOpacity(0.35)),
+    ),
+    child: Row(
       children: [
-        Expanded(
-          child: _StatCard(
-            icon: Icons.confirmation_number_rounded,
-            label: 'Tickets',
-            value: '12,450',
-            color: NexoColors.ticket,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RechargeScreen())),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _StatCard(
-            icon: Icons.star_rounded,
-            label: 'Social Points',
-            value: '8,250',
-            color: NexoColors.social,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsScreen())),
-          ),
-        ),
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 8),
+        Expanded(child: Text(label, style: const TextStyle(color: NexoColors.textSecondary, fontSize: 11))),
+        Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 15)),
       ],
-    );
-  }
+    ),
+  );
 }
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-  final VoidCallback onTap;
-  const _StatCard({required this.icon, required this.label, required this.value, required this.color, required this.onTap});
+class _Stories extends StatelessWidget {
+  const _Stories();
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: NexoColors.card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final names = ['Your Story', 'Shadoww', 'GalaxyGirl', 'Prince_X', 'Ahmed'];
+    return SizedBox(
+      height: 96,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        itemCount: names.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, i) => Column(
           children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 10),
-            Text(label, style: const TextStyle(color: NexoColors.textSecondary, fontSize: 13)),
-            const SizedBox(height: 4),
-            Text(value, style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FeatureGrid extends StatelessWidget {
-  const _FeatureGrid();
-
-  @override
-  Widget build(BuildContext context) {
-    final features = [
-      _Feature(Icons.chat_bubble_rounded, 'Chat', const Color(0xFF7B5CFF), () {}),
-      _Feature(Icons.diamond_rounded, 'Mining', const Color(0xFF00E676), () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const MiningScreen()));
-      }),
-      _Feature(Icons.swap_horiz_rounded, 'Trade', const Color(0xFF00BCD4), () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const TradeScreen()));
-      }),
-      _Feature(Icons.handyman_rounded, 'Craft', const Color(0xFFE040FB), () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const CraftScreen()));
-      }),
-      _Feature(Icons.storefront_rounded, 'Market', const Color(0xFF7C4DFF), () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const RechargeScreen()));
-      }),
-      _Feature(Icons.mic_rounded, 'Voice', const Color(0xFF536DFE), () {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الصوت — قريبًا')));
-      }),
-      _Feature(Icons.videocam_rounded, 'Video', const Color(0xFF651FFF), () {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الفيديو — قريبًا')));
-      }),
-      _Feature(Icons.workspace_premium_rounded, 'VIP Room', const Color(0xFFFFD700), () {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('غرف VIP — قريبًا')));
-      }),
-      _Feature(Icons.inventory_2_rounded, 'Inventory', const Color(0xFFAA00FF), () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const InventoryScreen()));
-      }),
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.85,
-      ),
-      itemCount: features.length,
-      itemBuilder: (context, index) {
-        final f = features[index];
-        return GestureDetector(
-          onTap: f.onTap,
-          child: Container(
-            decoration: BoxDecoration(
-              color: NexoColors.card,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: f.color.withOpacity(0.35)),
-              boxShadow: [BoxShadow(color: f.color.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4))],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: f.color.withOpacity(0.15), shape: BoxShape.circle),
-                  child: Icon(f.icon, color: f.color, size: 26),
-                ),
-                const SizedBox(height: 8),
-                Text(f.label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _Feature {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-  _Feature(this.icon, this.label, this.color, this.onTap);
-}
-
-class _VipBanner extends StatelessWidget {
-  const _VipBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RechargeScreen())),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [NexoColors.gold.withOpacity(0.2), NexoColors.primary.withOpacity(0.15)]),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: NexoColors.gold.withOpacity(0.4)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.workspace_premium, color: NexoColors.gold, size: 28),
-            const SizedBox(width: 12),
-            const Expanded(child: Text('VIP مميزات حصرية تنتظرك', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15))),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              width: 62,
+              height: 62,
+              padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
-                color: NexoColors.gold.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: NexoColors.gold.withOpacity(0.5)),
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: i == 0
+                      ? [NexoColors.cardBorder, NexoColors.cardBorder]
+                      : [NexoColors.primary, NexoColors.secondary],
+                ),
               ),
-              child: const Text('عرض المزايا', style: TextStyle(color: NexoColors.gold, fontWeight: FontWeight.bold, fontSize: 13)),
+              child: CircleAvatar(
+                backgroundColor: NexoColors.surface,
+                child: i == 0
+                    ? const Icon(Icons.add, color: Colors.white)
+                    : Text(names[i][0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              width: 70,
+              child: Text(names[i], maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 10)),
             ),
           ],
         ),
@@ -357,67 +211,44 @@ class _VipBanner extends StatelessWidget {
   }
 }
 
-class _DailyRewardsSection extends StatelessWidget {
-  const _DailyRewardsSection();
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  const _SectionTitle({required this.title});
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+  );
+}
+
+class _FeedPost extends StatelessWidget {
+  final String name;
+  final String text;
+  final String meta;
+  final IconData icon;
+  const _FeedPost({required this.name, required this.text, required this.meta, required this.icon});
 
   @override
-  Widget build(BuildContext context) {
-    final rewards = [
-      {'label': 'التداول', 'value': '+250', 'sub': 'هذا اليوم', 'icon': Icons.swap_horiz, 'color': NexoColors.gold},
-      {'label': 'التصنيع', 'value': '+180', 'sub': 'هذا اليوم', 'icon': Icons.handyman, 'color': NexoColors.primary},
-      {'label': 'النقاط', 'value': '+320', 'sub': 'هذا اليوم', 'icon': Icons.star, 'color': NexoColors.social},
-    ];
-
-    return Column(
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: NexoColors.card,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: NexoColors.cardBorder),
+    ),
+    child: Row(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('مكافآت اليوم', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyMissionsScreen())),
-                  child: const Text('المهام اليومية', style: TextStyle(color: NexoColors.success, fontSize: 13, fontWeight: FontWeight.w600)),
-                ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsScreen())),
-                  child: const Text('عرض الكل ←', style: TextStyle(color: NexoColors.primary, fontSize: 13, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: rewards.map((r) {
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsScreen())),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: NexoColors.card,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: (r['color'] as Color).withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(r['icon'] as IconData, color: r['color'] as Color, size: 22),
-                      const SizedBox(height: 6),
-                      Text(r['value'] as String, style: TextStyle(color: r['color'] as Color, fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text(r['label'] as String, style: const TextStyle(color: NexoColors.textSecondary, fontSize: 11)),
-                      Text(r['sub'] as String, style: const TextStyle(color: NexoColors.textSecondary, fontSize: 10)),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
+        CircleAvatar(backgroundColor: NexoColors.primary.withOpacity(0.18), child: Icon(icon, color: NexoColors.primary, size: 20)),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text(text, style: const TextStyle(color: NexoColors.textSecondary, fontSize: 13)),
+          const SizedBox(height: 5),
+          Text(meta, style: const TextStyle(color: Colors.white38, fontSize: 10)),
+        ])),
       ],
-    );
-  }
+    ),
+  );
 }
