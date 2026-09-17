@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/economy_service.dart';
+import '../services/api_client.dart';
+import '../services/auth_service.dart';
+import '../config/api_config.dart';
 import '../theme/nexo_theme.dart';
 
 class RechargeScreen extends StatelessWidget {
@@ -26,10 +29,52 @@ class RechargeScreen extends StatelessWidget {
           leading: const CircleAvatar(child: Icon(Icons.diamond_rounded)),
           title: Text((p['gems'] as int).toString() + ' Gems', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           subtitle: Text((p['id'] as String) + ' · Bonus ' + (p['bonus'] as String) + ' Gems', style: const TextStyle(color: NexoColors.textSecondary)),
-          trailing: ElevatedButton(onPressed: () {
-            context.read<EconomyService>().addGems(p['gems'] as int);
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تمت إضافة ' + (p['gems'] as int).toString() + ' Gems (Prototype Wallet)')));
-          }, child: Text('\$' + (p['price'] as String))),
+          trailing: ElevatedButton(
+            onPressed: () async {
+              final auth = context.read<AuthService>();
+              if (NexoApiConfig.configured && auth.online) {
+                try {
+                  final api = context.read<ApiClient>();
+                  final result = await api.postJson('/payments/create-order', {
+                    'packageId': p['id'],
+                  });
+                  if (!mounted) return;
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      backgroundColor: NexoColors.card,
+                      title: const Text('تم إنشاء طلب الدفع', style: TextStyle(color: Colors.white)),
+                      content: Text(
+                        'Order: ${result['orderId']}\\nProvider: ${result['provider']}\\nالرصيد لن يزيد إلا بعد تأكيد مزود الدفع من السيرفر.',
+                        style: const TextStyle(color: NexoColors.textSecondary),
+                      ),
+                      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('حسنًا'))],
+                    ),
+                  );
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('تعذر إنشاء طلب الدفع: $e'), backgroundColor: Colors.redAccent),
+                    );
+                  }
+                }
+                return;
+              }
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('الدفع الحقيقي يحتاج ربط مزود دفع؛ لن أضيف Gems وهمية.')),
+                );
+              }
+            },
+            child: Text('\
+        ))),
+        const SizedBox(height: 14),
+        const Text('العملة الوحيدة للمستخدم: Gems. الرصيد يُضاف فقط بعد تأكيد الدفع من السيرفر.', style: TextStyle(color: NexoColors.textSecondary), textAlign: TextAlign.center),
+      ],
+    ),
+  );
+} + (p['price'] as String)),
+          ),
         ))),
         const SizedBox(height: 14),
         const Text('العملة الوحيدة للمستخدم: Gems. أي أسماء Tickets قديمة ليست نظام عملة ثاني.', style: TextStyle(color: NexoColors.textSecondary), textAlign: TextAlign.center),
