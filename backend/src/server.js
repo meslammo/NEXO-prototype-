@@ -385,6 +385,85 @@ async function googlePublisher() {
   return androidpublisher({version:'v3',auth:authClient});
 }
 
+app.post('/games/rooms',{preHandler:auth},async(req,reply)=>{
+  const gameId=String((req.body||{}).gameId||'online_duel');
+  if(!['online_duel','daily_arena'].includes(gameId))return reply.code(400).send({error:'INVALID_ONLINE_GAME'});
+  try{
+    return await tx(async c=>{
+      const waiting=await c.query(`SELECT * FROM nexo.game_rooms
+        WHERE game_id=$1 AND status='waiting' AND host_id<>$2
+        ORDER BY created_at ASC LIMIT 1 FOR UPDATE`,[gameId,uid(req)]);
+      if(waiting.rowCount){
+        const room=waiting.rows[0];
+        await c.query(`UPDATE nexo.game_rooms SET guest_id=$1,status='matched',updated_at=NOW() WHERE id=$2`,[uid(req),room.id]);
+        emit(room.host_id,{type:'game_room_matched',roomId:room.id,gameId});
+        return {...room,guest_id:uid(req),status:'matched'};
+      }
+      const r=await c.query(`INSERT INTO nexo.game_rooms(id,game_id,host_id) VALUES($1,$2,$3) RETURNING *`,[randomUUID(),gameId,uid(req)]);
+      return r.rows[0];
+    });
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'ROOM_CREATE_FAILED'});}
+});
+
+app.get('/games/rooms/:id',{preHandler:auth},async(req,reply)=>{
+  const r=await q('SELECT * FROM nexo.game_rooms WHERE id=$1 AND (host_id=$2 OR guest_id=$2)',[req.params.id,uid(req)]);
+  if(!r.rowCount)return reply.code(404).send({error:'ROOM_NOT_FOUND'});
+  return r.rows[0];
+});
+
+app.post('/games/rooms/:id/join',{preHandler:auth},async(req,reply)=>{
+  try{
+    return await tx(async c=>{
+      const r=await c.query('SELECT * FROM nexo.game_rooms WHERE id=$1 FOR UPDATE',[req.params.id]);
+      if(!r.rowCount)return reply.code(404).send({error:'ROOM_NOT_FOUND'});
+      const room=r.rows[0];
+      if(room.host_id===uid(req)||room.guest_id===uid(req))return room;
+      if(room.status!=='waiting'||room.guest_id)throw Object.assign(new Error('ROOM_FULL'),{code:409});
+      await c.query(`UPDATE nexo.game_rooms SET guest_id=$1,status='matched',updated_at=NOW() WHERE id=$2`,[uid(req),room.id]);
+      emit(room.host_id,{type:'game_room_matched',roomId:room.id,gameId:room.game_id});
+      return {...room,guest_id:uid(req),status:'matched'};
+    });
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'ROOM_JOIN_FAILED'});}
+});
+
+app.post('/games/rooms/:id/ready',{preHandler:auth},async(req,reply)=>{
+  try{
+    return await tx(async c=>{
+      const r=await c.query('SELECT * FROM nexo.game_rooms WHERE id=$1 FOR UPDATE',[req.params.id]);
+      if(!r.rowCount)return reply.code(404).send({error:'ROOM_NOT_FOUND'});
+      const room=r.rows[0];
+      if(room.host_id!==uid(req)&&room.guest_id!==uid(req))throw Object.assign(new Error('FORBIDDEN'),{code:403});
+      const ready=Boolean((req.body||{}).ready);
+      if(room.host_id===uid(req))room.host_ready=ready;else room.guest_ready=ready;
+      if(room.host_ready&&room.guest_ready)room.status='ready';
+      await c.query('UPDATE nexo.game_rooms SET host_ready=$1,guest_ready=$2,status=$3,updated_at=NOW() WHERE id=$4',[room.host_ready,room.guest_ready,room.status,room.id]);
+      const event={type:'game_room_update',roomId:room.id,status:room.status};
+      emit(room.host_id,event);if(room.guest_id)emit(room.guest_id,event);
+      return room;
+    });
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'ROOM_READY_FAILED'});}
+});
+
+app.post('/games/rooms/:id/score',{preHandler:auth},async(req,reply)=>{
+  const score=Number((req.body||{}).score||0);
+  if(!Number.isInteger(score)||score<0||score>10000)return reply.code(400).send({error:'INVALID_SCORE'});
+  try{
+    return await tx(async c=>{
+      const r=await c.query('SELECT * FROM nexo.game_rooms WHERE id=$1 AND status IN (\'ready\',\'playing\',\'matched\') FOR UPDATE',[req.params.id]);
+      if(!r.rowCount)return reply.code(404).send({error:'ROOM_NOT_ACTIVE'});
+      const room=r.rows[0];
+      if(room.host_id!==uid(req)&&room.guest_id!==uid(req))throw Object.assign(new Error('FORBIDDEN'),{code:403});
+      await c.query(`INSERT INTO nexo.game_room_scores(room_id,user_id,score)
+        VALUES($1,$2,$3) ON CONFLICT(room_id,user_id) DO UPDATE SET score=EXCLUDED.score,created_at=NOW()`,[room.id,uid(req),score]);
+      const scores=(await c.query('SELECT user_id,score FROM nexo.game_room_scores WHERE room_id=$1',[room.id])).rows;
+      if(scores.length>=2){
+        await c.query('UPDATE nexo.game_rooms SET status=\'completed\',updated_at=NOW() WHERE id=$1',[room.id]);
+      }
+      return {roomId:room.id,scores,status:scores.length>=2?'completed':room.status};
+    });
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'SCORE_SUBMIT_FAILED'});}
+});
+
 app.post('/payments/google/verify',{preHandler:auth},async(req,reply)=>{
   const b=req.body||{},orderId=String(b.orderId||''),productId=String(b.productId||''),purchaseToken=String(b.purchaseToken||'');
   if(!orderId||!productId||!purchaseToken)return reply.code(400).send({error:'INVALID_PURCHASE'});
