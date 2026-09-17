@@ -30,6 +30,21 @@ async function auth(req, reply) {
   try { await req.jwtVerify(); }
   catch (_) { return reply.code(401).send({ error: 'UNAUTHORIZED' }); }
 }
+
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+async function resolveUserId(db, reference) {
+  const value = String(reference || '').trim();
+  if (!value) throw Object.assign(new Error('INVALID_USER'), { code: 400 });
+  if (UUID_RE.test(value)) {
+    const r = await db.query('SELECT id FROM nexo.users WHERE id=$1', [value]);
+    if (r.rowCount) return r.rows[0].id;
+  }
+  const r = await db.query('SELECT id FROM nexo.users WHERE lower(username)=lower($1)', [value]);
+  if (!r.rowCount) throw Object.assign(new Error('USER_NOT_FOUND'), { code: 404 });
+  return r.rows[0].id;
+}
+
 async function tx(fn) {
   const client = await pool.connect();
   try { await client.query('BEGIN'); const out = await fn(client); await client.query('COMMIT'); return out; }
@@ -86,6 +101,24 @@ app.get('/me',{preHandler:auth},async req=>{
   const r=await q('SELECT * FROM nexo.users WHERE id=$1',[uid(req)]); return {user:publicUser(r.rows[0])};
 });
 app.get('/gifts',async()=> (await q('SELECT id,name,rarity,gems,tradeable,image,tagline FROM nexo.gifts WHERE active=true ORDER BY gems')).rows);
+app.get('/users/search', async (req, reply) => {
+  const query = String((req.query || {}).q || '').trim().slice(0,40);
+  if (!query) return [];
+  return (await q(`SELECT u.id,u.username,u.display_name AS "displayName",u.avatar,u.name_color AS "nameColor",
+    u.vip_level AS "vipLevel",COALESCE(p.online,false) AS online
+    FROM nexo.users u LEFT JOIN nexo.presence p ON p.user_id=u.id
+    WHERE lower(u.username) LIKE lower($1) OR lower(u.display_name) LIKE lower($1)
+    ORDER BY online DESC,u.username ASC LIMIT 20`, ['%'+query+'%'])).rows;
+});
+app.get('/users/lookup/:reference', async (req, reply) => {
+  try {
+    const id = await resolveUserId({ query: q }, req.params.reference);
+    const r = await q(`SELECT u.id,u.username,u.display_name AS "displayName",u.avatar,u.name_color AS "nameColor",
+      u.vip_level AS "vipLevel",COALESCE(p.online,false) AS online
+      FROM nexo.users u LEFT JOIN nexo.presence p ON p.user_id=u.id WHERE u.id=$1`,[id]);
+    return r.rows[0] || reply.code(404).send({error:'USER_NOT_FOUND'});
+  } catch(e){ return reply.code(e.code||500).send({error:e.code||'USER_LOOKUP_FAILED'}); }
+});
 app.get('/wallet',{preHandler:auth},async req=> (await q('SELECT gems,energy,level,experience,reputation,vip_level,name_color,glow FROM nexo.users WHERE id=$1',[uid(req)])).rows[0]);
 app.get('/inventory',{preHandler:auth},async req=> (await q('SELECT i.item_id AS id,g.name,g.rarity,g.gems,g.tradeable,g.image,g.tagline,i.quantity FROM nexo.inventory i JOIN nexo.gifts g ON g.id=i.item_id WHERE i.user_id=$1 AND i.quantity>0 ORDER BY g.gems',[uid(req)])).rows);
 
@@ -127,13 +160,51 @@ app.post('/gifts/buy',{preHandler:auth},async(req,reply)=>{
 });
 
 app.post('/chat/:peerId/messages',{preHandler:auth},async(req,reply)=>{
-  const body=String((req.body||{}).body||'').trim();
-  if(!body||body.length>4000)return reply.code(400).send({error:'INVALID_MESSAGE'});
-  const r=await q('INSERT INTO nexo.messages(id,sender_id,recipient_id,body) VALUES($1,$2,$3,$4) RETURNING *',[randomUUID(),uid(req),req.params.peerId,body]);
-  const msg=r.rows[0]; emit(req.params.peerId,{type:'chat_message',message:msg}); return msg;
+  try{
+    const peerId=await resolveUserId({query:q},req.params.peerId);
+    const body=String((req.body||{}).body||'').trim();
+    if(!body||body.length>4000)return reply.code(400).send({error:'INVALID_MESSAGE'});
+    const r=await q('INSERT INTO nexo.messages(id,sender_id,recipient_id,body) VALUES($1,$2,$3,$4) RETURNING *',[randomUUID(),uid(req),peerId,body]);
+    const msg=r.rows[0]; emit(peerId,{type:'chat_message',message:msg}); return msg;
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'CHAT_SEND_FAILED'});}
 });
-app.get('/chat/:peerId/messages',{preHandler:auth},async(req)=> (await q('SELECT m.id,m.sender_id,m.recipient_id,m.kind,m.body,m.gift_id,m.created_at,u.username AS sender_username FROM nexo.messages m JOIN nexo.users u ON u.id=m.sender_id WHERE (m.sender_id=$1 AND m.recipient_id=$2) OR (m.sender_id=$2 AND m.recipient_id=$1) ORDER BY m.created_at ASC LIMIT 200',[uid(req),req.params.peerId])).rows);
-
+app.get('/chat/:peerId/messages',{preHandler:auth},async(req,reply)=>{
+  try{
+    const peerId=await resolveUserId({query:q},req.params.peerId);
+    return (await q('SELECT m.id,m.sender_id,m.recipient_id,m.kind,m.body,m.gift_id,m.created_at,u.username AS sender_username FROM nexo.messages m JOIN nexo.users u ON u.id=m.sender_id WHERE (m.sender_id=$1 AND m.recipient_id=$2) OR (m.sender_id=$2 AND m.recipient_id=$1) ORDER BY m.created_at ASC LIMIT 200',[uid(req),peerId])).rows;
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'CHAT_HISTORY_FAILED'});}
+});
+app.post('/gifts/send',{preHandler:auth},async(req,reply)=>{
+  const b=req.body||{}, giftId=String(b.giftId||''), key=String(b.idempotencyKey||'');
+  if(!giftId||!key)return reply.code(400).send({error:'INVALID_INPUT'});
+  try{
+    return await tx(async c=>{
+      const to=await resolveUserId(c,b.toUserId);
+      if(to===uid(req))throw Object.assign(new Error('INVALID_RECIPIENT'),{code:400});
+      const prior=await c.query('SELECT 1 FROM nexo.wallet_ledger WHERE idempotency_key=$1',[key]);
+      if(prior.rowCount)return {ok:true,idempotent:true};
+      const g=await c.query('SELECT * FROM nexo.gifts WHERE id=$1 AND active=true',[giftId]);
+      if(!g.rowCount)throw Object.assign(new Error('GIFT_NOT_FOUND'),{code:404});
+      const own=await c.query('SELECT quantity FROM nexo.inventory WHERE user_id=$1 AND item_id=$2 FOR UPDATE',[uid(req),giftId]);
+      if(own.rowCount&&own.rows[0].quantity>0){
+        await c.query('UPDATE nexo.inventory SET quantity=quantity-1 WHERE user_id=$1 AND item_id=$2',[uid(req),giftId]);
+        const bal=(await c.query('SELECT gems FROM nexo.users WHERE id=$1',[uid(req)])).rows[0].gems;
+        await c.query('INSERT INTO nexo.wallet_ledger(id,user_id,kind,amount,balance_after,reference_id,idempotency_key) VALUES($1,$2,$3,0,$4,$5,$6)',[randomUUID(),uid(req),'gift_send_owned',bal,giftId,key]);
+      } else {
+        const price=g.rows[0].gems;
+        const u=await c.query('SELECT gems FROM nexo.users WHERE id=$1 FOR UPDATE',[uid(req)]);
+        if(Number(u.rows[0].gems)<price)throw Object.assign(new Error('INSUFFICIENT_GEMS'),{code:409});
+        const gems=Number(u.rows[0].gems)-price;
+        await c.query('UPDATE nexo.users SET gems=$1 WHERE id=$2',[gems,uid(req)]);
+        await c.query('INSERT INTO nexo.wallet_ledger(id,user_id,kind,amount,balance_after,reference_id,idempotency_key) VALUES($1,$2,$3,$4,$5,$6,$7)',[randomUUID(),uid(req),'gift_send_purchase',-price,gems,giftId,key]);
+      }
+      await c.query('INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES($1,$2,1) ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=nexo.inventory.quantity+1',[to,giftId]);
+      await c.query('INSERT INTO nexo.messages(id,sender_id,recipient_id,kind,gift_id) VALUES($1,$2,$3,\'gift\',$4)',[randomUUID(),uid(req),to,giftId]);
+      emit(to,{type:'gift',from:userId(req),giftId});
+      return {ok:true,giftId};
+    });
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'GIFT_SEND_FAILED'});}
+});
 app.post('/trades',{preHandler:auth},async(req,reply)=>{
   const b=req.body||{}, to=String(b.toUserId||''), items=Array.isArray(b.fromItems)?b.fromItems:[], fromGems=Math.max(0,Number(b.fromGems||0));
   if(!to||to===uid(req))return reply.code(400).send({error:'INVALID_PEER'});
@@ -202,6 +273,52 @@ app.post('/trades/:id/dispute',{preHandler:auth},async(req,reply)=>{
   const t=r.rows[0]; emit(t.from_user_id,{type:'trade_update',tradeId:t.id,status:t.status}); emit(t.to_user_id,{type:'trade_update',tradeId:t.id,status:t.status}); return t;
 });
 
+app.post('/economy/daily-claim',{preHandler:auth},async(req,reply)=>{
+  try{
+    return await tx(async c=>{
+      const today=(await c.query('SELECT CURRENT_DATE AS d')).rows[0].d;
+      const prev=await c.query('SELECT claim_date,streak FROM nexo.daily_claims WHERE user_id=$1 FOR UPDATE',[uid(req)]);
+      if(prev.rowCount && String(prev.rows[0].claim_date)===String(today))throw Object.assign(new Error('ALREADY_CLAIMED'),{code:409});
+      let streak=1;
+      if(prev.rowCount){
+        const d=new Date(prev.rows[0].claim_date); const td=new Date(today);
+        const diff=Math.round((td-d)/86400000);
+        streak=diff===1 ? Math.min(7,prev.rows[0].streak+1) : 1;
+      }
+      const reward=Math.min(50,20+(streak-1)*5);
+      const u=await c.query('SELECT energy FROM nexo.users WHERE id=$1 FOR UPDATE',[uid(req)]);
+      const energy=Math.min(100,Number(u.rows[0].energy)+reward);
+      await c.query('UPDATE nexo.users SET energy=$1 WHERE id=$2',[energy,uid(req)]);
+      await c.query(`INSERT INTO nexo.daily_claims(user_id,claim_date,streak) VALUES($1,$2,$3)
+        ON CONFLICT(user_id) DO UPDATE SET claim_date=EXCLUDED.claim_date,streak=EXCLUDED.streak`,[uid(req),today,streak]);
+      return {energy,reward,streak};
+    });
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'DAILY_CLAIM_FAILED'});}
+});
+app.post('/economy/energy/convert',{preHandler:auth},async(req,reply)=>{
+  try{return await tx(async c=>{
+    const u=await c.query('SELECT energy FROM nexo.users WHERE id=$1 FOR UPDATE',[uid(req)]);
+    if(!u.rowCount||u.rows[0].energy<100)throw Object.assign(new Error('INSUFFICIENT_ENERGY'),{code:409});
+    const r=await c.query('UPDATE nexo.users SET energy=energy-100,gems=gems+25 WHERE id=$1 RETURNING energy,gems',[uid(req)]);
+    return r.rows[0];
+  });}catch(e){return reply.code(e.code||500).send({error:e.code||'ENERGY_CONVERSION_FAILED'});}
+});
+app.post('/games/play',{preHandler:auth},async(req,reply)=>{
+  const gameId=String((req.body||{}).gameId||''), key=String((req.body||{}).idempotencyKey||'');
+  const games={quick_challenge:{cost:3,reward:20},mini_puzzle:{cost:5,reward:35},daily_arena:{cost:8,reward:55}};
+  const game=games[gameId];
+  if(!game||!key)return reply.code(400).send({error:'INVALID_GAME'});
+  try{return await tx(async c=>{
+    const prior=await c.query('SELECT reward_gems FROM nexo.game_events WHERE idempotency_key=$1',[key]);
+    if(prior.rowCount)return {ok:true,idempotent:true,rewardGems:Number(prior.rows[0].reward_gems)};
+    const u=await c.query('SELECT energy,gems FROM nexo.users WHERE id=$1 FOR UPDATE',[uid(req)]);
+    if(Number(u.rows[0].energy)<game.cost)throw Object.assign(new Error('INSUFFICIENT_ENERGY'),{code:409});
+    const energy=Number(u.rows[0].energy)-game.cost, gems=Number(u.rows[0].gems)+game.reward;
+    await c.query('UPDATE nexo.users SET energy=$1,gems=$2 WHERE id=$3',[energy,gems,uid(req)]);
+    await c.query('INSERT INTO nexo.game_events(id,user_id,game_id,cost_energy,reward_gems,idempotency_key) VALUES($1,$2,$3,$4,$5,$6)',[randomUUID(),uid(req),gameId,game.cost,game.reward,key]);
+    return {ok:true,energy,gems,rewardGems:game.reward};
+  });}catch(e){return reply.code(e.code||500).send({error:e.code||'GAME_FAILED'});}
+});
 app.post('/payments/create-order',{preHandler:auth},async(req,reply)=>{
   const packs={starter_499:{gems:500,amountMinor:499},plus_999:{gems:1200,amountMinor:999},pro_1999:{gems:3000,amountMinor:1999},ultra_24999:{gems:8000,amountMinor:24999}};
   const id=String((req.body||{}).packageId||''), p=packs[id]; if(!p)return reply.code(400).send({error:'UNKNOWN_PACKAGE'});
