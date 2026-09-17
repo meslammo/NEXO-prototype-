@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/nexo_catalog.dart';
 import '../services/economy_service.dart';
+import '../services/api_client.dart';
+import '../services/auth_service.dart';
+import '../config/api_config.dart';
 import '../theme/nexo_theme.dart';
 import 'trade_screen.dart';
 
@@ -18,14 +21,31 @@ class _MarketScreenState extends State<MarketScreen> with SingleTickerProviderSt
   @override
   void dispose() { _tabs.dispose(); super.dispose(); }
 
-  void _buy(NexoGift gift) {
+  Future<void> _buy(NexoGift gift) async {
     final economy = context.read<EconomyService>();
+    final auth = context.read<AuthService>();
+    if (NexoApiConfig.configured && auth.online) {
+      try {
+        final api = context.read<ApiClient>();
+        final result = await api.postJson('/gifts/buy', {
+          'giftId': gift.id,
+          'idempotencyKey': 'buy-${gift.id}-${DateTime.now().microsecondsSinceEpoch}',
+        });
+        economy.setGems((result['gems'] as num?)?.toInt() ?? economy.gems);
+        economy.addItem(gift.id, 1);
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ ${gift.name} دخل المخزون من السيرفر')));
+        return;
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إتمام الشراء: $e'), backgroundColor: Colors.redAccent));
+        return;
+      }
+    }
     if (!economy.spendGems(gift.gems)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ Gems غير كافية')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ Gems غير كافية')));
       return;
     }
     economy.addItem(gift.id, 1);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ ' + gift.name + ' دخل المخزون مقابل ' + gift.gems.toString() + ' Gems')));
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ ' + gift.name + ' دخل المخزون محليًا')));
   }
 
   @override
