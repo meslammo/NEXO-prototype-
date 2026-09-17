@@ -22,7 +22,7 @@ jobs:
       - name: Analyze (non-blocking)
         run: flutter analyze || true
       - name: Regenerate supported Android host project
-        run: flutter create --platforms=android .
+        run: flutter create --platforms=android --project-name nexo_app .
       - name: Build APK
         run: flutter build apk --release
       - name: Upload APK
