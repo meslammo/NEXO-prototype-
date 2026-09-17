@@ -2,6 +2,8 @@ const Fastify = require('fastify');
 const cors = require('@fastify/cors');
 const helmet = require('@fastify/helmet');
 const rateLimit = require('@fastify/rate-limit');
+const { androidpublisher } = require('@googleapis/androidpublisher');
+const { JWT } = require('google-auth-library');
 const jwt = require('@fastify/jwt');
 const websocket = require('@fastify/websocket');
 const bcrypt = require('bcryptjs');
@@ -371,6 +373,63 @@ app.post('/trades/:id/dispute', { preHandler: auth }, async (req, reply) => {
   if(!r.rowCount)return reply.code(409).send({error:'TRADE_NOT_DISPUTABLE'});
   const t=r.rows[0];emit(t.from_user_id,{type:'trade_update',tradeId:t.id,status:t.status});emit(t.to_user_id,{type:'trade_update',tradeId:t.id,status:t.status});return t;
 });
+async function googlePublisher() {
+  const raw=process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if(!raw) return null;
+  const credentials=JSON.parse(raw);
+  const authClient=new JWT({
+    email:credentials.client_email,
+    key:credentials.private_key,
+    scopes:['https://www.googleapis.com/auth/androidpublisher'],
+  });
+  return androidpublisher({version:'v3',auth:authClient});
+}
+
+app.post('/payments/google/verify',{preHandler:auth},async(req,reply)=>{
+  const b=req.body||{},orderId=String(b.orderId||''),productId=String(b.productId||''),purchaseToken=String(b.purchaseToken||'');
+  if(!orderId||!productId||!purchaseToken)return reply.code(400).send({error:'INVALID_PURCHASE'});
+  const publisher=await googlePublisher();
+  if(!publisher)return reply.code(503).send({error:'GOOGLE_PLAY_NOT_CONFIGURED'});
+  const packageName=process.env.ANDROID_PACKAGE_NAME||'com.example.nexo_app';
+  try{
+    const orderResult=await q('SELECT * FROM nexo.payment_orders WHERE id=$1 AND user_id=$2 FOR UPDATE',[orderId,uid(req)]);
+    if(!orderResult.rowCount)return reply.code(404).send({error:'ORDER_NOT_FOUND'});
+    const order=orderResult.rows[0];
+    if(order.status==='completed')return {ok:true,idempotent:true,gemsAdded:Number(order.gems)};
+    if(order.package_id!==productId)return reply.code(409).send({error:'PRODUCT_MISMATCH'});
+    const existing=await q('SELECT 1 FROM nexo.purchase_tokens WHERE purchase_token=$1',[purchaseToken]);
+    if(existing.rowCount)return reply.code(409).send({error:'PURCHASE_TOKEN_REPLAYED'});
+
+    const google=await publisher.purchases.products.get({packageName,productId,token:purchaseToken});
+    const purchase=google.data;
+    if(Number(purchase.purchaseState)!==0)return reply.code(409).send({error:'PURCHASE_NOT_COMPLETED'});
+    if(Number(purchase.acknowledgementState||0)===0){
+      // Acknowledgement/consumption is attempted after entitlement is persisted.
+    }
+
+    await tx(async c=>{
+      await c.query('INSERT INTO nexo.purchase_tokens(purchase_token,user_id,product_id,order_id) VALUES($1,$2,$3,$4)',[purchaseToken,uid(req),productId,orderId]);
+      const u=await c.query('UPDATE nexo.users SET gems=gems+$1 WHERE id=$2 RETURNING gems',[order.gems,uid(req)]);
+      await c.query('UPDATE nexo.payment_orders SET status=\'completed\',provider=\'google_play\',provider_transaction_id=$1,completed_at=NOW() WHERE id=$2',[purchaseToken,orderId]);
+      await c.query('INSERT INTO nexo.wallet_ledger(id,user_id,kind,amount,balance_after,reference_id,idempotency_key) VALUES($1,$2,\'google_play_purchase\',$3,$4,$5,$6)',
+        [randomUUID(),uid(req),order.gems,u.rows[0].gems,orderId,'google:'+purchaseToken]);
+      emit(uid(req),{type:'payment_completed',orderId,gems:Number(order.gems)});
+    });
+
+    try {
+      if(Number(purchase.consumptionState||0)===0){
+        await publisher.purchases.products.consume({packageName,productId,token:purchaseToken});
+      }
+    } catch(_) {
+      // Entitlement is not granted twice because purchase_tokens is unique.
+    }
+    return {ok:true,gemsAdded:Number(order.gems)};
+  }catch(e){
+    req.log.error(e);
+    return reply.code(502).send({error:'GOOGLE_VERIFICATION_FAILED'});
+  }
+});
+
 app.post('/payments/create-order',{preHandler:auth},async(req,reply)=>{
   const packs={starter_499:{gems:500,amountMinor:499},plus_999:{gems:1200,amountMinor:999},pro_1999:{gems:3000,amountMinor:1999},ultra_24999:{gems:8000,amountMinor:24999}};
   const id=String((req.body||{}).packageId||''), p=packs[id]; if(!p)return reply.code(400).send({error:'UNKNOWN_PACKAGE'});
