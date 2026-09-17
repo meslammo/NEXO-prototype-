@@ -351,7 +351,7 @@ app.get('/ws',{websocket:true},(socket,req)=>{
   let decoded; try{decoded=app.jwt.verify(String(req.query&&req.query.token||''));}catch(_){socket.close();return;}
   const id=decoded.sub; if(!sockets.has(id))sockets.set(id,new Set()); sockets.get(id).add(socket);
   q('INSERT INTO nexo.presence(user_id,online,last_seen) VALUES($1,true,NOW()) ON CONFLICT(user_id) DO UPDATE SET online=true,last_seen=NOW()',[id]).catch(()=>{});
-  socket.on('message',raw=>{try{const m=JSON.parse(raw.toString()); if(m.type==='signal'&&m.toUserId)emit(m.toUserId,{type:'signal',fromUserId:id,payload:m.payload});}catch(_){}}); 
+  socket.on('message',async raw=>{try{const m=JSON.parse(raw.toString()); if(m.type==='signal'&&m.toUserId){const target=await resolveUserId({query:q},m.toUserId);emit(target,{type:'signal',fromUserId:id,payload:m.payload});}}catch(_){}}); 
   socket.on('close',()=>{const set=sockets.get(id);if(set){set.delete(socket);if(!set.size)sockets.delete(id);}q('UPDATE nexo.presence SET online=false,last_seen=NOW() WHERE user_id=$1',[id]).catch(()=>{});});
 });
 
