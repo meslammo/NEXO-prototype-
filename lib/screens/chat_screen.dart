@@ -149,7 +149,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     Future.microtask(() async {
       await _remoteRenderer.initialize();
       _remoteStreamSubscription = _callService.remoteStreams.listen((stream) async {
-        await _remoteRenderer.setSrcObject(stream: stream);
+        await _remoteRenderer.setSrcObject(stream);
         if (mounted) setState(() => _remoteStream = stream);
       });
       _chatEventSubscription = context.read<RealtimeService>().events.listen((event) {
