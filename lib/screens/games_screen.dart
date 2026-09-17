@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/economy_service.dart';
@@ -16,6 +17,29 @@ class GamesScreen extends StatelessWidget {
     ('🏆', 'Daily Arena', 'منافسة يومية خفيفة', 8, 55),
   ];
 
+  Future<void> _openOnlineArena(BuildContext context) async {
+    final auth = context.read<AuthService>();
+    if (!NexoApiConfig.configured || !auth.online) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('السيرفر غير متاح.')));
+      return;
+    }
+    String? roomId;
+    String status = 'searching';
+    try {
+      final created = await context.read<ApiClient>().postJson('/games/rooms', {'gameId':'online_duel'});
+      roomId = created['id']?.toString();
+      status = created['status']?.toString() ?? 'waiting';
+    } catch (e) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر الدخول للـOnline Arena: $e'), backgroundColor: Colors.redAccent));
+      return;
+    }
+    if (!context.mounted || roomId == null) return;
+    await showDialog(
+      context: context,
+      builder: (_) => _OnlineArenaDialog(roomId: roomId!, initialStatus: status),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,6 +54,8 @@ class GamesScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
           _MiningEntryCard(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MiningScreen()))),
+          const SizedBox(height: 14),
+          _OnlineArenaCard(onTap: () => _openOnlineArena(context)),
           const SizedBox(height: 14),
           ...List.generate(_games.length, (index) => Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -150,6 +176,37 @@ class _GameCard extends StatelessWidget {
   }
 }
 
+
+class _OnlineArenaCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _OnlineArenaCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(18),
+    child: Ink(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Color(0xFF3A1E5F), Color(0xFF182A58)]),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFB56CFF).withOpacity(.65)),
+      ),
+      child: const Row(
+        children: [
+          CircleAvatar(radius: 28, backgroundColor: Color(0x333C1A5F), child: Icon(Icons.people_alt_rounded, color: Colors.white)),
+          SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Online Arena', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            SizedBox(height: 4),
+            Text('Matchmaking + Room + Ready + Server Score', style: TextStyle(color: Color(0xFFB8B0C9), fontSize: 12)),
+          ])),
+          Icon(Icons.play_circle_fill_rounded, color: Color(0xFFB56CFF)),
+        ],
+      ),
+    ),
+  );
+}
 class _ArchitectureNote extends StatelessWidget {
   const _ArchitectureNote();
   @override
