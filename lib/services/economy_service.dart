@@ -1,83 +1,86 @@
 import 'package:flutter/foundation.dart';
 
 class EconomyService extends ChangeNotifier {
-  int _energy = 100;
-  int _tickets = 12450;
-  int _socialPoints = 5420;
-  Map<String, int> _inventory = {};
+  static const int maxEnergy = 100;
+  static const int freeDailyEnergy = 50;
+  static const int energyPer100Gems = 100;
+  static const int gemsPer100Energy = 25;
+
+  int _energy = freeDailyEnergy;
+  int _gems = 12450;
+  final Map<String, int> _inventory = {};
 
   int get energy => _energy;
-  int get tickets => _tickets;
-  int get socialPoints => _socialPoints;
-  Map<String, int> get inventory => _inventory;
+  int get gems => _gems;
+  Map<String, int> get inventory => Map.unmodifiable(_inventory);
+
+  // Legacy aliases only: there is one currency, Gems.
+  int get tickets => _gems;
 
   EconomyService() {
-    _initializeInventory();
-  }
-
-  void _initializeInventory() {
-    _inventory = {
-      'crown_shine': 2,
-      'galaxy_aura': 1,
-      'neon_heart': 3,
-      'shadow_flame': 1,
-      'rainbow_ticket': 5,
-      'diamond_glow': 1,
-      'fire_wings': 1,
-    };
+    _inventory.addAll({
+      'Crown Shine': 2,
+      'Galaxy Aura': 1,
+      'Neon Heart': 3,
+      'Shadow Flame': 1,
+      'Diamond Glow': 1,
+      'Fire Wings': 1,
+    });
   }
 
   bool spendEnergy(int amount) {
-    if (_energy < amount) return false;
+    if (amount <= 0 || _energy < amount) return false;
     _energy -= amount;
     notifyListeners();
     return true;
   }
 
   void addEnergy(int amount) {
-    _energy = (_energy + amount).clamp(0, 200);
+    if (amount <= 0) return;
+    _energy = (_energy + amount).clamp(0, maxEnergy);
     notifyListeners();
   }
 
-  bool spendTickets(int amount) {
-    if (_tickets < amount) return false;
-    _tickets -= amount;
+  bool spendGems(int amount) {
+    if (amount <= 0 || _gems < amount) return false;
+    _gems -= amount;
     notifyListeners();
     return true;
   }
 
-  void addTickets(int amount) {
-    _tickets += amount;
+  void addGems(int amount) {
+    if (amount <= 0) return;
+    _gems += amount;
     notifyListeners();
   }
 
-  bool spendSocialPoints(int amount) {
-    if (_socialPoints < amount) return false;
-    _socialPoints -= amount;
-    notifyListeners();
-    return true;
-  }
-
-  void addSocialPoints(int amount) {
-    _socialPoints += amount;
-    notifyListeners();
-  }
+  bool spendTickets(int amount) => spendGems(amount);
+  void addTickets(int amount) => addGems(amount);
 
   void addItem(String itemId, int quantity) {
+    if (quantity <= 0) return;
     _inventory[itemId] = (_inventory[itemId] ?? 0) + quantity;
     notifyListeners();
   }
 
   bool removeItem(String itemId, int quantity) {
-    if ((_inventory[itemId] ?? 0) < quantity) return false;
+    if (quantity <= 0 || (_inventory[itemId] ?? 0) < quantity) return false;
     _inventory[itemId] = (_inventory[itemId] ?? 0) - quantity;
     if (_inventory[itemId] == 0) _inventory.remove(itemId);
     notifyListeners();
     return true;
   }
 
+  int convertEnergyToGems() {
+    if (_energy < energyPer100Gems) return 0;
+    _energy -= energyPer100Gems;
+    _gems += gemsPer100Energy;
+    notifyListeners();
+    return gemsPer100Energy;
+  }
+
   void resetDaily() {
-    _energy = 100;
+    _energy = freeDailyEnergy;
     notifyListeners();
   }
 }
