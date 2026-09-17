@@ -207,6 +207,99 @@ class _OnlineArenaCard extends StatelessWidget {
     ),
   );
 }
+class _OnlineArenaDialog extends StatefulWidget {
+  final String roomId;
+  final String initialStatus;
+  const _OnlineArenaDialog({required this.roomId, required this.initialStatus});
+
+  @override
+  State<_OnlineArenaDialog> createState() => _OnlineArenaDialogState();
+}
+
+class _OnlineArenaDialogState extends State<_OnlineArenaDialog> {
+  Timer? _poller;
+  String _roomId = '';
+  String _status = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _roomId = widget.roomId;
+    _status = widget.initialStatus;
+    _poller = Timer.periodic(const Duration(seconds: 2), (_) => _refresh());
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    try {
+      final room = await context.read<ApiClient>().getJson('/games/rooms/$_roomId');
+      if (!mounted) return;
+      setState(() => _status = room['status']?.toString() ?? _status);
+    } catch (_) {}
+  }
+
+  Future<void> _ready() async {
+    try {
+      final room = await context.read<ApiClient>().postJson('/games/rooms/$_roomId/ready', {'ready': true});
+      if (mounted) setState(() => _status = room['status']?.toString() ?? _status);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر Ready: $e'), backgroundColor: Colors.redAccent));
+    }
+  }
+
+  Future<void> _join(String id) async {
+    final clean = id.trim();
+    if (clean.isEmpty) return;
+    try {
+      final room = await context.read<ApiClient>().postJson('/games/rooms/$clean/join', {});
+      if (!mounted) return;
+      setState(() { _roomId = clean; _status = room['status']?.toString() ?? 'matched'; });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر الانضمام: $e'), backgroundColor: Colors.redAccent));
+    }
+  }
+
+  @override
+  void dispose() {
+    _poller?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = TextEditingController(text: _roomId);
+    return AlertDialog(
+      backgroundColor: const Color(0xFF132F4C),
+      title: const Text('Online Arena', style: TextStyle(color: Colors.white)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Room ID', style: const TextStyle(color: Colors.white70)),
+          const SizedBox(height: 4),
+          SelectableText(_roomId, style: const TextStyle(color: Color(0xFF66E0FF), fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Text('Status: $_status', style: const TextStyle(color: Colors.white)),
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(labelText: 'Join Room ID', labelStyle: TextStyle(color: Colors.white70)),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(child: OutlinedButton(onPressed: () => _join(controller.text), child: const Text('Join'))),
+              const SizedBox(width: 8),
+              Expanded(child: ElevatedButton(onPressed: _ready, child: const Text('Ready'))),
+            ],
+          ),
+        ],
+      ),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('إغلاق'))],
+    );
+  }
+}
+
 class _ArchitectureNote extends StatelessWidget {
   const _ArchitectureNote();
   @override
