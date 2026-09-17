@@ -1,201 +1,99 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/nexo_catalog.dart';
+import '../services/economy_service.dart';
 import '../theme/nexo_theme.dart';
 
-class InventoryScreen extends StatefulWidget {
+class InventoryScreen extends StatelessWidget {
   const InventoryScreen({super.key});
 
   @override
-  State<InventoryScreen> createState() => _InventoryScreenState();
-}
-
-class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  final List<Map<String, dynamic>> elements = [
-    {'name': 'Crown Shine', 'icon': Icons.workspace_premium, 'color': Color(0xFFFFD700), 'qty': 2},
-    {'name': 'Galaxy Aura', 'icon': Icons.star, 'color': Color(0xFFFFB300), 'qty': 1},
-    {'name': 'Neon Heart', 'icon': Icons.favorite, 'color': Color(0xFFFF6B9D), 'qty': 3},
-    {'name': 'Shadow Flame', 'icon': Icons.local_fire_department, 'color': Color(0xFF9C27B0), 'qty': 1},
-    {'name': 'Name Glow Ticket', 'icon': Icons.confirmation_number, 'color': Color(0xFF7B5CFF), 'qty': 2},
-    {'name': 'VIP Emblem', 'icon': Icons.workspace_premium, 'color': Color(0xFFFFD700), 'qty': 1, 'isVip': true},
-    {'name': 'Rainbow Ticket', 'icon': Icons.confirmation_number, 'color': Color(0xFFE040FB), 'qty': 5},
-    {'name': 'Diamond Glow', 'icon': Icons.diamond, 'color': Color(0xFF00E5FF), 'qty': 1},
-    {'name': 'Fire Wings', 'icon': Icons.flutter_dash, 'color': Color(0xFFFF6E40), 'qty': 1},
-  ];
-
-  final List<Map<String, dynamic>> tickets = [
-    {'name': 'Name Glow Ticket', 'icon': Icons.confirmation_number, 'color': Color(0xFF7B5CFF), 'qty': 2},
-    {'name': 'Rainbow Ticket', 'icon': Icons.confirmation_number, 'color': Color(0xFFE040FB), 'qty': 5},
-  ];
-
-  final List<Map<String, dynamic>> effects = [
-    {'name': 'Galaxy Aura', 'icon': Icons.star, 'color': Color(0xFFFFB300), 'qty': 1},
-    {'name': 'Shadow Flame', 'icon': Icons.local_fire_department, 'color': Color(0xFF9C27B0), 'qty': 1},
-    {'name': 'Fire Wings', 'icon': Icons.flutter_dash, 'color': Color(0xFFFF6E40), 'qty': 1},
-    {'name': 'Diamond Glow', 'icon': Icons.diamond, 'color': Color(0xFF00E5FF), 'qty': 1},
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: NexoColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.maybePop(context),
-                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'المخزون (Inventory)',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.more_horiz, color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-
-            // Tabs
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: NexoColors.card,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: TabBar(
-                controller: _tabController,
-                indicator: BoxDecoration(
-                  color: NexoColors.primary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                labelColor: Colors.white,
-                unselectedLabelColor: NexoColors.textSecondary,
-                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                tabs: const [
-                  Tab(text: 'العناصر'),
-                  Tab(text: 'التذاكر'),
-                  Tab(text: 'التأثيرات'),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Grid content
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildGrid(elements),
-                  _buildGrid(tickets),
-                  _buildGrid(effects),
-                ],
-              ),
-            ),
-          ],
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        backgroundColor: NexoColors.background,
+        appBar: AppBar(
+          backgroundColor: NexoColors.background,
+          title: const Text('Collection / Inventory'),
+          centerTitle: true,
+          leading: const BackButton(color: Colors.white),
+          bottom: const TabBar(isScrollable: true, tabs: [Tab(text: 'Gifts'), Tab(text: 'Frames'), Tab(text: 'Assets'), Tab(text: 'Crafted')]),
+        ),
+        body: Consumer<EconomyService>(
+          builder: (_, economy, __) => TabBarView(children: [_gifts(economy), _frames(), _assets(), _crafted(economy)]),
         ),
       ),
     );
   }
 
-  Widget _buildGrid(List<Map<String, dynamic>> items) {
+  Widget _gifts(EconomyService economy) {
     return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.8,
-      ),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return Container(
-          decoration: BoxDecoration(
-            color: NexoColors.card,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: (item['color'] as Color).withOpacity(0.35)),
-            boxShadow: [
-              BoxShadow(
-                color: (item['color'] as Color).withOpacity(0.12),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (item['isVip'] == true)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: NexoColors.gold, width: 1.5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    'VIP',
-                    style: TextStyle(color: NexoColors.gold, fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: (item['color'] as Color).withOpacity(0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    item['icon'] as IconData,
-                    color: item['color'] as Color,
-                    size: 28,
-                  ),
-                ),
-              const SizedBox(height: 10),
-              Text(
-                item['name'] as String,
-                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'x${item['qty']}',
-                style: TextStyle(
-                  color: item['color'] as Color,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        );
+      padding: const EdgeInsets.all(16),
+      itemCount: nexoGifts.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: .78),
+      itemBuilder: (_, i) {
+        final gift = nexoGifts[i];
+        final qty = economy.inventory[gift.id] ?? 0;
+        return _Tile(border: gift.rarity.color, child: Column(children: [
+          Expanded(child: Image.asset(gift.image, fit: BoxFit.contain)),
+          Text(gift.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 3),
+          Text(gift.rarity.label, style: TextStyle(color: gift.rarity.color, fontSize: 9)),
+          Text('x' + qty.toString(), style: const TextStyle(color: NexoColors.primary, fontWeight: FontWeight.bold)),
+        ]));
       },
     );
   }
+
+  Widget _frames() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: nexoFrames.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.2),
+      itemBuilder: (_, i) {
+        final f = nexoFrames[i];
+        final c = (f['rarity'] as NexoRarity).color;
+        return _Tile(border: c, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(width: 78, height: 78, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c, width: 4), boxShadow: [BoxShadow(color: c.withOpacity(.35), blurRadius: 18)]), child: Icon(f['icon'] as IconData, color: c, size: 34)),
+          const SizedBox(height: 8),
+          Text(f['name'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          Text((f['rarity'] as NexoRarity).label, style: TextStyle(color: c, fontSize: 10)),
+        ]));
+      },
+    );
+  }
+
+  Widget _assets() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: nexoAssets.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: .92),
+      itemBuilder: (_, i) {
+        final a = nexoAssets[i];
+        final c = (a['rarity'] as NexoRarity).color;
+        return _Tile(border: c, child: Column(children: [
+          Expanded(child: Image.asset(a['image'] as String, fit: BoxFit.contain)),
+          Text(a['name'] as String, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+          Text((a['rarity'] as NexoRarity).label, style: TextStyle(color: c, fontSize: 10)),
+        ]));
+      },
+    );
+  }
+
+  Widget _crafted(EconomyService economy) {
+    final crafted = economy.inventory.entries.where((e) => e.key.startsWith('crafted_')).toList();
+    if (crafted.isEmpty) {
+      return const Center(child: Padding(padding: EdgeInsets.all(28), child: Text('مفيش عناصر مصنّعة لسه.\\nادخل Workshop / Craft من Profile؛ المنتج هنا يدخل المخزون ومش بيتكرر في Market.', textAlign: TextAlign.center, style: TextStyle(color: NexoColors.textSecondary, height: 1.6))));
+    }
+    return ListView(padding: const EdgeInsets.all(16), children: crafted.map((entry) => Card(color: NexoColors.card, child: ListTile(leading: const CircleAvatar(child: Icon(Icons.handyman_rounded)), title: Text(entry.key.replaceFirst('crafted_', ''), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), trailing: Text('x' + entry.value.toString(), style: const TextStyle(color: NexoColors.primary, fontWeight: FontWeight.bold)))).toList());
+  }
+}
+
+class _Tile extends StatelessWidget {
+  final Color border;
+  final Widget child;
+  const _Tile({required this.border, required this.child});
+  @override
+  Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: NexoColors.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: border.withOpacity(.32))), child: child);
 }

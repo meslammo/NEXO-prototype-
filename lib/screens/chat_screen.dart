@@ -1,170 +1,430 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/nexo_catalog.dart';
+import '../services/economy_service.dart';
+import '../services/social_engine.dart';
 import '../theme/nexo_theme.dart';
-import '../widgets/energy_battery_widget.dart';
+import 'trade_screen.dart';
+
+class _ChatLine {
+  final String from;
+  final String text;
+  final String? giftId;
+  _ChatLine(this.from, this.text, {this.giftId});
+}
+
+final Map<String, List<_ChatLine>> _chatMessages = {
+  'shadoww': [_ChatLine('Shadoww', 'جاهز للشات؟'), _ChatLine('NEXO_KING', 'أيوة، وعايز أجرب الهدايا.'), _ChatLine('Shadoww', 'افتح صندوق الهدايا وجرب واحدة.')],
+  'galaxygirl': [_ChatLine('GalaxyGirl', 'الإيموجي ده جامد ✨')],
+  'prince': [_ChatLine('Prince_X', 'نبعت Trade؟')],
+  'ahmed': [_ChatLine('Ahmed', 'شكراً يا صاحبي!')],
+  'mdark': [_ChatLine('M:Dark', 'نقابلك في الروم؟')],
+};
 
 class ChatScreen extends StatelessWidget {
   const ChatScreen({super.key});
 
+  static const people = [
+    _Person('Shadoww', 'shadoww', true, Color(0xFFB44CFF)),
+    _Person('GalaxyGirl', 'galaxygirl', true, Color(0xFFFF6B9D)),
+    _Person('Prince_X', 'prince', false, Color(0xFFF5C14A)),
+    _Person('Ahmed', 'ahmed', false, Color(0xFF3EE08A)),
+    _Person('M:Dark', 'mdark', true, Color(0xFF6EB6FF)),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final chats = [
-      {'name': 'Shadoww', 'msg': 'مرحبا كيف حالك؟', 'time': '10:30 PM', 'unread': 2, 'online': true},
-      {'name': 'GalaxyGirl', 'msg': 'تحب هذا الإيموجي 💜', 'time': '10:28 PM', 'unread': 1, 'online': true},
-      {'name': 'Prince_X', 'msg': 'تم إرسال طلب تداول ؟', 'time': '10:26 PM', 'unread': 1, 'online': false},
-      {'name': 'Ahmed', 'msg': 'شكرا لك!', 'time': '10:25 PM', 'unread': 0, 'online': false},
-      {'name': 'M:Dark', 'msg': 'مرحبا!', 'time': '10:20 PM', 'unread': 0, 'online': false},
-    ];
-
-    return SafeArea(
-      child: Column(
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Row(
-              children: [
-                const Text(
-                  'الشات',
-                  style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                const EnergyBatteryWidget(),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.people_outline, color: Colors.white70),
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.qr_code_scanner, color: Colors.white70),
-                ),
-              ],
+    return Scaffold(
+      backgroundColor: NexoColors.background,
+      appBar: AppBar(
+        title: const Text('Chat'),
+        backgroundColor: NexoColors.background,
+        actions: [
+          Consumer<EconomyService>(
+            builder: (_, e, __) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Center(child: Text('💎 ' + e.gems.toString(), style: const TextStyle(color: NexoColors.primary, fontWeight: FontWeight.bold))),
             ),
           ),
-
-          // Search
+        ],
+      ),
+      body: Column(
+        children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
             child: TextField(
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                hintText: 'بحث عن مستخدم...',
+                hintText: 'بحث عن مستخدم أو غرفة...',
                 hintStyle: const TextStyle(color: NexoColors.textSecondary),
                 prefixIcon: const Icon(Icons.search, color: NexoColors.textSecondary),
                 filled: true,
                 fillColor: NexoColors.card,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
               ),
             ),
           ),
-
-          // Online avatars
           SizedBox(
-            height: 80,
-            child: ListView.builder(
+            height: 92,
+            child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: 4,
-              itemBuilder: (context, i) {
-                final names = ['Shadoww', 'GalaxyGirl', 'Prince_X', 'Ahmed'];
-                return Padding(
+              children: people.where((p) => p.online).map((p) => GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatThreadScreen(person: p))),
+                child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Column(
-                    children: [
-                      Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 26,
-                            backgroundColor: NexoColors.primary.withOpacity(0.3),
-                            child: Text(names[i][0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: Colors.greenAccent,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: NexoColors.background, width: 2),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(names[i], style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                    ],
-                  ),
-                );
-              },
+                  child: Column(children: [_Avatar(name: p.name, color: p.color, online: true), const SizedBox(height: 4), Text(p.name, style: const TextStyle(color: Colors.white70, fontSize: 11))]),
+                ),
+              )).toList(),
             ),
           ),
-
           const Divider(color: NexoColors.cardBorder, height: 1),
-
-          // Chat list
           Expanded(
-            child: ListView.builder(
-              itemCount: chats.length,
-              itemBuilder: (context, index) {
-                final c = chats[index];
+            child: ListView(
+              children: people.map((p) {
+                final list = _chatMessages[p.id] ?? const <_ChatLine>[];
+                final preview = list.isEmpty ? 'بدون رسائل' : (list.last.giftId != null ? '🎁 هدية' : list.last.text);
                 return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  leading: CircleAvatar(
-                    radius: 26,
-                    backgroundColor: NexoColors.primary.withOpacity(0.25),
-                    child: Text(
-                      (c['name'] as String)[0],
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
-                  ),
-                  title: Text(
-                    c['name'] as String,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(
-                    c['msg'] as String,
-                    style: const TextStyle(color: NexoColors.textSecondary, fontSize: 13),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        c['time'] as String,
-                        style: const TextStyle(color: NexoColors.textSecondary, fontSize: 11),
-                      ),
-                      if ((c['unread'] as int) > 0) ...[
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: NexoColors.primary,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '${c['unread']}',
-                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  onTap: () {},
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                  leading: _Avatar(name: p.name, color: p.color, online: p.online),
+                  title: Text(p.name, style: TextStyle(color: p.color, fontWeight: FontWeight.bold, shadows: [Shadow(color: p.color.withOpacity(.45), blurRadius: 8)])),
+                  subtitle: Text(preview, style: const TextStyle(color: NexoColors.textSecondary)),
+                  trailing: const Icon(Icons.chevron_left_rounded, color: Colors.white54),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatThreadScreen(person: p))),
                 );
-              },
+              }).toList(),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: OutlinedButton.icon(
+              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الرومات الحية موجودة داخل تدفق Chat Room.'))),
+              icon: const Icon(Icons.record_voice_over_rounded),
+              label: const Text('Live Rooms'),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+class ChatThreadScreen extends StatefulWidget {
+  final _Person person;
+  const ChatThreadScreen({super.key, required this.person});
+
+  @override
+  State<ChatThreadScreen> createState() => _ChatThreadScreenState();
+}
+
+class _ChatThreadScreenState extends State<ChatThreadScreen> {
+  final _controller = TextEditingController();
+  Timer? _callTimer;
+  String? _callKind;
+  int _callMinutes = 0;
+
+  List<_ChatLine> get _lines => _chatMessages[widget.person.id] ?? const <_ChatLine>[];
+
+  @override
+  void dispose() {
+    _callTimer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _sendText() {
+    final value = _controller.text.trim();
+    if (value.isEmpty) return;
+    setState(() {
+      (_chatMessages[widget.person.id] ??= []).add(_ChatLine('NEXO_KING', value));
+      _controller.clear();
+    });
+    context.read<SocialEngine>().logChatMessage();
+  }
+
+  void _showUserInfo() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: NexoColors.surface,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _Avatar(name: widget.person.name, color: widget.person.color, online: widget.person.online, radius: 34),
+            const SizedBox(height: 10),
+            Text(widget.person.name, style: TextStyle(color: widget.person.color, fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ListTile(leading: const Icon(Icons.person_outline, color: NexoColors.primary), title: const Text('معلومات المستخدم'), subtitle: Text(widget.person.online ? 'Online الآن' : 'Offline'), onTap: () => Navigator.pop(context)),
+            ListTile(leading: const Icon(Icons.swap_horiz_rounded, color: NexoColors.primary), title: const Text('Trade'), onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => TradeScreen(peerId: widget.person.id, peerName: widget.person.name)));
+            }),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openGiftSheet() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: NexoColors.surface,
+      builder: (sheetContext) => SafeArea(
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: .78,
+          minChildSize: .55,
+          maxChildSize: .92,
+          builder: (_, scroll) => Padding(
+            padding: const EdgeInsets.all(16),
+            child: ListView(
+              controller: scroll,
+              children: [
+                Row(children: [
+                  const Icon(Icons.redeem_rounded, color: Colors.amber),
+                  const SizedBox(width: 8),
+                  const Expanded(child: Text('Gift Box', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))),
+                  IconButton(onPressed: () => Navigator.pop(sheetContext), icon: const Icon(Icons.close, color: Colors.white70)),
+                ]),
+                const Text('Catalog → Rarity → Details → Gems / owned → Send → Chat → Inventory → Trade', style: TextStyle(color: NexoColors.textSecondary, fontSize: 12)),
+                const SizedBox(height: 14),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: nexoGifts.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: .72),
+                  itemBuilder: (_, i) {
+                    final gift = nexoGifts[i];
+                    final owned = context.watch<EconomyService>().inventory[gift.id] ?? 0;
+                    return InkWell(
+                      onTap: () => _giftDetails(gift, owned, sheetContext),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: NexoColors.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: gift.rarity.color.withOpacity(.38))),
+                        child: Column(children: [
+                          Expanded(child: Image.asset(gift.image, fit: BoxFit.contain)),
+                          Text(gift.name, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                          const SizedBox(height: 3),
+                          Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: gift.rarity.color.withOpacity(.15), borderRadius: BorderRadius.circular(10)), child: Text(gift.rarity.label, style: TextStyle(color: gift.rarity.color, fontSize: 9, fontWeight: FontWeight.bold))),
+                          const SizedBox(height: 3),
+                          Text(owned > 0 ? 'مملوك x' + owned.toString() : gift.gems.toString() + ' Gems', style: TextStyle(color: owned > 0 ? NexoColors.success : NexoColors.primary, fontSize: 10)),
+                        ]),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _giftDetails(NexoGift gift, int owned, BuildContext sheetContext) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: NexoColors.card,
+        title: Text(gift.name, style: TextStyle(color: gift.rarity.color, fontWeight: FontWeight.bold)),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          SizedBox(height: 100, child: Image.asset(gift.image, fit: BoxFit.contain)),
+          Text(gift.rarity.label, style: TextStyle(color: gift.rarity.color, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text(gift.tagline, style: const TextStyle(color: Colors.white70), textAlign: TextAlign.center),
+          const SizedBox(height: 8),
+          Text('قابل للتداول: ' + (gift.tradeable ? 'نعم' : 'لا'), style: const TextStyle(color: NexoColors.textSecondary, fontSize: 12)),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('رجوع')),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              final economy = context.read<EconomyService>();
+              if (owned > 0) {
+                economy.removeItem(gift.id, 1);
+              } else if (!economy.spendGems(gift.gems)) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ Gems غير كافية')));
+                return;
+              }
+              setState(() => (_chatMessages[widget.person.id] ??= []).add(_ChatLine('NEXO_KING', 'تم إرسال ' + gift.name, giftId: gift.id)));
+              context.read<SocialEngine>().logGiftSend();
+              Navigator.pop(sheetContext);
+            },
+            icon: const Icon(Icons.send_rounded),
+            label: Text(owned > 0 ? 'إرسال من المخزون' : 'شراء وإرسال بـ ' + gift.gems.toString() + ' Gems'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _insertEmoji(String emoji) {
+    final text = _controller.text;
+    final sel = _controller.selection;
+    final start = sel.start < 0 ? text.length : sel.start;
+    final end = sel.end < 0 ? text.length : sel.end;
+    _controller.value = TextEditingValue(text: text.replaceRange(start, end, emoji), selection: TextSelection.collapsed(offset: start + emoji.length));
+  }
+
+  void _startCall(String kind) {
+    final economy = context.read<EconomyService>();
+    final cost = kind == 'video' ? 4 : 1;
+    if (!economy.spendEnergy(cost)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ الطاقة غير كافية')));
+      return;
+    }
+    _callTimer?.cancel();
+    setState(() { _callKind = kind; _callMinutes = 0; });
+    _callTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!mounted || _callKind == null) return;
+      final extra = _callKind == 'video' ? 4 : 1;
+      if (!economy.spendEnergy(extra)) {
+        _endCall(showToast: true);
+        return;
+      }
+      setState(() => _callMinutes++);
+    });
+    context.read<SocialEngine>().logActivity(kind == 'video' ? 'video_call' : 'voice_call');
+  }
+
+  void _endCall({bool showToast = false}) {
+    _callTimer?.cancel();
+    _callTimer = null;
+    setState(() => _callKind = null);
+    if (showToast) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('انتهت المكالمة لأن الطاقة خلصت.')));
+  }
+
+  void _openEmojiPanel() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: NexoColors.surface,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: ['🔥', '💜', '💎', '👑', '✨', '😂', '⚡', '❤️', '😍', '😎', '🥳', '🤝', '🫶', '🎉', '😈', '🙌'].map(
+              (e) => InkWell(
+                onTap: () { Navigator.pop(context); _insertEmoji(e); },
+                child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: NexoColors.card, borderRadius: BorderRadius.circular(12)), child: Text(e, style: const TextStyle(fontSize: 24))),
+              ),
+            ).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = _lines;
+    return Scaffold(
+      backgroundColor: NexoColors.background,
+      appBar: AppBar(
+        backgroundColor: NexoColors.background,
+        leading: const BackButton(color: Colors.white),
+        titleSpacing: 0,
+        title: Row(children: [
+          GestureDetector(onTap: _showUserInfo, child: _Avatar(name: widget.person.name, color: widget.person.color, online: widget.person.online)),
+          const SizedBox(width: 9),
+          GestureDetector(onTap: _showUserInfo, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(widget.person.name, style: TextStyle(color: widget.person.color, fontWeight: FontWeight.bold)),
+            Text(widget.person.online ? 'Online' : 'Offline', style: const TextStyle(color: NexoColors.textSecondary, fontSize: 11)),
+          ])),
+        ]),
+        actions: [
+          IconButton(onPressed: () => _callKind == 'voice' ? _endCall() : _startCall('voice'), icon: Icon(_callKind == 'voice' ? Icons.call_end : Icons.call_rounded, color: _callKind == 'voice' ? Colors.redAccent : Colors.white70)),
+          IconButton(onPressed: () => _callKind == 'video' ? _endCall() : _startCall('video'), icon: Icon(_callKind == 'video' ? Icons.videocam_off_rounded : Icons.videocam_rounded, color: _callKind == 'video' ? Colors.redAccent : Colors.white70)),
+        ],
+      ),
+      body: Column(children: [
+        if (_callKind != null)
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: (_callKind == 'video' ? Colors.deepPurpleAccent : NexoColors.primary).withOpacity(.14), borderRadius: BorderRadius.circular(14), border: Border.all(color: (_callKind == 'video' ? Colors.deepPurpleAccent : NexoColors.primary).withOpacity(.35))),
+            child: Row(children: [
+              Icon(_callKind == 'video' ? Icons.videocam : Icons.call, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text((_callKind == 'video' ? 'Video' : 'Voice') + ' call · ' + _callMinutes.toString() + ' min · ' + (_callKind == 'video' ? '4' : '1') + ' Energy/min', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+              TextButton(onPressed: _endCall, child: const Text('إنهاء')),
+            ]),
+          ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            itemCount: lines.length,
+            itemBuilder: (_, i) {
+              final line = lines[i];
+              final mine = line.from == 'NEXO_KING';
+              final person = mine ? const _Person('NEXO_KING', 'me', true, NexoColors.primary) : widget.person;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 13),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  _Avatar(name: person.name, color: person.color, online: person.online, radius: 18),
+                  const SizedBox(width: 8),
+                  Expanded(child: RichText(text: TextSpan(children: [
+                    TextSpan(text: line.from + '  ', style: TextStyle(color: person.color, fontWeight: FontWeight.bold, shadows: [Shadow(color: person.color.withOpacity(.55), blurRadius: 9)])),
+                    if (line.giftId != null) ...[
+                      const TextSpan(text: '🎁 '),
+                      TextSpan(text: giftById(line.giftId!)?.name ?? 'Gift', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+                    ] else TextSpan(text: line.text, style: const TextStyle(color: Colors.white, height: 1.45)),
+                  ]))),
+                ]),
+              );
+            },
+          ),
+        ),
+        SafeArea(
+          top: false,
+          child: Column(children: [
+            const Divider(color: NexoColors.cardBorder, height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+              child: Row(children: [
+                IconButton(onPressed: _openEmojiPanel, icon: const Text('☺️', style: TextStyle(fontSize: 24))),
+                IconButton(onPressed: _openGiftSheet, icon: const Icon(Icons.card_giftcard_rounded, color: Colors.amber)),
+                IconButton(onPressed: _showUserInfo, icon: const Icon(Icons.info_outline_rounded, color: Colors.white70)),
+                IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TradeScreen(peerId: widget.person.id, peerName: widget.person.name))), icon: const Icon(Icons.swap_horiz_rounded, color: NexoColors.primary)),
+                Expanded(
+                  child: TextField(controller: _controller, onSubmitted: (_) => _sendText(), style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: 'اكتب رسالة...', hintStyle: const TextStyle(color: NexoColors.textSecondary), filled: true, fillColor: NexoColors.card, border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none), contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10))),
+                ),
+                IconButton(onPressed: _sendText, icon: const Icon(Icons.send_rounded, color: NexoColors.primary)),
+              ]),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+class _Person {
+  final String name;
+  final String id;
+  final bool online;
+  final Color color;
+  const _Person(this.name, this.id, this.online, this.color);
+}
+
+class _Avatar extends StatelessWidget {
+  final String name;
+  final Color color;
+  final bool online;
+  final double radius;
+  const _Avatar({required this.name, required this.color, required this.online, this.radius = 25});
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    children: [
+      CircleAvatar(radius: radius, backgroundColor: color.withOpacity(.13), child: Text(name.isEmpty ? '?' : name[0], style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: radius))),
+      if (online) Positioned(right: 0, bottom: 0, child: Container(width: 10, height: 10, decoration: BoxDecoration(color: Colors.greenAccent, shape: BoxShape.circle, border: Border.all(color: NexoColors.background, width: 2)))),
+    ],
+  );
 }

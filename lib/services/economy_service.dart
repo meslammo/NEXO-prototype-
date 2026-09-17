@@ -14,17 +14,19 @@ class EconomyService extends ChangeNotifier {
   int get gems => _gems;
   Map<String, int> get inventory => Map.unmodifiable(_inventory);
 
-  // Legacy aliases only: there is one currency, Gems.
+  // Legacy aliases only. Gems هي العملة الوحيدة الظاهرة.
   int get tickets => _gems;
 
   EconomyService() {
     _inventory.addAll({
-      'Crown Shine': 2,
-      'Galaxy Aura': 1,
-      'Neon Heart': 3,
-      'Shadow Flame': 1,
-      'Diamond Glow': 1,
-      'Fire Wings': 1,
+      'crown-shine': 2,
+      'galaxy-aura': 1,
+      'neon-heart': 3,
+      'shadow-flame': 1,
+      'diamond-glow': 1,
+      'fire-wings': 1,
+      'name-glow': 1,
+      'vip-emblem': 1,
     });
   }
 

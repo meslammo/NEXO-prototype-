@@ -2,67 +2,57 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/nexo_service.dart';
 import '../services/economy_service.dart';
-import 'our_club_screen.dart';
-import 'powers_collection_screen.dart';
+import '../theme/nexo_theme.dart';
+import 'name_glow_screen.dart';
 import 'inventory_screen.dart';
+import 'our_club_screen.dart';
 import 'recharge_screen.dart';
+import 'craft_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  Color _parseColor(String value) {
+    try { return Color(int.parse('0xFF' + value.replaceFirst('#', ''))); } catch (_) { return NexoColors.primary; }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1929),
-      appBar: AppBar(
-        title: const Text('👤 Profile'),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF0A1929),
-        elevation: 0,
-        actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.settings_outlined))],
-      ),
+      backgroundColor: NexoColors.background,
+      appBar: AppBar(title: const Text('Profile'), centerTitle: true, backgroundColor: NexoColors.background, actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.settings_outlined))]),
       body: Consumer2<NexoService, EconomyService>(
         builder: (context, nexo, economy, _) {
           final user = nexo.currentUser;
-          final nameColor = Color(int.parse('0xFF${user.nameColor.replaceFirst('#', '')}'));
+          final color = _parseColor(user.nameColor);
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 30),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
             children: [
-              Center(child: CircleAvatar(
-                radius: 48,
-                backgroundColor: const Color(0xFF132F4C),
-                child: Text(user.username.isNotEmpty ? user.username[0] : '?', style: const TextStyle(color: Color(0xFF00D4FF), fontSize: 32, fontWeight: FontWeight.bold)),
-              )),
-              const SizedBox(height: 10),
-              Center(child: Text(user.displayName, style: TextStyle(
-                color: nameColor, fontSize: 21, fontWeight: FontWeight.bold,
-                shadows: user.glow ? [Shadow(color: nameColor, blurRadius: 10)] : null,
-              ))),
-              const SizedBox(height: 6),
-              Center(child: Wrap(spacing: 8, children: [
-                _Tag(label: user.vipLevel, icon: Icons.workspace_premium_rounded),
-                _Tag(label: '💎 ${economy.gems}', icon: Icons.diamond_rounded),
+              Center(child: Stack(alignment: Alignment.bottomRight, children: [
+                Container(padding: const EdgeInsets.all(5), decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: color.withOpacity(.65), width: 3), boxShadow: [BoxShadow(color: color.withOpacity(.22), blurRadius: 20)]), child: CircleAvatar(radius: 50, backgroundColor: NexoColors.card, child: Text(user.username[0], style: TextStyle(color: color, fontSize: 34, fontWeight: FontWeight.bold)))),
+                Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(10)), child: Text(user.vipLevel, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 10))),
               ])),
+              const SizedBox(height: 10),
+              Center(child: Text(user.displayName, style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.bold, shadows: user.glow ? [Shadow(color: color, blurRadius: 14), Shadow(color: color.withOpacity(.45), blurRadius: 26)] : null))),
+              const SizedBox(height: 6),
+              Center(child: Text('💎 ' + economy.gems.toString() + ' Gems', style: const TextStyle(color: NexoColors.primary, fontWeight: FontWeight.bold))),
               const SizedBox(height: 18),
               Row(children: [
-                Expanded(child: _Stat(label: 'Level', value: '${user.level}')),
+                Expanded(child: _Stat('Level', user.level.toString())),
                 const SizedBox(width: 8),
-                Expanded(child: _Stat(label: 'Reputation', value: '${user.reputation}')),
+                Expanded(child: _Stat('Reputation', user.reputation.toString())),
                 const SizedBox(width: 8),
-                Expanded(child: _Stat(label: 'NEXO Score', value: '${user.nexoScore}')),
+                Expanded(child: _Stat('NEXO Score', user.nexoScore.toString())),
               ]),
               const SizedBox(height: 22),
               const Text('حسابك', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
-              _MenuTile(icon: Icons.groups_rounded, title: 'Our Club', subtitle: 'المجتمع والعضوية والنشاط', color: const Color(0xFF00D4FF),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OurClubScreen()))),
-              _MenuTile(icon: Icons.auto_awesome_rounded, title: 'Powers', subtitle: 'الكولكشن · تفعيل وإيقاف القوى', color: const Color(0xFFE040FB),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PowersCollectionScreen()))),
-              _MenuTile(icon: Icons.inventory_2_rounded, title: 'Collection / Inventory', subtitle: 'العناصر والتأثيرات والممتلكات', color: const Color(0xFF7B5CFF),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InventoryScreen()))),
-              _MenuTile(icon: Icons.verified_rounded, title: 'Badges', subtitle: user.badges.isEmpty ? 'لا توجد شارات بعد' : user.badges.join(' · '), color: const Color(0xFFFFB300), onTap: () {}),
-              _MenuTile(icon: Icons.workspace_premium_rounded, title: 'VIP', subtitle: 'العضوية والمزايا', color: const Color(0xFFFFD54F),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RechargeScreen()))),
+              _Menu(icon: Icons.auto_awesome_rounded, title: 'Font Colour', subtitle: 'لون ووهج الاسم + المعاينة داخل الشات', color: color, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NameGlowScreen()))),
+              _Menu(icon: Icons.inventory_2_rounded, title: 'Collection / Inventory', subtitle: 'Gifts · Frames · Assets · Crafted Items', color: const Color(0xFF7B5CFF), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InventoryScreen()))),
+              _Menu(icon: Icons.handyman_rounded, title: 'Workshop / Craft', subtitle: 'التصنيع منفصل عن المتجر والمنتج يدخل المخزون', color: Colors.deepPurpleAccent, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CraftScreen()))),
+              _Menu(icon: Icons.groups_rounded, title: 'Our Club', subtitle: 'المجتمع والعضوية والنشاط', color: NexoColors.primary, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OurClubScreen()))),
+              _Menu(icon: Icons.military_tech_rounded, title: 'Badges', subtitle: user.badges.isEmpty ? 'لا توجد شارات بعد' : user.badges.join(' · '), color: Colors.amber, onTap: () {}),
+              _Menu(icon: Icons.workspace_premium_rounded, title: 'VIP / Recharge', subtitle: 'العضوية والمزايا وشحن Gems', color: Colors.amber, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RechargeScreen()))),
             ],
           );
         },
@@ -71,54 +61,20 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-class _Tag extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  const _Tag({required this.label, required this.icon});
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(color: const Color(0xFF132F4C), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFF2B4660))),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 14, color: Colors.white70), const SizedBox(width: 5),
-      Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-    ]),
-  );
-}
-
 class _Stat extends StatelessWidget {
-  final String label;
-  final String value;
-  const _Stat({required this.label, required this.value});
+  final String label, value;
+  const _Stat(this.label, this.value);
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-    decoration: BoxDecoration(color: const Color(0xFF132F4C), borderRadius: BorderRadius.circular(12)),
-    child: Column(children: [
-      Text(label, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF90A4AE), fontSize: 10)),
-      const SizedBox(height: 4),
-      Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-    ]),
-  );
+  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 8), decoration: BoxDecoration(color: NexoColors.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: NexoColors.cardBorder)), child: Column(children: [Text(label, style: const TextStyle(color: NexoColors.textSecondary, fontSize: 10)), const SizedBox(height: 4), Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17))]));
 }
 
-class _MenuTile extends StatelessWidget {
+class _Menu extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
   final Color color;
   final VoidCallback onTap;
-  const _MenuTile({required this.icon, required this.title, required this.subtitle, required this.color, required this.onTap});
+  const _Menu({required this.icon, required this.title, required this.subtitle, required this.color, required this.onTap});
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 10),
-    decoration: BoxDecoration(color: const Color(0xFF132F4C), borderRadius: BorderRadius.circular(15), border: Border.all(color: color.withOpacity(0.3))),
-    child: ListTile(
-      onTap: onTap,
-      leading: CircleAvatar(backgroundColor: color.withOpacity(0.14), child: Icon(icon, color: color)),
-      title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      subtitle: Text(subtitle, style: const TextStyle(color: Color(0xFF90A4AE), fontSize: 11)),
-      trailing: const Icon(Icons.chevron_left_rounded, color: Colors.white54),
-    ),
-  );
+  Widget build(BuildContext context) => Container(margin: const EdgeInsets.only(bottom: 10), decoration: BoxDecoration(color: NexoColors.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withOpacity(.3))), child: ListTile(onTap: onTap, leading: CircleAvatar(backgroundColor: color.withOpacity(.14), child: Icon(icon, color: color)), title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), subtitle: Text(subtitle, style: const TextStyle(color: NexoColors.textSecondary, fontSize: 11)), trailing: const Icon(Icons.chevron_left_rounded, color: Colors.white54)));
 }

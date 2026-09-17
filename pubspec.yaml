@@ -1,7 +1,7 @@
 name: nexo_app
-description: "A new Flutter project."
+description: "NEXO social/gaming prototype"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.5.4
@@ -23,6 +23,12 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/
-    - assets/icons/
-    - assets/items/
+    - crown_shine.png
+    - diamond_glow.png
+    - fire_wings.png
+    - galaxy_aura.png
+    - name_glow_ticket.png
+    - neon_heart.png
+    - rainbow_ticket.png
+    - shadow_flame.png
+    - vip_emblem.png
