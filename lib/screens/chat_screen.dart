@@ -130,7 +130,9 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   int _callMinutes = 0;
   late final WebRtcCallService _callService;
   StreamSubscription<MediaStream>? _remoteStreamSubscription;
+  StreamSubscription<Map<String,dynamic>>? _chatEventSubscription;
   MediaStream? _remoteStream;
+  final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
 
   bool get _remoteMode {
     final auth = context.read<AuthService>();
@@ -143,10 +145,23 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   void initState() {
     super.initState();
     _callService = WebRtcCallService(context.read<RealtimeService>());
-    _remoteStreamSubscription = _callService.remoteStreams.listen((stream) {
-      if (mounted) setState(() => _remoteStream = stream);
-    });
     Future.microtask(() async {
+      await _remoteRenderer.initialize();
+      _remoteStreamSubscription = _callService.remoteStreams.listen((stream) async {
+        await _remoteRenderer.setSrcObject(stream);
+        if (mounted) setState(() => _remoteStream = stream);
+      });
+      _chatEventSubscription = context.read<RealtimeService>().events.listen((event) {
+        if (!mounted) return;
+        if (event['type'] == 'chat_message') {
+          final message = Map<String,dynamic>.from((event['message'] as Map?) ?? const {});
+          final sender = message['sender_username']?.toString() ?? message['sender_id']?.toString() ?? widget.person.name;
+          setState(() => (_chatMessages[widget.person.id] ??= []).add(_ChatLine(sender, message['body']?.toString() ?? '')));
+        } else if (event['type'] == 'gift') {
+          final giftId = event['giftId']?.toString();
+          if (giftId != null) setState(() => (_chatMessages[widget.person.id] ??= []).add(_ChatLine(widget.person.name, '', giftId: giftId)));
+        }
+      });
       await _callService.listenForIncoming(widget.person.id);
       await _loadRemoteHistory();
     });
@@ -176,6 +191,8 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   void dispose() {
     _callTimer?.cancel();
     _remoteStreamSubscription?.cancel();
+    _chatEventSubscription?.cancel();
+    _remoteRenderer.dispose();
     _callService.dispose();
     _controller.dispose();
     super.dispose();
@@ -448,7 +465,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: Colors.black),
             child: RTCVideoView(
-              RTCVideoRenderer()..setSrcObject(_remoteStream),
+              _remoteRenderer,
               objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
             ),
           ),
