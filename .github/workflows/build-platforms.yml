@@ -1,0 +1,61 @@
+name: Build NEXO platforms
+
+on:
+  workflow_dispatch:
+
+env:
+  NEXO_API_URL: https://nexo-api-production-05d3.up.railway.app
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.5"
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter create --platforms=android --project-name nexo_app --org com.example .
+      - run: flutter build apk --release --dart-define=NEXO_API_URL=$NEXO_API_URL
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nexo-android-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.5"
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter create --platforms=ios --project-name nexo_app --org com.example .
+      - run: flutter build ios --release --no-codesign --dart-define=NEXO_API_URL=$NEXO_API_URL
+      - name: Package iOS build
+        run: ditto -c -k --sequesterRsrc --keepParent build/ios/iphoneos/Runner.app build/ios/Runner-ios-release.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nexo-ios-release-unsigned
+          path: build/ios/Runner-ios-release.zip
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.5"
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter create --platforms=windows --project-name nexo_app --org com.example .
+      - run: flutter build windows --release --dart-define=NEXO_API_URL=$env:NEXO_API_URL
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nexo-windows-release
+          path: build/windows/x64/runner/Release/
