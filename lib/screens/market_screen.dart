@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/economy_service.dart';
-import '../services/trade_service.dart';
+
+class MarketItem {
+  final String name;
+  final String rarity;
+  final int price;
+  const MarketItem(this.name, this.rarity, this.price);
+}
 
 class MarketScreen extends StatefulWidget {
-  const MarketScreen({Key? key}) : super(key: key);
+  const MarketScreen({super.key});
 
   @override
   State<MarketScreen> createState() => _MarketScreenState();
@@ -12,13 +18,12 @@ class MarketScreen extends StatefulWidget {
 
 class _MarketScreenState extends State<MarketScreen>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final TradeService _tradeService = TradeService();
+  late final TabController _tabController;
 
-  final items = [
-    {'name': '⛏ Pickaxe', 'rarity': 'Common', 'price': 100},
-    {'name': '💎 Rare Ore', 'rarity': 'Rare', 'price': 500},
-    {'name': '👑 Legendary Ore', 'rarity': 'Legendary', 'price': 2000},
+  static const items = <MarketItem>[
+    MarketItem('⛏ Pickaxe', 'Common', 100),
+    MarketItem('💎 Rare Ore', 'Rare', 500),
+    MarketItem('👑 Legendary Ore', 'Legendary', 2000),
   ];
 
   @override
@@ -35,14 +40,14 @@ class _MarketScreenState extends State<MarketScreen>
 
   void _buyItem(int index, BuildContext context) {
     final economy = Provider.of<EconomyService>(context, listen: false);
-    final price = items[index]['price'] as int;
+    final item = items[index];
 
-    if (economy.spendTickets(price)) {
-      economy.addItem(items[index]['name']!, 1);
+    if (economy.spendTickets(item.price)) {
+      economy.addItem(item.name, 1);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Purchased ${items[index]['name']}'),
-          backgroundColor: const Color(0xFF00d4ff),
+          content: Text('✅ Purchased ${item.name}'),
+          backgroundColor: NexoColorsLike.primary,
         ),
       );
     } else {
@@ -61,80 +66,76 @@ class _MarketScreenState extends State<MarketScreen>
       appBar: AppBar(
         title: const Text('🛒 Market'),
         centerTitle: true,
-        backgroundColor: const Color(0xFF0a1929),
+        backgroundColor: const Color(0xFF0A1929),
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFF00d4ff),
-          tabs: const [
-            Tab(text: 'Shop'),
-            Tab(text: 'Trade'),
-            Tab(text: 'Crafting'),
-          ],
+          indicatorColor: const Color(0xFF00D4FF),
+          tabs: const [Tab(text: 'Shop'), Tab(text: 'Trade'), Tab(text: 'Crafting')],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          // Shop Tab
           ListView.builder(
             itemCount: items.length,
-            itemBuilder: (context, index) => Padding(
-              padding: const EdgeInsets.all(12),
-              child: GestureDetector(
-                onTap: () => _buyItem(index, context),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF132f4c),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: const Color(0xFF7c3aed), width: 1.5),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(items[index]['name'] as String,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold)),
-                          Container(
-                            margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF7c3aed),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(items[index]['rarity'] as String,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return Padding(
+                padding: const EdgeInsets.all(12),
+                child: GestureDetector(
+                  onTap: () => _buyItem(index, context),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF132F4C),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: const Color(0xFF7C3AED), width: 1.5),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item.name,
                                 style: const TextStyle(
-                                    color: Colors.white, fontSize: 10)),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00d4ff),
-                          borderRadius: BorderRadius.circular(8),
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold)),
+                            Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF7C3AED),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(item.rarity,
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 10)),
+                            ),
+                          ],
                         ),
-                        child: Text(
-                            '🎫 ${items[index]['price']}',
-                            style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                    ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00D4FF),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text('🎫 ${item.price}',
+                              style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
-          // Trade Tab
           Center(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -148,10 +149,10 @@ class _MarketScreenState extends State<MarketScreen>
                           fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   const Text(
-                      'Trade directly with other players\nor use the marketplace.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: Color(0xFF90a4ae), fontSize: 12)),
+                    'Trade directly with other players\nor use the marketplace.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF90A4AE), fontSize: 12),
+                  ),
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
@@ -163,7 +164,6 @@ class _MarketScreenState extends State<MarketScreen>
               ),
             ),
           ),
-          // Crafting Tab
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -175,13 +175,12 @@ class _MarketScreenState extends State<MarketScreen>
                         fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 const Text('Combine materials to create items',
-                    style: TextStyle(
-                        color: Color(0xFF90a4ae), fontSize: 12)),
+                    style: TextStyle(color: Color(0xFF90A4AE), fontSize: 12)),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Crafting coming soon')),
-                ),
+                    const SnackBar(content: Text('Crafting coming soon')),
+                  ),
                   child: const Text('Open Crafting'),
                 ),
               ],
@@ -191,4 +190,8 @@ class _MarketScreenState extends State<MarketScreen>
       ),
     );
   }
+}
+
+class NexoColorsLike {
+  static const primary = Color(0xFF00D4FF);
 }
