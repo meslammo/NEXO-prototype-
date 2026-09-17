@@ -40,6 +40,27 @@ CREATE TABLE IF NOT EXISTS nexo.trades (
   to_confirmed BOOLEAN NOT NULL DEFAULT FALSE, dispute_reason TEXT, resolution TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), expires_at TIMESTAMPTZ NOT NULL
 );
+CREATE TABLE IF NOT EXISTS nexo.game_rooms (
+  id UUID PRIMARY KEY,
+  game_id TEXT NOT NULL,
+  host_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  guest_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL,
+  host_ready BOOLEAN NOT NULL DEFAULT FALSE,
+  guest_ready BOOLEAN NOT NULL DEFAULT FALSE,
+  status TEXT NOT NULL DEFAULT 'waiting',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS nexo_game_rooms_waiting_idx ON nexo.game_rooms(game_id,status,created_at);
+
+CREATE TABLE IF NOT EXISTS nexo.game_room_scores (
+  room_id UUID NOT NULL REFERENCES nexo.game_rooms(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  score INT NOT NULL CHECK (score >= 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (room_id,user_id)
+);
+
 CREATE TABLE IF NOT EXISTS nexo.purchase_tokens (
   purchase_token TEXT PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
