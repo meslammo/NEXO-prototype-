@@ -1,5 +1,7 @@
 const Fastify = require('fastify');
 const cors = require('@fastify/cors');
+const helmet = require('@fastify/helmet');
+const rateLimit = require('@fastify/rate-limit');
 const jwt = require('@fastify/jwt');
 const websocket = require('@fastify/websocket');
 const bcrypt = require('bcryptjs');
@@ -18,7 +20,9 @@ const JWT_SECRET = process.env.JWT_SECRET || '';
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
 if (JWT_SECRET.length < 32) throw new Error('JWT_SECRET must be 32+ chars');
 
-app.register(cors, { origin: true });
+app.register(cors, { origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true });
+app.register(helmet, { global: true });
+app.register(rateLimit, { global: true, max: 120, timeWindow: '1 minute', keyGenerator: (req) => req.ip });
 app.register(jwt, { secret: JWT_SECRET });
 app.register(websocket);
 
@@ -75,7 +79,7 @@ app.post('/auth/guest', async (req, reply) => {
   let r=await q('SELECT * FROM nexo.users WHERE username=$1',[username]);
   let u=r.rows[0];
   if(!u){ r=await q('INSERT INTO nexo.users(id,username,display_name) VALUES($1,$2,$3) RETURNING *',[randomUUID(),username,'NEXO Guest']); u=r.rows[0]; }
-  const token=app.jwt.sign({sub:u.id,username:u.username});
+  const token=app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'});
   return { token, user:publicUser(u) };
 });
 
