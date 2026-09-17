@@ -1,40 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-// استيراد باقي الملفات بعد تقسيمها
-// import 'navigation_container.dart'; 
-
-void main() {
-  runApp(const NexoApp());
-}
-
-class NexoApp extends StatelessWidget {
-  const NexoApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'NEXO - AISEP Capstone',
-      // إعدادات اللغة العربية والاتجاه من اليمين لليسار
-      localizationsDelegates: const [
-        GlobalCupertinoLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale("ar", "AE"), // العربية
-      ],
-      locale: const Locale("ar", "AE"),
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0A0A12),
-        fontFamily: 'system-ui',
-      ),
-      home: const MainNavigationContainer(),
-    );
-  }
-}import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'theme/nexo_theme.dart';
 import 'widgets/adaptive_scaffold.dart';
@@ -42,8 +8,6 @@ import 'screens/home_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/trade_screen.dart';
 import 'screens/craft_screen.dart';
-import 'screens/inventory_screen.dart';
-import 'screens/recharge_screen.dart';
 import 'screens/more_screen.dart';
 import 'services/energy_storage_service.dart';
 import 'services/economy_service.dart';
@@ -52,7 +16,7 @@ import 'services/nexo_service.dart';
 import 'services/social_engine.dart';
 import 'services/trade_service.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EnergyStorageService.loadOnStartup();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -61,6 +25,7 @@ void main() async {
     systemNavigationBarColor: NexoColors.surface,
     systemNavigationBarIconBrightness: Brightness.light,
   ));
+
   runApp(
     MultiProvider(
       providers: [
@@ -84,14 +49,20 @@ class NexoApp extends StatelessWidget {
       title: 'NEXO',
       debugShowCheckedModeBanner: false,
       theme: NexoTheme.darkTheme,
-      // Support Arabic RTL
       locale: const Locale('ar'),
-      builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: child!,
-        );
-      },
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('ar'),
+        Locale('en'),
+      ],
+      builder: (context, child) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: const MainShell(),
     );
   }
@@ -107,7 +78,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = const [
+  static const _screens = <Widget>[
     HomeScreen(),
     ChatScreen(),
     TradeScreen(),
@@ -115,7 +86,7 @@ class _MainShellState extends State<MainShell> {
     MoreScreen(),
   ];
 
-  final List<NavigationDestination> _destinations = const [
+  static const _destinations = <NavigationDestination>[
     NavigationDestination(
       icon: Icon(Icons.home_outlined),
       selectedIcon: Icon(Icons.home_rounded),
@@ -147,14 +118,9 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       selectedIndex: _selectedIndex,
-      onDestinationSelected: (index) {
-        setState(() => _selectedIndex = index);
-      },
+      onDestinationSelected: (index) => setState(() => _selectedIndex = index),
       destinations: _destinations,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
     );
   }
 }
