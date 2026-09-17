@@ -85,4 +85,32 @@ class EconomyService extends ChangeNotifier {
     _energy = freeDailyEnergy;
     notifyListeners();
   }
+
+  void hydrateFromServer({required int gems, required int energy, Map<String,int>? inventory}) {
+    _gems = gems;
+    _energy = energy.clamp(0, maxEnergy);
+    if (inventory != null) {
+      _inventory
+        ..clear()
+        ..addAll(inventory);
+    }
+    notifyListeners();
+  }
+
+  void setGems(int gems) {
+    _gems = gems < 0 ? 0 : gems;
+    notifyListeners();
+  }
+
+  void setEnergy(int energy) {
+    _energy = energy.clamp(0, maxEnergy);
+    notifyListeners();
+  }
+
+  void replaceInventory(Map<String,int> items) {
+    _inventory
+      ..clear()
+      ..addAll(items);
+    notifyListeners();
+  }
 }
