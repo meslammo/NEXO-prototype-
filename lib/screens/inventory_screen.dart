@@ -86,7 +86,25 @@ class InventoryScreen extends StatelessWidget {
     if (crafted.isEmpty) {
       return const Center(child: Padding(padding: EdgeInsets.all(28), child: Text('مفيش عناصر مصنّعة لسه.\\nادخل Workshop / Craft من Profile؛ المنتج هنا يدخل المخزون ومش بيتكرر في Market.', textAlign: TextAlign.center, style: TextStyle(color: NexoColors.textSecondary, height: 1.6))));
     }
-    return ListView(padding: const EdgeInsets.all(16), children: crafted.map((entry) => Card(color: NexoColors.card, child: ListTile(leading: const CircleAvatar(child: Icon(Icons.handyman_rounded)), title: Text(entry.key.replaceFirst('crafted_', ''), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), trailing: Text('x' + entry.value.toString(), style: const TextStyle(color: NexoColors.primary, fontWeight: FontWeight.bold)))).toList());
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: crafted.map((entry) {
+        return Card(
+          color: NexoColors.card,
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.handyman_rounded)),
+            title: Text(
+              entry.key.replaceFirst('crafted_', ''),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            trailing: Text(
+              'x${entry.value}',
+              style: const TextStyle(color: NexoColors.primary, fontWeight: FontWeight.bold),
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 }
 
