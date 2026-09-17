@@ -19,6 +19,7 @@ import 'services/power_service.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';
 import 'services/realtime_service.dart';
+import 'services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +31,11 @@ Future<void> main() async {
   final realtimeService = RealtimeService(apiClient);
   await realtimeService.connect();
   await realtimeService.setPresence(true);
+
+  final notificationService = NotificationService(apiClient, realtimeService);
+  if (authService.online) {
+    await notificationService.initialize();
+  }
 
   final economyService = EconomyService();
   if (authService.online) {
@@ -65,6 +71,7 @@ Future<void> main() async {
         Provider<ApiClient>.value(value: apiClient),
         ChangeNotifierProvider<AuthService>.value(value: authService),
         Provider<RealtimeService>.value(value: realtimeService),
+        ChangeNotifierProvider<NotificationService>.value(value: notificationService),
         ChangeNotifierProvider<EconomyService>.value(value: economyService),
         ChangeNotifierProvider(create: (_) => MiningService()),
         ChangeNotifierProvider(create: (_) => NexoService()),
