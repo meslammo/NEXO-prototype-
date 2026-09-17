@@ -193,7 +193,7 @@ app.post('/chat/:peerId/messages',{preHandler:auth},async(req,reply)=>{
     const body=String((req.body||{}).body||'').trim();
     if(!body||body.length>4000)return reply.code(400).send({error:'INVALID_MESSAGE'});
     const r=await q('INSERT INTO nexo.messages(id,sender_id,recipient_id,body) VALUES($1,$2,$3,$4) RETURNING *',[randomUUID(),uid(req),peerId,body]);
-    const msg=r.rows[0]; emit(peerId,{type:'chat_message',message:msg}); return msg;
+    const msg=r.rows[0]; emit(peerId,{type:'chat_message',message:msg}); await notify(peerId,'chat','رسالة جديدة','لديك رسالة جديدة في NEXO',{senderId:uid(req)}); return msg;
   }catch(e){return reply.code(e.code||500).send({error:e.code||'CHAT_SEND_FAILED'});}
 });
 app.get('/chat/:peerId/messages',{preHandler:auth},async(req,reply)=>{
@@ -291,7 +291,7 @@ app.post('/trades', { preHandler: auth }, async (req, reply) => {
       await lockTradeItems(c,id,uid(req),items);
       await c.query('UPDATE nexo.trades SET from_items=$1::jsonb WHERE id=$2',[JSON.stringify(items),id]);
       if(gems>0) await c.query('UPDATE nexo.users SET gems=gems-$1 WHERE id=$2',[gems,uid(req)]);
-      emit(to,{type:'trade_created',tradeId:id});
+      emit(to,{type:'trade_created',tradeId:id}); await notify(to,'trade','عرض Trade جديد','لديك عرض Trade ينتظر الرد',{tradeId:id,fromUserId:uid(req)});
       return {id,status:'locked',fromItems:items,fromGems:gems,toItems:[],toGems:0};
     });
   } catch(e) { return reply.code(e.code||500).send({error:e.code||'TRADE_CREATE_FAILED'}); }
@@ -365,6 +365,8 @@ app.post('/trades/:id/confirm', { preHandler: auth }, async (req, reply) => {
       await c.query('UPDATE nexo.trades SET status=$1,from_confirmed=$2,to_confirmed=$3,fee_gems=$4 WHERE id=$5',[t.status,t.from_confirmed,t.to_confirmed,t.fee_gems||0,t.id]);
       emit(t.from_user_id,{type:'trade_update',tradeId:t.id,status:t.status});
       emit(t.to_user_id,{type:'trade_update',tradeId:t.id,status:t.status});
+      await notify(t.from_user_id,'trade','Trade updated',`حالة الـTrade أصبحت ${t.status}`,{tradeId:t.id});
+      await notify(t.to_user_id,'trade','Trade updated',`حالة الـTrade أصبحت ${t.status}`,{tradeId:t.id});
       return t;
     });
   } catch(e){return reply.code(e.code||500).send({error:e.code||'TRADE_CONFIRM_FAILED'});}
