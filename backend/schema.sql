@@ -40,6 +40,18 @@ CREATE TABLE IF NOT EXISTS nexo.trades (
   to_confirmed BOOLEAN NOT NULL DEFAULT FALSE, dispute_reason TEXT, resolution TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), expires_at TIMESTAMPTZ NOT NULL
 );
+CREATE TABLE IF NOT EXISTS nexo.notifications (
+  id UUID PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  read BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS nexo_notifications_user_idx ON nexo.notifications(user_id,read,created_at DESC);
+
 CREATE TABLE IF NOT EXISTS nexo.game_rooms (
   id UUID PRIMARY KEY,
   game_id TEXT NOT NULL,
