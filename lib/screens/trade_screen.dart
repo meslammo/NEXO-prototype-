@@ -158,6 +158,23 @@ class _TradeScreenState extends State<TradeScreen> {
 
   void _startTimer() {
     _timer?.cancel();
+    if (_remoteMode) {
+      _timer = Timer.periodic(const Duration(seconds: 2), (_) async {
+        final id = _trade?.id;
+        if (id == null || id.isEmpty) return;
+        try {
+          final raw = await context.read<ApiClient>().getJson('/trades/$id');
+          final updated = _tradeFromServer(raw);
+          if (!mounted) return;
+          setState(() {
+            _trade = updated;
+            _remaining = updated.remainingTime;
+          });
+          if (updated.status.isFinal) _timer?.cancel();
+        } catch (_) {}
+      });
+      return;
+    }
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_trade == null) return;
       final updated = _escrow.checkExpiry(_trade!.id);
@@ -248,7 +265,7 @@ class _TradeScreenState extends State<TradeScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('رجوع')),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
               if (_remoteMode) {
                 try {
@@ -293,11 +310,25 @@ class _TradeScreenState extends State<TradeScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               if (controller.text.trim().isEmpty) return;
+              final reason = controller.text.trim();
               Navigator.pop(ctx);
+              if (_remoteMode) {
+                try {
+                  final raw = await context.read<ApiClient>().postJson('/trades/${_trade!.id}/dispute', {'reason': reason});
+                  final updated = _tradeFromServer(raw);
+                  if (!mounted) return;
+                  setState(() => _trade = updated);
+                  _timer?.cancel();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم فتح النزاع على السيرفر')));
+                } catch (e) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر فتح النزاع: $e'), backgroundColor: Colors.redAccent));
+                }
+                return;
+              }
               try {
-                final updated = _escrow.openDispute(tradeId: _trade!.id, userId: currentUserId, reason: controller.text.trim());
+                final updated = _escrow.openDispute(tradeId: _trade!.id, userId: currentUserId, reason: reason);
                 setState(() => _trade = updated);
                 _timer?.cancel();
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم فتح النزاع')));
