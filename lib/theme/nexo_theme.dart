@@ -30,7 +30,7 @@ class NexoTheme {
       foregroundColor: Colors.white,
       elevation: 0,
     ),
-    cardTheme: CardThemeData(
+    cardTheme: const CardTheme(
       color: NexoColors.card,
       surfaceTintColor: Colors.transparent,
       margin: EdgeInsets.zero,
