@@ -8,6 +8,7 @@ import '../services/social_engine.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/webrtc_call_service.dart';
+import '../services/realtime_service.dart';
 import '../config/api_config.dart';
 import '../theme/nexo_theme.dart';
 import 'trade_screen.dart';
