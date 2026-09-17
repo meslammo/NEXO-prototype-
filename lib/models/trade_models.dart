@@ -43,7 +43,11 @@ extension TradeStatusX on TradeStatus {
       this == TradeStatus.confirmedB;
 
   bool get canCancel =>
-      this == TradeStatus.pending || this == TradeStatus.locked;
+      this == TradeStatus.pending ||
+      this == TradeStatus.locked ||
+      this == TradeStatus.confirmedA ||
+      this == TradeStatus.confirmedB ||
+      this == TradeStatus.disputed;
 
   bool get isFinal =>
       this == TradeStatus.completed ||
