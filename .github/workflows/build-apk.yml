@@ -40,14 +40,18 @@ storeFile=nexo-release.jks
 EOF
             python3 - <<'PY'
 from pathlib import Path
-p=Path("android/app/build.gradle")
-s=p.read_text()
-prefix='''def keystorePropertiesFile = rootProject.file("key.properties")
+
+if Path("android/app/build.gradle").exists():
+    p=Path("android/app/build.gradle")
+    s=p.read_text()
+    prefix='''def keystorePropertiesFile = rootProject.file("key.properties")
 def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) { keystoreProperties.load(new FileInputStream(keystorePropertiesFile)) }
 '''
-s=prefix+s
-s=s.replace("android {", '''android {
+    if "keystorePropertiesFile" not in s:
+        s=prefix+s
+    if "signingConfigs {" not in s:
+        s=s.replace("android {", '''android {
     signingConfigs {
         release {
             if (keystorePropertiesFile.exists()) {
@@ -58,8 +62,45 @@ s=s.replace("android {", '''android {
             }
         }
     }''',1)
-s=s.replace("signingConfig signingConfigs.debug","signingConfig (keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug)")
-p.write_text(s)
+    s=s.replace("signingConfig signingConfigs.debug","signingConfig (keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug)")
+    p.write_text(s)
+
+elif Path("android/app/build.gradle.kts").exists():
+    p=Path("android/app/build.gradle.kts")
+    s=p.read_text()
+    prefix='''import java.io.FileInputStream
+import java.util.Properties
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
+'''
+    if "keystorePropertiesFile" not in s:
+        s=prefix+s
+    if "create("release")" not in s:
+        s=s.replace("    buildTypes {", '''    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"] as String?
+                keyPassword = keystoreProperties["keyPassword"] as String?
+                storeFile = (keystoreProperties["storeFile"] as String?)?.let { file(it) }
+                storePassword = keystoreProperties["storePassword"] as String?
+            }
+        }
+    }
+
+    buildTypes {''',1)
+    s=s.replace(
+        'signingConfig = signingConfigs.getByName("debug")',
+        'signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")',
+        1
+    )
+    p.write_text(s)
+else:
+    raise SystemExit("No Android Gradle build file found")
 PY
           else
             echo "No NEXO release keystore secrets configured; using CI debug signing for test builds."
