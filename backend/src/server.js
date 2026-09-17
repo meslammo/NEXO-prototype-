@@ -57,6 +57,15 @@ async function tx(fn) {
   catch (e) { await client.query('ROLLBACK'); throw e; }
   finally { client.release(); }
 }
+
+async function notify(userId, kind, title, body, data={}) {
+  try {
+    const id=randomUUID();
+    await q('INSERT INTO nexo.notifications(id,user_id,kind,title,body,data) VALUES($1,$2,$3,$4,$5,$6::jsonb)',[id,userId,kind,title,body,JSON.stringify(data)]);
+    emit(userId,{type:'notification',notification:{id,userId,kind,title,body,data,read:false}});
+  } catch (_) {}
+}
+
 function emit(toUserId, event) {
   const list = sockets.get(toUserId);
   if (!list) return;
@@ -106,6 +115,19 @@ app.post('/auth/login', async (req, reply) => {
 app.get('/me',{preHandler:auth},async req=>{
   const r=await q('SELECT * FROM nexo.users WHERE id=$1',[uid(req)]); return {user:publicUser(r.rows[0])};
 });
+app.get('/notifications',{preHandler:auth},async req=>{
+  return (await q('SELECT id,kind,title,body,data,read,created_at FROM nexo.notifications WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100',[uid(req)])).rows;
+});
+app.post('/notifications/:id/read',{preHandler:auth},async(req,reply)=>{
+  const r=await q('UPDATE nexo.notifications SET read=true WHERE id=$1 AND user_id=$2 RETURNING id',[req.params.id,uid(req)]);
+  if(!r.rowCount)return reply.code(404).send({error:'NOTIFICATION_NOT_FOUND'});
+  return {ok:true};
+});
+app.post('/notifications/read-all',{preHandler:auth},async req=>{
+  await q('UPDATE nexo.notifications SET read=true WHERE user_id=$1 AND read=false',[uid(req)]);
+  return {ok:true};
+});
+
 app.get('/gifts',async()=> (await q('SELECT id,name,rarity,gems,tradeable,image,tagline FROM nexo.gifts WHERE active=true ORDER BY gems')).rows);
 app.get('/users/search', async (req, reply) => {
   const query = String((req.query || {}).q || '').trim().slice(0,40);
