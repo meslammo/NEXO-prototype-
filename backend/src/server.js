@@ -192,9 +192,9 @@ app.post('/economy/energy/spend',{preHandler:auth},async(req,reply)=>{
 app.post('/economy/energy/daily-claim',{preHandler:auth},async(req,reply)=>{
   try{
     return await tx(async c=>{
-      const today=(new Date()).toISOString().slice(0,10);
+      const today=(await c.query('SELECT CURRENT_DATE AS today')).rows[0].today;
       const existing=await c.query('SELECT claim_date,streak FROM nexo.daily_claims WHERE user_id=$1 FOR UPDATE',[uid(req)]);
-      if(existing.rowCount && String(existing.rows[0].claim_date).slice(0,10)===today){
+      if(existing.rowCount && String(existing.rows[0].claim_date)===String(today)){
         const u=await c.query('SELECT energy FROM nexo.users WHERE id=$1',[uid(req)]);
         return {claimed:false,energy:Number(u.rows[0].energy),streak:Number(existing.rows[0].streak)};
       }
@@ -203,9 +203,9 @@ app.post('/economy/energy/daily-claim',{preHandler:auth},async(req,reply)=>{
       const energy=Math.min(100,before+50);
       let streak=1;
       if(existing.rowCount){
-        const prev=new Date(existing.rows[0].claim_date);
-        const diff=Math.round((Date.parse(today+'T00:00:00Z')-Date.UTC(prev.getUTCFullYear(),prev.getUTCMonth(),prev.getUTCDate()))/86400000);
-        streak=diff===1 ? Number(existing.rows[0].streak)+1 : 1;
+        const prev=String(existing.rows[0].claim_date);
+        const prior=await c.query('SELECT $1::date = CURRENT_DATE - INTERVAL \'1 day\' AS consecutive',[prev]);
+        streak=prior.rows[0].consecutive ? Number(existing.rows[0].streak)+1 : 1;
         await c.query('UPDATE nexo.daily_claims SET claim_date=$1,streak=$2 WHERE user_id=$3',[today,streak,uid(req)]);
       }else{
         await c.query('INSERT INTO nexo.daily_claims(user_id,claim_date,streak) VALUES($1,$2,$3)',[uid(req),today,1]);
