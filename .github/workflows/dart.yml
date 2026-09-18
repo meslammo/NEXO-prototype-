@@ -1,5 +1,9 @@
 name: Flutter CI
 
+concurrency:
+  group: nexo-dart.yml-{{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: ["main", "nexo/fullstack-phases-1-10"]
