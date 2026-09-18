@@ -56,6 +56,12 @@ Future<void> main() async {
         energy: (wallet['energy'] as num?)?.toInt() ?? economyService.energy,
         inventory: inventory,
       );
+      try {
+        final daily = await apiClient.postJson('/economy/energy/daily-claim', {});
+        if (daily['energy'] != null) {
+          economyService.setEnergy((daily['energy'] as num).toInt());
+        }
+      } catch (_) {}
     } catch (_) {}
   }
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
