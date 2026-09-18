@@ -449,7 +449,7 @@ app.post('/gifts/send',{preHandler:auth},async(req,reply)=>{
       if(to===uid(req))throw Object.assign(new Error('INVALID_RECIPIENT'),{code:400});
       const prior=await c.query('SELECT 1 FROM nexo.wallet_ledger WHERE idempotency_key=$1',[key]);
       if(prior.rowCount)return {ok:true,idempotent:true};
-      const g=await c.query('SELECT * FROM nexo.gifts WHERE id=$1 AND active=true AND item_type='gift'',[giftId]);
+      const g=await c.query("SELECT * FROM nexo.gifts WHERE id=$1 AND active=true AND item_type='gift'",[giftId]);
       if(!g.rowCount)throw Object.assign(new Error('GIFT_NOT_FOUND'),{code:404});
       const own=await c.query('SELECT quantity FROM nexo.inventory WHERE user_id=$1 AND item_id=$2 FOR UPDATE',[uid(req),giftId]);
       if(own.rowCount&&own.rows[0].quantity>0){
