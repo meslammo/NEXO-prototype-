@@ -1,5 +1,9 @@
 name: Build NEXO APK
 
+concurrency:
+  group: nexo-build-apk.yml-{{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
   push:
