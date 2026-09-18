@@ -2,6 +2,8 @@ name: Build NEXO platforms
 
 on:
   workflow_dispatch:
+  push:
+    branches: ["nexo/fullstack-phases-1-10"]
 
 env:
   NEXO_API_URL: https://nexo-api-production-05d3.up.railway.app
