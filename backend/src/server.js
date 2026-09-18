@@ -584,7 +584,8 @@ app.post('/trades/:id/confirm', { preHandler: auth }, async (req, reply) => {
       if(!r.rowCount)return reply.code(404).send({error:'TRADE_NOT_FOUND'});
       const t=r.rows[0], from=t.from_user_id===uid(req), to=t.to_user_id===uid(req);
       if(!from&&!to)throw Object.assign(new Error('FORBIDDEN'),{code:403});
-      if(!Array.isArray(t.to_items)||t.to_items.length<0)throw Object.assign(new Error('INVALID_TRADE'),{code:409});
+      if(!Array.isArray(t.from_items)||!Array.isArray(t.to_items)||t.from_items.length>4||t.to_items.length>4)throw Object.assign(new Error('INVALID_TRADE'),{code:409});
+      if(new Date(t.expires_at).getTime()<Date.now())throw Object.assign(new Error('TRADE_EXPIRED'),{code:409});
       if(from)t.from_confirmed=true;if(to)t.to_confirmed=true;
       if(t.from_confirmed&&t.to_confirmed){
         const feePercent=await settingNumber(c,'trade.feePercent',5); const fee=Math.ceil((Number(t.from_gems)+Number(t.to_gems))*feePercent/100);
