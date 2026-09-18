@@ -48,7 +48,7 @@ class _InventoryScreenState extends State<InventoryScreen>{
         final item=items[i], qty=economy.inventory[item.id]??0;
         return InkWell(onTap:()=>_openDetails(item,qty),borderRadius:BorderRadius.circular(18),child:Container(
           padding:const EdgeInsets.all(10),
-          decoration:BoxDecoration(color:NexoColors.card,borderRadius:BorderRadius.circular(18),border:Border.all(color:item.rarity.color.withOpacity(qty>0?.45:.18))),
+          decoration:BoxDecoration(color:NexoColors.card,borderRadius:BorderRadius.circular(18),border:Border.all(color:item.rarity.color.withOpacity(qty>0 ? .45 : .18))),
           child:Column(children:[
             Expanded(child:NexoAssetArt(item:item,size:94)),
             Text(item.name,maxLines:1,overflow:TextOverflow.ellipsis,textAlign:TextAlign.center,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.bold,fontSize:11)),
