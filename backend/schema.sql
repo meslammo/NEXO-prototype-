@@ -133,6 +133,12 @@ CREATE TABLE IF NOT EXISTS nexo.admin_actions (
   id UUID PRIMARY KEY, admin_subject TEXT NOT NULL, action TEXT NOT NULL,
   target_id TEXT, details JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE TABLE IF NOT EXISTS nexo.device_tokens (
+  id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  platform TEXT NOT NULL, token TEXT NOT NULL UNIQUE, active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS nexo_device_tokens_user_idx ON nexo.device_tokens(user_id,active);
 CREATE TABLE IF NOT EXISTS nexo.app_settings (
   key TEXT PRIMARY KEY, value JSONB NOT NULL DEFAULT '{}'::jsonb, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
