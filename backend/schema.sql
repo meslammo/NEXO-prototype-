@@ -5,17 +5,43 @@ CREATE TABLE IF NOT EXISTS nexo.users (
   gems BIGINT NOT NULL DEFAULT 1000 CHECK (gems >= 0), energy INT NOT NULL DEFAULT 50 CHECK (energy BETWEEN 0 AND 100),
   level INT NOT NULL DEFAULT 1, experience BIGINT NOT NULL DEFAULT 0, reputation INT NOT NULL DEFAULT 0,
   vip_level TEXT NOT NULL DEFAULT 'Base', name_color TEXT NOT NULL DEFAULT '#54d6ff', glow BOOLEAN NOT NULL DEFAULT TRUE,
+  role TEXT NOT NULL DEFAULT 'user', banned BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), last_active TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE nexo.users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user';
+ALTER TABLE nexo.users ADD COLUMN IF NOT EXISTS banned BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS nexo_users_role_idx ON nexo.users(role,banned);
+
 CREATE TABLE IF NOT EXISTS nexo.gifts (
-  id TEXT PRIMARY KEY, name TEXT NOT NULL, rarity TEXT NOT NULL, gems INT NOT NULL CHECK (gems > 0),
-  tradeable BOOLEAN NOT NULL DEFAULT TRUE, image TEXT NOT NULL, tagline TEXT NOT NULL, active BOOLEAN NOT NULL DEFAULT TRUE
+  id TEXT PRIMARY KEY, name TEXT NOT NULL, rarity TEXT NOT NULL, gems INT NOT NULL CHECK (gems >= 0),
+  tradeable BOOLEAN NOT NULL DEFAULT TRUE, image TEXT NOT NULL, tagline TEXT NOT NULL, active BOOLEAN NOT NULL DEFAULT TRUE,
+  item_type TEXT NOT NULL DEFAULT 'gift', category TEXT NOT NULL DEFAULT 'gifts',
+  description TEXT NOT NULL DEFAULT '', animation TEXT NOT NULL DEFAULT 'pulse',
+  market_visible BOOLEAN NOT NULL DEFAULT TRUE, sort_order INT NOT NULL DEFAULT 0,
+  tags JSONB NOT NULL DEFAULT '[]'::jsonb, metadata JSONB NOT NULL DEFAULT '{}'::jsonb
 );
+ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS item_type TEXT NOT NULL DEFAULT 'gift';
+ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'gifts';
+ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT '';
+ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS animation TEXT NOT NULL DEFAULT 'pulse';
+ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS market_visible BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS sort_order INT NOT NULL DEFAULT 0;
+ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS tags JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb;
+CREATE INDEX IF NOT EXISTS nexo_gifts_market_idx ON nexo.gifts(active,market_visible,item_type,sort_order,gems);
+
 CREATE TABLE IF NOT EXISTS nexo.inventory (
   user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
   item_id TEXT NOT NULL REFERENCES nexo.gifts(id), quantity INT NOT NULL DEFAULT 0 CHECK (quantity >= 0),
   PRIMARY KEY (user_id,item_id)
 );
+CREATE TABLE IF NOT EXISTS nexo.user_equipped (
+  user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  slot TEXT NOT NULL, item_id TEXT REFERENCES nexo.gifts(id) ON DELETE SET NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY (user_id,slot)
+);
+CREATE INDEX IF NOT EXISTS nexo_user_equipped_item_idx ON nexo.user_equipped(item_id);
+
 CREATE TABLE IF NOT EXISTS nexo.wallet_ledger (
   id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
   kind TEXT NOT NULL, amount BIGINT NOT NULL, balance_after BIGINT NOT NULL, reference_id TEXT,
@@ -32,6 +58,7 @@ CREATE TABLE IF NOT EXISTS nexo.messages (
   body TEXT, gift_id TEXT REFERENCES nexo.gifts(id), created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS nexo_messages_pair_idx ON nexo.messages(sender_id,recipient_id,created_at DESC);
+
 CREATE TABLE IF NOT EXISTS nexo.trades (
   id UUID PRIMARY KEY, from_user_id UUID NOT NULL REFERENCES nexo.users(id), to_user_id UUID NOT NULL REFERENCES nexo.users(id),
   status TEXT NOT NULL DEFAULT 'locked', from_items JSONB NOT NULL DEFAULT '[]', to_items JSONB NOT NULL DEFAULT '[]',
@@ -41,46 +68,30 @@ CREATE TABLE IF NOT EXISTS nexo.trades (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), expires_at TIMESTAMPTZ NOT NULL
 );
 CREATE TABLE IF NOT EXISTS nexo.security_events (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL,
-  event_type TEXT NOT NULL,
-  severity TEXT NOT NULL DEFAULT 'info',
-  ip TEXT,
-  details JSONB NOT NULL DEFAULT '{}'::jsonb,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id UUID PRIMARY KEY, user_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL,
+  event_type TEXT NOT NULL, severity TEXT NOT NULL DEFAULT 'info', ip TEXT,
+  details JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS nexo_security_events_user_idx ON nexo.security_events(user_id,created_at DESC);
-
 CREATE TABLE IF NOT EXISTS nexo.notifications (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
-  kind TEXT NOT NULL,
-  title TEXT NOT NULL,
-  body TEXT NOT NULL,
-  data JSONB NOT NULL DEFAULT '{}'::jsonb,
-  read BOOLEAN NOT NULL DEFAULT FALSE,
+  id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL,
+  data JSONB NOT NULL DEFAULT '{}'::jsonb, read BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS nexo_notifications_user_idx ON nexo.notifications(user_id,read,created_at DESC);
 
 CREATE TABLE IF NOT EXISTS nexo.game_rooms (
-  id UUID PRIMARY KEY,
-  game_id TEXT NOT NULL,
-  host_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
-  guest_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL,
-  host_ready BOOLEAN NOT NULL DEFAULT FALSE,
-  guest_ready BOOLEAN NOT NULL DEFAULT FALSE,
-  status TEXT NOT NULL DEFAULT 'waiting',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id UUID PRIMARY KEY, game_id TEXT NOT NULL, host_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  guest_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL, host_ready BOOLEAN NOT NULL DEFAULT FALSE,
+  guest_ready BOOLEAN NOT NULL DEFAULT FALSE, status TEXT NOT NULL DEFAULT 'waiting',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS nexo_game_rooms_waiting_idx ON nexo.game_rooms(game_id,status,created_at);
-
 CREATE TABLE IF NOT EXISTS nexo.game_room_scores (
   room_id UUID NOT NULL REFERENCES nexo.game_rooms(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
-  score INT NOT NULL CHECK (score >= 0),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  score INT NOT NULL CHECK (score >= 0), created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (room_id,user_id)
 );
 
@@ -91,21 +102,17 @@ CREATE TABLE IF NOT EXISTS nexo.payment_orders (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), completed_at TIMESTAMPTZ
 );
 CREATE TABLE IF NOT EXISTS nexo.purchase_tokens (
-  purchase_token TEXT PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
-  product_id TEXT NOT NULL,
-  order_id UUID NOT NULL REFERENCES nexo.payment_orders(id) ON DELETE CASCADE,
+  purchase_token TEXT PRIMARY KEY, user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  product_id TEXT NOT NULL, order_id UUID NOT NULL REFERENCES nexo.payment_orders(id) ON DELETE CASCADE,
   verified_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE TABLE IF NOT EXISTS nexo.presence (
   user_id UUID PRIMARY KEY REFERENCES nexo.users(id) ON DELETE CASCADE,
   online BOOLEAN NOT NULL DEFAULT FALSE, last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS nexo.daily_claims (
   user_id UUID PRIMARY KEY REFERENCES nexo.users(id) ON DELETE CASCADE,
-  claim_date DATE NOT NULL,
-  streak INT NOT NULL DEFAULT 1 CHECK (streak >= 1)
+  claim_date DATE NOT NULL, streak INT NOT NULL DEFAULT 1 CHECK (streak >= 1)
 );
 CREATE TABLE IF NOT EXISTS nexo.game_events (
   id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
@@ -119,9 +126,15 @@ CREATE TABLE IF NOT EXISTS nexo.treasury_ledger (
 CREATE TABLE IF NOT EXISTS nexo.trade_locks (
   trade_id UUID NOT NULL REFERENCES nexo.trades(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
-  item_id TEXT NOT NULL REFERENCES nexo.gifts(id),
-  quantity INT NOT NULL CHECK (quantity > 0),
+  item_id TEXT NOT NULL REFERENCES nexo.gifts(id), quantity INT NOT NULL CHECK (quantity > 0),
   PRIMARY KEY (trade_id,user_id,item_id)
+);
+CREATE TABLE IF NOT EXISTS nexo.admin_actions (
+  id UUID PRIMARY KEY, admin_subject TEXT NOT NULL, action TEXT NOT NULL,
+  target_id TEXT, details JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS nexo.app_settings (
+  key TEXT PRIMARY KEY, value JSONB NOT NULL DEFAULT '{}'::jsonb, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 INSERT INTO nexo.users(id,username,email,password_hash,display_name,avatar,gems,energy) VALUES
@@ -132,14 +145,61 @@ INSERT INTO nexo.users(id,username,email,password_hash,display_name,avatar,gems,
 ('00000000-0000-0000-0000-000000000105','mdark',NULL,NULL,'M:Dark','006.jpg',1000,50)
 ON CONFLICT (username) DO NOTHING;
 
-INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline) VALUES
-('neon-heart','Neon Heart','Common',15,true,'neon_heart.png','نبضة نيون لطيفة للشات'),
-('shadow-flame','Shadow Flame','Rare',80,true,'shadow_flame.png','لهب مظلم للغرف الليلية'),
-('name-glow','Name Glow','Rare',120,true,'name_glow_ticket.png','وهج مميز للاسم'),
-('diamond-glow','Diamond Glow','Epic',220,true,'diamond_glow.png','لمعة ماسية عند الإرسال'),
-('galaxy-aura','Galaxy Aura','Epic',280,true,'galaxy_aura.png','هالة مجرية حول الرسالة'),
-('rainbow-aura','Rainbow Aura','Epic',350,true,'rainbow_ticket.png','أثر طيفي مميز'),
-('fire-wings','Fire Wings','Legendary',650,true,'fire_wings.png','دخول ناري قوي'),
-('crown-shine','Crown Shine','Legendary',900,true,'crown_shine.png','تاج لامع للغرف'),
-('vip-emblem','VIP Emblem','NEXO Exclusive',1800,false,'vip_emblem.png','شارة NEXO حصرية')
-ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,tradeable=EXCLUDED.tradeable,image=EXCLUDED.image,tagline=EXCLUDED.tagline;
+INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,item_type,category,description,animation,market_visible,sort_order) VALUES
+('neon-heart','Neon Heart','Common',15,true,'neon_heart.png','نبضة نيون لطيفة للشات','gift','gifts','هدية نيون سريعة للإرسال في الشات.','pulse',true,10),
+('shadow-flame','Shadow Flame','Rare',80,true,'shadow_flame.png','لهب مظلم للغرف الليلية','gift','gifts','لهب غامض مع أثر مضيء.','float',true,11),
+('name-glow','Name Glow','Rare',120,true,'name_glow_ticket.png','وهج مميز للاسم','gift','identity','تأثير اسم قابل للاستخدام في الهوية والشات.','shine',true,12),
+('diamond-glow','Diamond Glow','Epic',220,true,'diamond_glow.png','لمعة ماسية عند الإرسال','gift','gifts','هدية ماسية بتأثير لمعان.','shine',true,13),
+('galaxy-aura','Galaxy Aura','Epic',280,true,'galaxy_aura.png','هالة مجرية حول الرسالة','gift','effects','هالة فضائية تظهر حول الرسالة والصورة.','orbit',true,14),
+('rainbow-aura','Rainbow Aura','Epic',350,true,'rainbow_ticket.png','أثر طيفي مميز','gift','effects','طيف لوني نابض.','rainbow',true,15),
+('fire-wings','Fire Wings','Legendary',650,true,'fire_wings.png','دخول ناري قوي','gift','gifts','أجنحة نارية بهالة قوية.','float',true,16),
+('crown-shine','Crown Shine','Legendary',900,true,'crown_shine.png','تاج لامع للغرف','gift','gifts','تاج ملكي متوهج.','shine',true,17),
+('vip-emblem','VIP Emblem','NEXO Exclusive',1800,false,'vip_emblem.png','شارة NEXO حصرية','gift','vip','شارة خاصة غير قابلة للتداول.','pulse',true,18),
+('dragon','Dragon','Legendary',12000,true,'assets/nexo/gifts/dragon.svg','تنين NEXO الأسطوري','gift','legendary','تنين طاقة بوهج ناري.','float',true,20),
+('unicorn','Unicorn','Legendary',9000,true,'assets/nexo/gifts/unicorn.svg','اليونيكورن المتوهج','gift','legendary','يونيكورن سماوي بتدرجات مضيئة.','shine',true,21),
+('phoenix','Phoenix','Legendary',15000,true,'assets/nexo/gifts/phoenix.svg','بعث الفينيكس','gift','legendary','طائر العنقاء بنبض ناري.','float',true,22),
+('nexo-car','NEXO Car','Epic',3500,true,'assets/nexo/gifts/nexo-car.svg','السيارة النيون','gift','vehicles','سيارة NEXO الرياضية.','pulse',true,23),
+('al-hurra','Al-Hurra','NEXO Exclusive',75000,false,'assets/nexo/gifts/al-hurra.svg','الحُرّة','gift','exclusive','رمز حرية حصري.','orbit',true,24),
+('purity','Purity','Epic',1800,true,'assets/nexo/gifts/purity.svg','النقاء','gift','gifts','قطرة نقاء مضيئة.','shine',true,25),
+('moon-wolf','Moon Wolf','Epic',2400,true,'assets/nexo/gifts/moon-wolf.svg','ذئب القمر','gift','gifts','ذئب سماوي بتأثير قمري.','pulse',true,26),
+('crystal-rose','Crystal Rose','Rare',450,true,'assets/nexo/gifts/crystal-rose.svg','وردة كريستالية','gift','gifts','وردة بلورية ملونة.','shine',true,27),
+('thunder-core','Thunder Core','Rare',700,true,'assets/nexo/gifts/thunder-core.svg','قلب البرق','gift','effects','نواة برق بنبض سريع.','pulse',true,28),
+('royal-chest','Royal Chest','Legendary',6000,true,'assets/nexo/gifts/royal-chest.svg','الصندوق الملكي','gift','featured','صندوق جوائز ذهبي.','shine',true,29),
+('ocean-serpent','Ocean Serpent','Epic',3200,true,'assets/nexo/gifts/ocean-serpent.svg','ثعبان المحيط','gift','gifts','ثعبان مائي طيفي.','float',true,30),
+('cosmic-orb','Cosmic Orb','Rare',550,true,'assets/nexo/gifts/cosmic-orb.svg','الكرة الكونية','gift','effects','طاقة كونية دورانية.','orbit',true,31),
+
+('frame-cyan','Cyan Orbit Frame','Rare',900,'assets/nexo/frames/cyan-orbit.svg','إطار مدار سماوي','frame','frames','إطار دائري أزرق متوهج.','orbit',true,100),
+('frame-violet','Violet Pulse Frame','Epic',1800,'assets/nexo/frames/violet-pulse.svg','نبض بنفسجي','frame','frames','إطار نبضي بنفسجي.','pulse',true,101),
+('frame-royal','Royal Gold Frame','Legendary',4200,'assets/nexo/frames/royal-gold.svg','إطار ذهبي ملكي','frame','frames','حلقة ذهبية للـProfile.','shine',true,102),
+('frame-fire','Inferno Frame','Legendary',6000,'assets/nexo/frames/fire-ring.svg','حلقة نارية','frame','frames','إطار ناري قوي.','orbit',true,103),
+('frame-galaxy','Galaxy Ring Frame','Epic',3000,'assets/nexo/frames/galaxy-ring.svg','مدار مجري','frame','frames','إطار فضائي متحرك.','orbit',true,104),
+('frame-exclusive','NEXO Exclusive Frame','NEXO Exclusive',55000,false,'assets/nexo/frames/nexo-exclusive.svg','إطار حصري','frame','frames','إطار محدود.','shine',true,105),
+
+('asset-cosmic','Cosmic Aura Asset','Epic',1200,'assets/nexo/assets/cosmic-aura.svg','هالة كونية','asset','assets','هالة خلفية للهوية.','orbit',true,120),
+('asset-inferno','Inferno Wings Asset','Legendary',4500,'assets/nexo/assets/inferno-wings.svg','أجنحة لهب','asset','assets','أجنحة هوية متوهجة.','float',true,121),
+('asset-halo','Royal Halo Asset','Legendary',5200,'assets/nexo/assets/royal-halo.svg','الهالة الملكية','asset','assets','هالة حول الصورة.','shine',true,122),
+('asset-shield','NEXO Shield Asset','Rare',800,'assets/nexo/assets/nexo-shield.svg','درع NEXO','asset','assets','رمز حماية للهوية.','pulse',true,123),
+('asset-comet','Star Comet Asset','Epic',2200,'assets/nexo/assets/star-comet.svg','ذيل نجمي','asset','assets','مؤثر سريع.','float',true,124),
+('asset-prism','Prism Burst Asset','NEXO Exclusive',28000,false,'assets/nexo/assets/prism-burst.svg','انفجار طيفي','asset','assets','أصل بصري حصري.','rainbow',true,125),
+
+('emoji-laugh','Laugh Burst','Common',25,true,'assets/nexo/emoji/laugh.svg','ضحكة نيون','emoji','emoji','إيموجي متحرك.','pulse',true,140),
+('emoji-fire','Fire Emoji','Rare',60,true,'assets/nexo/emoji/fire.svg','لهب سريع','emoji','emoji','إيموجي لهب.','float',true,141),
+('emoji-heart','Purple Heart','Common',30,true,'assets/nexo/emoji/purple-heart.svg','قلب بنفسجي','emoji','emoji','إيموجي قلب.','pulse',true,142),
+('emoji-crown','Crown Emoji','Rare',75,true,'assets/nexo/emoji/crown.svg','تاج لامع','emoji','emoji','إيموجي تاج.','shine',true,143),
+('emoji-wow','Wow Emoji','Epic',120,true,'assets/nexo/emoji/wow.svg','دهشة','emoji','emoji','إيموجي دهشة.','pulse',true,144),
+('emoji-love','Love Emoji','Rare',90,true,'assets/nexo/emoji/love.svg','حب','emoji','emoji','إيموجي حب.','shine',true,145),
+('emoji-rocket','Rocket Emoji','Epic',150,true,'assets/nexo/emoji/rocket.svg','انطلق','emoji','emoji','إيموجي صاروخ.','float',true,146),
+('emoji-snow','Snow Emoji','Rare',65,true,'assets/nexo/emoji/snow.svg','ثلج نيون','emoji','emoji','إيموجي ثلجي.','orbit',true,147),
+
+('crafted-shadow-mask','Shadow Mask','Epic',0,true,'assets/nexo/crafted/shadow-mask.svg','مصنوع بالـWorkshop','crafted','crafted','قطعة تصنيع.','pulse',false,200),
+('crafted-phoenix-seal','Phoenix Seal','Legendary',0,true,'assets/nexo/crafted/phoenix-seal.svg','ختم الفينيكس','crafted','crafted','قطعة تصنيع نادرة.','shine',false,201),
+('crafted-prism-token','Prism Token','Rare',0,true,'assets/nexo/crafted/prism-token.svg','توكن طيفي','crafted','crafted','قطعة مصنعة.','rainbow',false,202),
+('crafted-nebula-core','Nebula Core','Epic',0,true,'assets/nexo/crafted/nebula-core.svg','نواة سديم','crafted','crafted','نواة مصنعة.','orbit',false,203),
+('crafted-golden-signet','Golden Signet','Legendary',0,true,'assets/nexo/crafted/golden-signet.svg','خاتم ذهبي مصنوع','crafted','crafted','ختم ملكي مصنوع.','shine',false,204),
+('crafted-arcana','NEXO Arcana','NEXO Exclusive',0,false,'assets/nexo/crafted/nexo-arcana.svg','أركانا NEXO','crafted','crafted','قطعة تصنيع حصرية.','orbit',false,205)
+ON CONFLICT (id) DO UPDATE SET
+  name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,tradeable=EXCLUDED.tradeable,image=EXCLUDED.image,
+  tagline=EXCLUDED.tagline,item_type=EXCLUDED.item_type,category=EXCLUDED.category,description=EXCLUDED.description,
+  animation=EXCLUDED.animation,market_visible=EXCLUDED.market_visible,sort_order=EXCLUDED.sort_order;
+
+UPDATE nexo.gifts SET description=COALESCE(NULLIF(description,''),tagline) WHERE description='';
