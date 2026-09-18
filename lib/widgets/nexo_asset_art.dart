@@ -16,6 +16,7 @@ class _NexoAssetArtState extends State<NexoAssetArt> with SingleTickerProviderSt
   @override void dispose(){_controller.dispose();super.dispose();}
   Widget _image(){
     final p=widget.item.image;
+    if(p.startsWith('emoji:')) return Center(child: Text(p.substring(6),textAlign:TextAlign.center,style:TextStyle(fontSize:widget.size*.62,height:1)));
     if(p.toLowerCase().endsWith('.svg')) return p.startsWith('http')?SvgPicture.network(p,width:widget.size,height:widget.size,fit:BoxFit.contain):SvgPicture.asset(p,width:widget.size,height:widget.size,fit:BoxFit.contain);
     return p.startsWith('http')?Image.network(p,width:widget.size,height:widget.size,fit:BoxFit.contain,errorBuilder:(_,__,___)=>Icon(Icons.broken_image_rounded,color:widget.item.rarity.color,size:widget.size*.5)):Image.asset(p,width:widget.size,height:widget.size,fit:BoxFit.contain,errorBuilder:(_,__,___)=>Icon(Icons.broken_image_rounded,color:widget.item.rarity.color,size:widget.size*.5));
   }
