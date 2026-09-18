@@ -19,7 +19,7 @@ dependencies:
   flutter_webrtc: ^1.6.2+hotfix.3
   in_app_purchase: ^3.3.0
   provider: ^6.1.2
-  flutter_svg: ^2.2.0
+  flutter_svg: ^2.0.17
 
 dev_dependencies:
   flutter_test:
@@ -38,3 +38,8 @@ flutter:
     - rainbow_ticket.png
     - shadow_flame.png
     - vip_emblem.png
+    - assets/nexo/gifts/
+    - assets/nexo/frames/
+    - assets/nexo/assets/
+    - assets/nexo/emoji/
+    - assets/nexo/crafted/
