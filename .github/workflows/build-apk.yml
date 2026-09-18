@@ -27,8 +27,6 @@ jobs:
           test -f android/app/build.gradle || test -f android/app/build.gradle.kts
       - name: Analyze (non-blocking)
         run: flutter analyze || true
-      - name: Regenerate supported Android host project
-        run: flutter create --platforms=android --project-name nexo_app --org com.example .
       - name: Configure stable release signing when secrets are available
         env:
           NEXO_KEYSTORE_BASE64: ${{ secrets.NEXO_KEYSTORE_BASE64 }}
@@ -54,6 +52,8 @@ jobs:
               s=s.replace("</manifest>", line+"\n</manifest>")
           p.write_text(s)
           PY
+      - name: Backend JavaScript syntax
+        run: node --check backend/src/server.js
       - name: Build APK
         run: flutter build apk --release --dart-define=NEXO_API_URL=https://nexo-api-production-05d3.up.railway.app
       - name: Upload APK
