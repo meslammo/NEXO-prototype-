@@ -35,7 +35,7 @@ class _InventoryScreenState extends State<InventoryScreen>{
       ]),
       actions:[
         TextButton(onPressed:()=>Navigator.pop(context),child:const Text('إغلاق')),
-        if(canEquip&&qty>0)ElevatedButton(onPressed:()=>{Navigator.pop(context),_equip(context,item,slot)},child:Text(item.type==NexoItemType.frame?'تجهيز الإطار':'تجهيز الـAsset'))
+        if(canEquip&&qty>0)ElevatedButton(onPressed:(){ Navigator.pop(context); _equip(context,item,slot); },child:Text(item.type==NexoItemType.frame?'تجهيز الإطار':'تجهيز الـAsset'))
       ],
     ));
   }
