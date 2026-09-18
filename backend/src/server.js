@@ -587,7 +587,7 @@ app.post('/trades/:id/confirm', { preHandler: auth }, async (req, reply) => {
       if(!Array.isArray(t.to_items)||t.to_items.length<0)throw Object.assign(new Error('INVALID_TRADE'),{code:409});
       if(from)t.from_confirmed=true;if(to)t.to_confirmed=true;
       if(t.from_confirmed&&t.to_confirmed){
-        const fee=Math.ceil((Number(t.from_gems)+Number(t.to_gems))*0.05);
+        const feePercent=await settingNumber(c,'trade.feePercent',5); const fee=Math.ceil((Number(t.from_gems)+Number(t.to_gems))*feePercent/100);
         const feeFrom=Math.min(fee,Number(t.from_gems)), feeTo=fee-feeFrom;
         for(const it of t.from_items||[])await c.query(`INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES($1,$2,$3)
           ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=nexo.inventory.quantity+EXCLUDED.quantity`,[t.to_user_id,it.itemId,Number(it.quantity||1)]);
@@ -649,15 +649,16 @@ async function googlePublisher() {
 
 app.post('/games/play',{preHandler:auth},async(req,reply)=>{
   const b=req.body||{}, gameId=String(b.gameId||''), key=String(b.idempotencyKey||'');
-  const games={
+  const gameDefaults={
     quick_challenge:{cost:3,reward:20},
     mini_puzzle:{cost:5,reward:35},
     daily_arena:{cost:8,reward:55}
   };
-  const game=games[gameId];
-  if(!game||!key)return reply.code(400).send({error:'INVALID_GAME_INPUT'});
+  const defaults=gameDefaults[gameId];
+  if(!defaults||!key)return reply.code(400).send({error:'INVALID_GAME_INPUT'});
   try{
     return await tx(async c=>{
+      const game={cost:await settingNumber(c,'games.'+gameId+'.cost',defaults.cost),reward:await settingNumber(c,'games.'+gameId+'.reward',defaults.reward)};
       const prior=await c.query('SELECT 1 FROM nexo.game_events WHERE idempotency_key=$1',[key]);
       if(prior.rowCount){
         const u=await c.query('SELECT gems,energy FROM nexo.users WHERE id=$1',[uid(req)]);
