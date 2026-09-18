@@ -126,7 +126,7 @@ app.post('/auth/guest', async (req, reply) => {
   const username='guest_'+(deviceId || randomUUID().slice(0,12));
   let r=await q('SELECT * FROM nexo.users WHERE username=$1',[username]);
   let u=r.rows[0];
-  if(!u){ r=await q('INSERT INTO nexo.users(id,username,display_name) VALUES($1,$2,$3) RETURNING *',[randomUUID(),username,'NEXO Guest']); u=r.rows[0]; await q(`INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES ($1,'neon-heart',2),($1,'shadow-flame',1),($1,'galaxy-aura',1),($1,'crown-shine',1) ON CONFLICT(user_id,item_id) DO NOTHING`,[u.id]); }
+  if(!u){ r=await q('INSERT INTO nexo.users(id,username,display_name) VALUES($1,$2,$3) RETURNING *',[randomUUID(),username,'NEXO Guest']); u=r.rows[0]; await q(`INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES ($1,'neon-heart',2),($1,'shadow-flame',1),($1,'galaxy-aura',1),($1,'crown-shine',1),($1,'frame-cyan',1),($1,'asset-cosmic',1),($1,'emoji-heart',2),($1,'crafted-shadow-mask',1) ON CONFLICT(user_id,item_id) DO NOTHING`,[u.id]); }
   const token=app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'});
   return { token, user:publicUser(u) };
 });
@@ -241,6 +241,19 @@ app.post('/admin/announce',{preHandler:adminAuth},async(req,reply)=>{
   return {ok:true,recipients:users.rowCount};
 });
 
+app.post('/push/register',{preHandler:auth},async(req,reply)=>{
+  const b=req.body||{}, platform=String(b.platform||'unknown').toLowerCase().slice(0,20), token=String(b.token||'').trim().slice(0,4096);
+  if(!token)return reply.code(400).send({error:'INVALID_PUSH_TOKEN'});
+  await q(`INSERT INTO nexo.device_tokens(id,user_id,platform,token,active,last_seen) VALUES($1,$2,$3,$4,true,NOW())
+    ON CONFLICT(token) DO UPDATE SET user_id=EXCLUDED.user_id,platform=EXCLUDED.platform,active=true,last_seen=NOW()`,[randomUUID(),uid(req),platform,token]);
+  return {ok:true};
+});
+app.post('/push/unregister',{preHandler:auth},async(req,reply)=>{
+  const token=String((req.body||{}).token||'').trim();
+  if(!token)return reply.code(400).send({error:'INVALID_PUSH_TOKEN'});
+  await q('UPDATE nexo.device_tokens SET active=false,last_seen=NOW() WHERE token=$1 AND user_id=$2',[token,uid(req)]);
+  return {ok:true};
+});
 app.get('/users/search', async (req, reply) => {
   const query = String((req.query || {}).q || '').trim().slice(0,40);
   if (!query) return [];
