@@ -47,6 +47,14 @@ async function adminAuth(req, reply) {
   if (!supplied || supplied !== configured) return reply.code(403).send({error:'ADMIN_FORBIDDEN'});
   return true;
 }
+const DEFAULT_SETTINGS = {
+  'economy.dailyFreeEnergy': 50, 'economy.maxEnergy': 100, 'economy.voicePerMinute': 1, 'economy.videoPerMinute': 4,
+  'economy.energyToGemsEnergy': 100, 'economy.energyToGemsReward': 25, 'trade.feePercent': 5,
+  'games.quick_challenge.cost': 3, 'games.quick_challenge.reward': 20,
+  'games.mini_puzzle.cost': 5, 'games.mini_puzzle.reward': 35,
+  'games.daily_arena.cost': 8, 'games.daily_arena.reward': 55
+};
+async function settingNumber(db,key,fallback){ try { const r=await db.query('SELECT value FROM nexo.app_settings WHERE key=$1',[key]); const v=r.rowCount?Number(r.rows[0].value):Number(fallback); return Number.isFinite(v)?v:Number(fallback); } catch(_){ return Number(fallback); } }
 async function adminAudit(req, action, targetId=null, details={}) {
   await q('INSERT INTO nexo.admin_actions(id,admin_subject,action,target_id,details) VALUES($1,$2,$3,$4,$5::jsonb)',
     [randomUUID(),String(req.headers['x-admin-key']||'').slice(0,12),action,targetId,JSON.stringify(details)]);
@@ -215,6 +223,21 @@ app.get('/inventory',{preHandler:auth},async req=> (await q(`SELECT i.item_id AS
   g.item_type AS "itemType",g.category,g.animation,g.market_visible AS "marketVisible",i.quantity
   FROM nexo.inventory i JOIN nexo.gifts g ON g.id=i.item_id WHERE i.user_id=$1 AND i.quantity>0 ORDER BY g.item_type,g.sort_order,g.gems`,[uid(req)])).rows);
 
+app.get('/admin/settings',{preHandler:adminAuth},async()=>{
+  const rows=(await q('SELECT key,value,updated_at AS "updatedAt" FROM nexo.app_settings ORDER BY key')).rows;
+  const out={...DEFAULT_SETTINGS}; for(const row of rows) out[row.key]=row.value; return out;
+});
+app.post('/admin/settings',{preHandler:adminAuth},async(req,reply)=>{
+  const key=String((req.body||{}).key||'').trim();
+  if(!Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS,key))return reply.code(400).send({error:'SETTING_NOT_ALLOWED'});
+  const value=Number((req.body||{}).value); if(!Number.isFinite(value))return reply.code(400).send({error:'SETTING_VALUE_INVALID'});
+  const ranges={'economy.dailyFreeEnergy':[0,100],'economy.maxEnergy':[1,1000],'economy.voicePerMinute':[0,100],'economy.videoPerMinute':[0,100],'economy.energyToGemsEnergy':[1,1000],'economy.energyToGemsReward':[0,1000000],'trade.feePercent':[0,25]};
+  const range=ranges[key]||[0,1000000]; if(value<range[0]||value>range[1])return reply.code(400).send({error:'SETTING_OUT_OF_RANGE'});
+  await q(`INSERT INTO nexo.app_settings(key,value,updated_at) VALUES($1,to_jsonb($2::numeric),NOW()) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=NOW()`,[key,value]);
+  await adminAudit(req,'setting_update',key,{value}); return {ok:true,key,value};
+});
+app.get('/admin',async(req,reply)=>{try{reply.type('text/html').send(fs.readFileSync(path.join(__dirname,'..','admin.html'),'utf8'));}catch(_){reply.code(404).send({error:'ADMIN_UI_NOT_FOUND'});}});
+app.get('/admin/styles.css',async(req,reply)=>{try{reply.type('text/css').send(fs.readFileSync(path.join(__dirname,'..','assets','nexo.css'),'utf8'));}catch(_){reply.code(404).send({error:'ADMIN_CSS_NOT_FOUND'});}});
 app.get('/admin/overview',{preHandler:adminAuth},async(req)=>{
   const [users,items,inventory,trades,security]=await Promise.all([
     q('SELECT COUNT(*)::int AS count FROM nexo.users'),
@@ -346,7 +369,9 @@ app.post('/economy/energy/daily-claim',{preHandler:auth},async(req,reply)=>{
       }
       const u=await c.query('SELECT energy FROM nexo.users WHERE id=$1 FOR UPDATE',[uid(req)]);
       const before=Number(u.rows[0].energy);
-      const energy=Math.min(100,before+50);
+      const dailyFree=await settingNumber(c,'economy.dailyFreeEnergy',50);
+      const maxEnergy=await settingNumber(c,'economy.maxEnergy',100);
+      const energy=Math.min(maxEnergy,before+dailyFree);
       let streak=1;
       if(existing.rowCount){
         const prev=String(existing.rows[0].claim_date);
@@ -370,18 +395,20 @@ app.post('/economy/energy/convert',{preHandler:auth},async(req,reply)=>{
     return await tx(async c=>{
       const u=await c.query('SELECT energy,gems FROM nexo.users WHERE id=$1 FOR UPDATE',[uid(req)]);
       if(!u.rowCount)return reply.code(404).send({error:'USER_NOT_FOUND'});
-      if(Number(u.rows[0].energy)<100)return reply.code(409).send({error:'INSUFFICIENT_ENERGY'});
-      const energy=Number(u.rows[0].energy)-100, gems=Number(u.rows[0].gems)+25;
+      const convertEnergy=await settingNumber(c,'economy.energyToGemsEnergy',100);
+      const convertReward=await settingNumber(c,'economy.energyToGemsReward',25);
+      if(Number(u.rows[0].energy)<convertEnergy)throw Object.assign(new Error('INSUFFICIENT_ENERGY'),{code:409});
+      const energy=Number(u.rows[0].energy)-convertEnergy, gems=Number(u.rows[0].gems)+convertReward;
       const key=String((req.body||{}).idempotencyKey||'');
       if(!key)return reply.code(400).send({error:'INVALID_INPUT'});
       const prior=await c.query('SELECT 1 FROM nexo.energy_ledger WHERE idempotency_key=$1',[key]);
       if(prior.rowCount)return {energy:Number(u.rows[0].energy),gems:Number(u.rows[0].gems),idempotent:true};
       await c.query('UPDATE nexo.users SET energy=$1,gems=$2,last_active=NOW() WHERE id=$3',[energy,gems,uid(req)]);
       await c.query('INSERT INTO nexo.energy_ledger(id,user_id,kind,amount,balance_after,reference_id,idempotency_key) VALUES($1,$2,$3,$4,$5,$6,$7)',
-        [randomUUID(),uid(req),'convert',-100,energy,'energy_to_gems',key]);
+        [randomUUID(),uid(req),'convert',-convertEnergy,energy,'energy_to_gems',key]);
       await c.query('INSERT INTO nexo.wallet_ledger(id,user_id,kind,amount,balance_after,reference_id,idempotency_key) VALUES($1,$2,$3,$4,$5,$6,$7)',
-        [randomUUID(),uid(req),'energy_convert',25,gems,'energy_to_gems',key+':gems']);
-      return {energy,gems,gemsAdded:25};
+        [randomUUID(),uid(req),'energy_convert',convertReward,gems,'energy_to_gems',key+':gems']);
+      return {energy,gems,gemsAdded:convertReward};
     });
   }catch(e){return reply.code(e.code||500).send({error:e.code||'ENERGY_CONVERT_FAILED'});}
 });
@@ -589,7 +616,7 @@ app.post('/trades/:id/confirm', { preHandler: auth }, async (req, reply) => {
       if(!Array.isArray(t.to_items)||t.to_items.length<0)throw Object.assign(new Error('INVALID_TRADE'),{code:409});
       if(from)t.from_confirmed=true;if(to)t.to_confirmed=true;
       if(t.from_confirmed&&t.to_confirmed){
-        const fee=Math.ceil((Number(t.from_gems)+Number(t.to_gems))*0.05);
+        const feePercent=await settingNumber(c,'trade.feePercent',5); const fee=Math.ceil((Number(t.from_gems)+Number(t.to_gems))*feePercent/100);
         const feeFrom=Math.min(fee,Number(t.from_gems)), feeTo=fee-feeFrom;
         for(const it of t.from_items||[])await c.query(`INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES($1,$2,$3)
           ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=nexo.inventory.quantity+EXCLUDED.quantity`,[t.to_user_id,it.itemId,Number(it.quantity||1)]);
@@ -651,15 +678,16 @@ async function googlePublisher() {
 
 app.post('/games/play',{preHandler:auth},async(req,reply)=>{
   const b=req.body||{}, gameId=String(b.gameId||''), key=String(b.idempotencyKey||'');
-  const games={
+  const gameDefaults={
     quick_challenge:{cost:3,reward:20},
     mini_puzzle:{cost:5,reward:35},
     daily_arena:{cost:8,reward:55}
   };
-  const game=games[gameId];
+  const defaults=gameDefaults[gameId];
   if(!game||!key)return reply.code(400).send({error:'INVALID_GAME_INPUT'});
   try{
     return await tx(async c=>{
+      const game={cost:await settingNumber(c,'games.'+gameId+'.cost',defaults.cost),reward:await settingNumber(c,'games.'+gameId+'.reward',defaults.reward)};
       const prior=await c.query('SELECT 1 FROM nexo.game_events WHERE idempotency_key=$1',[key]);
       if(prior.rowCount){
         const u=await c.query('SELECT gems,energy FROM nexo.users WHERE id=$1',[uid(req)]);
