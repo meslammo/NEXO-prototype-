@@ -46,7 +46,7 @@ class _MarketScreenState extends State<MarketScreen> with SingleTickerProviderSt
       ]),
       actions:[
         TextButton(onPressed:()=>Navigator.pop(context),child:const Text('إغلاق')),
-        if(item.marketVisible&&item.gems>0)ElevatedButton.icon(onPressed:()=>{Navigator.pop(context),_buy(item)},icon:const Icon(Icons.shopping_bag_outlined),label:Text(owned>0?'شراء نسخة أخرى':'شراء')),
+        if(item.marketVisible&&item.gems>0)ElevatedButton.icon(onPressed:(){ Navigator.pop(context); _buy(item); },icon:const Icon(Icons.shopping_bag_outlined),label:Text(owned>0?'شراء نسخة أخرى':'شراء')),
       ],
     ));
   }
