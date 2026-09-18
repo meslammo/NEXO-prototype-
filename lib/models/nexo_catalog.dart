@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
 
-enum NexoRarity { common, rare, epic, legendary, exclusive }
+enum NexoRarity { common, uncommon, rare, epic, legendary, mythic, exclusive }
 extension NexoRarityX on NexoRarity {
   String get label {
     switch (this) {
       case NexoRarity.common: return 'Common';
+      case NexoRarity.uncommon: return 'Uncommon';
       case NexoRarity.rare: return 'Rare';
       case NexoRarity.epic: return 'Epic';
       case NexoRarity.legendary: return 'Legendary';
+      case NexoRarity.mythic: return 'Mythic';
       case NexoRarity.exclusive: return 'NEXO Exclusive';
     }
   }
   Color get color {
     switch (this) {
       case NexoRarity.common: return Colors.blueGrey;
+      case NexoRarity.uncommon: return Colors.greenAccent;
       case NexoRarity.rare: return Colors.lightBlueAccent;
       case NexoRarity.epic: return Colors.deepPurpleAccent;
       case NexoRarity.legendary: return Colors.orangeAccent;
+      case NexoRarity.mythic: return Colors.redAccent;
       case NexoRarity.exclusive: return Colors.pinkAccent;
     }
   }
@@ -24,9 +28,11 @@ extension NexoRarityX on NexoRarity {
 NexoRarity nexoRarityFromString(String? raw) {
   final value = (raw ?? '').trim().toLowerCase().replaceAll(' ', '_');
   switch (value) {
+    case 'uncommon': return NexoRarity.uncommon;
     case 'rare': return NexoRarity.rare;
     case 'epic': return NexoRarity.epic;
     case 'legendary': return NexoRarity.legendary;
+    case 'mythic': return NexoRarity.mythic;
     case 'nexo_exclusive':
     case 'exclusive': return NexoRarity.exclusive;
     default: return NexoRarity.common;
@@ -102,13 +108,43 @@ const _newGifts=<NexoGift>[
 
 final nexoCatalogSeed=<NexoCatalogItem>[
  ..._legacyGifts,..._newGifts,
- NexoCatalogItem(id:'frame-cyan',name:'Cyan Orbit Frame',type:NexoItemType.frame,rarity:NexoRarity.rare,gems:900,image:'assets/nexo/frames/cyan-orbit.svg',tagline:'إطار مدار سماوي',description:'إطار دائري أزرق متوهج.',category:'frames',animation:'orbit'),
- NexoCatalogItem(id:'frame-violet',name:'Violet Pulse Frame',type:NexoItemType.frame,rarity:NexoRarity.epic,gems:1800,image:'assets/nexo/frames/violet-pulse.svg',tagline:'نبض بنفسجي',description:'إطار نبضي بنفسجي.',category:'frames',animation:'pulse'),
- NexoCatalogItem(id:'frame-royal',name:'Royal Gold Frame',type:NexoItemType.frame,rarity:NexoRarity.legendary,gems:4200,image:'assets/nexo/frames/royal-gold.svg',tagline:'إطار ذهبي ملكي',description:'حلقة ذهبية للـProfile.',category:'frames',animation:'shine'),
- NexoCatalogItem(id:'frame-fire',name:'Inferno Frame',type:NexoItemType.frame,rarity:NexoRarity.legendary,gems:6000,image:'assets/nexo/frames/fire-ring.svg',tagline:'حلقة نارية',description:'إطار ناري قوي.',category:'frames',animation:'orbit'),
- NexoCatalogItem(id:'frame-galaxy',name:'Galaxy Ring Frame',type:NexoItemType.frame,rarity:NexoRarity.epic,gems:3000,image:'assets/nexo/frames/galaxy-ring.svg',tagline:'مدار مجري',description:'إطار فضائي متحرك.',category:'frames',animation:'orbit'),
- NexoCatalogItem(id:'frame-exclusive',name:'NEXO Exclusive Frame',type:NexoItemType.frame,rarity:NexoRarity.exclusive,gems:55000,image:'assets/nexo/frames/nexo-exclusive.svg',tagline:'إطار حصري',description:'إطار محدود.',category:'frames',animation:'shine',tradeable:false),
- NexoCatalogItem(id:'asset-cosmic',name:'Cosmic Aura Asset',type:NexoItemType.asset,rarity:NexoRarity.epic,gems:1200,image:'assets/nexo/assets/cosmic-aura.svg',tagline:'هالة كونية',description:'هالة خلفية للهوية.',category:'assets',animation:'orbit'),
+  NexoCatalogItem(id:'frame-01-sunrise',name:'Sunrise Frame',type:NexoItemType.frame,rarity:NexoRarity.common,gems:100,image:'frame-01-sunrise.png',tagline:'Sunrise Frame',description:'Sunrise Frame',category:'frames',animation:'shine',sortOrder:100,tradeable:true),
+ NexoCatalogItem(id:'frame-02-simple-gold',name:'Simple Gold',type:NexoItemType.frame,rarity:NexoRarity.common,gems:150,image:'frame-02-simple-gold.png',tagline:'Simple Gold',description:'Simple Gold',category:'frames',animation:'shine',sortOrder:101,tradeable:true),
+ NexoCatalogItem(id:'frame-03-ocean-wave',name:'Ocean Wave',type:NexoItemType.frame,rarity:NexoRarity.common,gems:200,image:'frame-03-ocean-wave.png',tagline:'Ocean Wave',description:'Ocean Wave',category:'frames',animation:'float',sortOrder:102,tradeable:true),
+ NexoCatalogItem(id:'frame-04-papyrus-ring',name:'Papyrus Ring',type:NexoItemType.frame,rarity:NexoRarity.common,gems:250,image:'frame-04-papyrus-ring.png',tagline:'Papyrus Ring',description:'Papyrus Ring',category:'frames',animation:'pulse',sortOrder:103,tradeable:true),
+ NexoCatalogItem(id:'frame-cyan',name:'Cyan Orbit Frame',type:NexoItemType.frame,rarity:NexoRarity.common,gems:250,image:'assets/nexo/frames/cyan-orbit.svg',tagline:'Legacy Cyan Orbit Frame',description:'Cyan Orbit Frame',category:'frames',animation:'shine',sortOrder:104,tradeable:true),
+ NexoCatalogItem(id:'frame-05-desert-oasis',name:'Desert Oasis',type:NexoItemType.frame,rarity:NexoRarity.uncommon,gems:400,image:'frame-05-desert-oasis.png',tagline:'Desert Oasis',description:'Desert Oasis',category:'frames',animation:'float',sortOrder:105,tradeable:true),
+ NexoCatalogItem(id:'frame-06-balloon-party',name:'Balloon Party',type:NexoItemType.frame,rarity:NexoRarity.uncommon,gems:500,image:'frame-06-balloon-party.png',tagline:'Balloon Party',description:'Balloon Party',category:'frames',animation:'pulse',sortOrder:106,tradeable:true),
+ NexoCatalogItem(id:'frame-07-zodiac',name:'Zodiac Frame',type:NexoItemType.frame,rarity:NexoRarity.uncommon,gems:650,image:'frame-07-zodiac.png',tagline:'Zodiac Frame',description:'Zodiac Frame',category:'frames',animation:'orbit',sortOrder:107,tradeable:true),
+ NexoCatalogItem(id:'frame-08-bronze-lv10',name:'Bronze Frame (Lv.10)',type:NexoItemType.frame,rarity:NexoRarity.uncommon,gems:800,image:'frame-08-bronze-lv10.png',tagline:'Bronze Frame (Lv.10)',description:'Bronze Frame (Lv.10)',category:'frames',animation:'shine',sortOrder:108,tradeable:true),
+ NexoCatalogItem(id:'frame-09-bonded-hearts',name:'Bonded Hearts Frame',type:NexoItemType.frame,rarity:NexoRarity.uncommon,gems:1000,image:'frame-09-bonded-hearts.png',tagline:'Bonded Hearts Frame',description:'Bonded Hearts Frame',category:'frames',animation:'pulse',sortOrder:109,tradeable:true),
+ NexoCatalogItem(id:'frame-violet',name:'Violet Pulse Frame',type:NexoItemType.frame,rarity:NexoRarity.uncommon,gems:1000,image:'assets/nexo/frames/violet-pulse.svg',tagline:'Legacy Violet Pulse Frame',description:'Violet Pulse Frame',category:'frames',animation:'shine',sortOrder:110,tradeable:true),
+ NexoCatalogItem(id:'frame-10-crystal-ring',name:'Crystal Ring',type:NexoItemType.frame,rarity:NexoRarity.rare,gems:1500,image:'frame-10-crystal-ring.png',tagline:'Crystal Ring',description:'Crystal Ring',category:'frames',animation:'shine',sortOrder:111,tradeable:true),
+ NexoCatalogItem(id:'frame-11-warrior',name:'Warrior Frame',type:NexoItemType.frame,rarity:NexoRarity.rare,gems:2000,image:'frame-11-warrior.png',tagline:'Warrior Frame',description:'Warrior Frame',category:'frames',animation:'float',sortOrder:112,tradeable:true),
+ NexoCatalogItem(id:'frame-12-love-bloom',name:'Love Bloom',type:NexoItemType.frame,rarity:NexoRarity.rare,gems:2500,image:'frame-12-love-bloom.png',tagline:'Love Bloom',description:'Love Bloom',category:'frames',animation:'pulse',sortOrder:113,tradeable:true),
+ NexoCatalogItem(id:'frame-13-silver-lv25',name:'Silver Frame (Lv.25)',type:NexoItemType.frame,rarity:NexoRarity.rare,gems:3000,image:'frame-13-silver-lv25.png',tagline:'Silver Frame (Lv.25)',description:'Silver Frame (Lv.25)',category:'frames',animation:'shine',sortOrder:114,tradeable:true),
+ NexoCatalogItem(id:'frame-14-ramadan-lantern',name:'Ramadan Lantern Frame',type:NexoItemType.frame,rarity:NexoRarity.rare,gems:4000,image:'frame-14-ramadan-lantern.png',tagline:'Ramadan Lantern Frame',description:'Ramadan Lantern Frame',category:'frames',animation:'shine',sortOrder:115,tradeable:true),
+ NexoCatalogItem(id:'frame-galaxy',name:'Galaxy Ring Frame',type:NexoItemType.frame,rarity:NexoRarity.rare,gems:3000,image:'assets/nexo/frames/galaxy-ring.svg',tagline:'Legacy Galaxy Ring Frame',description:'Galaxy Ring Frame',category:'frames',animation:'shine',sortOrder:116,tradeable:true),
+ NexoCatalogItem(id:'frame-15-fire-lion',name:'Fire Lion',type:NexoItemType.frame,rarity:NexoRarity.epic,gems:6000,image:'frame-15-fire-lion.png',tagline:'Fire Lion',description:'Fire Lion',category:'frames',animation:'float',sortOrder:117,tradeable:true),
+ NexoCatalogItem(id:'frame-16-diamond-princess',name:'Diamond Princess',type:NexoItemType.frame,rarity:NexoRarity.epic,gems:7500,image:'frame-16-diamond-princess.png',tagline:'Diamond Princess',description:'Diamond Princess',category:'frames',animation:'shine',sortOrder:118,tradeable:true),
+ NexoCatalogItem(id:'frame-17-golden-wings',name:'Golden Wings',type:NexoItemType.frame,rarity:NexoRarity.epic,gems:9000,image:'frame-17-golden-wings.png',tagline:'Golden Wings',description:'Golden Wings',category:'frames',animation:'float',sortOrder:119,tradeable:true),
+ NexoCatalogItem(id:'frame-18-gold-lv50',name:'Gold Frame (Lv.50)',type:NexoItemType.frame,rarity:NexoRarity.epic,gems:11000,image:'frame-18-gold-lv50.png',tagline:'Gold Frame (Lv.50)',description:'Gold Frame (Lv.50)',category:'frames',animation:'shine',sortOrder:120,tradeable:true),
+ NexoCatalogItem(id:'frame-19',name:'Frame 19',type:NexoItemType.frame,rarity:NexoRarity.epic,gems:13000,image:'frame-19-frame-19.png',tagline:'Frame 19',description:'Frame 19',category:'frames',animation:'pulse',sortOrder:121,tradeable:true),
+ NexoCatalogItem(id:'frame-20-eternal-bond',name:'Eternal Bond Frame',type:NexoItemType.frame,rarity:NexoRarity.epic,gems:15000,image:'frame-20-eternal-bond.png',tagline:'Eternal Bond Frame',description:'Eternal Bond Frame',category:'frames',animation:'pulse',sortOrder:122,tradeable:true),
+ NexoCatalogItem(id:'frame-royal',name:'Royal Gold Frame',type:NexoItemType.frame,rarity:NexoRarity.epic,gems:11000,image:'assets/nexo/frames/royal-gold.svg',tagline:'Legacy Royal Gold Frame',description:'Royal Gold Frame',category:'frames',animation:'shine',sortOrder:123,tradeable:true),
+ NexoCatalogItem(id:'frame-21-noble',name:'Noble Frame (Rank 1/6)',type:NexoItemType.frame,rarity:NexoRarity.legendary,gems:20000,image:'frame-21-noble.png',tagline:'Noble Frame (Rank 1/6)',description:'Noble Frame (Rank 1/6)',category:'frames',animation:'shine',sortOrder:124,tradeable:true),
+ NexoCatalogItem(id:'frame-22-scribe',name:'Scribe Frame (Rank 2/6)',type:NexoItemType.frame,rarity:NexoRarity.legendary,gems:25000,image:'frame-22-scribe.png',tagline:'Scribe Frame (Rank 2/6)',description:'Scribe Frame (Rank 2/6)',category:'frames',animation:'shine',sortOrder:125,tradeable:true),
+ NexoCatalogItem(id:'frame-23-vizier',name:'Vizier Frame (Rank 3/6)',type:NexoItemType.frame,rarity:NexoRarity.legendary,gems:30000,image:'frame-23-vizier.png',tagline:'Vizier Frame (Rank 3/6)',description:'Vizier Frame (Rank 3/6)',category:'frames',animation:'shine',sortOrder:126,tradeable:true),
+ NexoCatalogItem(id:'frame-24-platinum-lv100',name:'Platinum Frame (Lv.100)',type:NexoItemType.frame,rarity:NexoRarity.legendary,gems:40000,image:'frame-24-platinum-lv100.png',tagline:'Platinum Frame (Lv.100)',description:'Platinum Frame (Lv.100)',category:'frames',animation:'shine',sortOrder:127,tradeable:true),
+ NexoCatalogItem(id:'frame-25-anniversary',name:'Anniversary Frame',type:NexoItemType.frame,rarity:NexoRarity.legendary,gems:50000,image:'frame-25-anniversary.png',tagline:'Anniversary Frame',description:'Anniversary Frame',category:'frames',animation:'pulse',sortOrder:128,tradeable:true),
+ NexoCatalogItem(id:'frame-fire',name:'Inferno Frame',type:NexoItemType.frame,rarity:NexoRarity.legendary,gems:50000,image:'assets/nexo/frames/fire-ring.svg',tagline:'Legacy Inferno Frame',description:'Inferno Frame',category:'frames',animation:'shine',sortOrder:129,tradeable:true),
+ NexoCatalogItem(id:'frame-26-high-priest',name:'High Priest Frame (Rank 4/6)',type:NexoItemType.frame,rarity:NexoRarity.mythic,gems:75000,image:'frame-26-high-priest.png',tagline:'High Priest Frame (Rank 4/6)',description:'High Priest Frame (Rank 4/6)',category:'frames',animation:'shine',sortOrder:130,tradeable:true),
+ NexoCatalogItem(id:'frame-27-nomarch',name:'Nomarch Frame (Rank 5/6)',type:NexoItemType.frame,rarity:NexoRarity.mythic,gems:100000,image:'frame-27-nomarch.png',tagline:'Nomarch Frame (Rank 5/6)',description:'Nomarch Frame (Rank 5/6)',category:'frames',animation:'shine',sortOrder:131,tradeable:true),
+ NexoCatalogItem(id:'frame-28-pharaoh',name:'Pharaoh Frame (Rank 6/6)',type:NexoItemType.frame,rarity:NexoRarity.mythic,gems:150000,image:'frame-28-pharaoh.png',tagline:'Pharaoh Frame (Rank 6/6)',description:'Pharaoh Frame (Rank 6/6)',category:'frames',animation:'shine',sortOrder:132,tradeable:true),
+ NexoCatalogItem(id:'frame-29-mythic-lv200',name:'Mythic Frame (Lv.200)',type:NexoItemType.frame,rarity:NexoRarity.mythic,gems:200000,image:'frame-29-mythic-lv200.png',tagline:'Mythic Frame (Lv.200)',description:'Mythic Frame (Lv.200)',category:'frames',animation:'shine',sortOrder:133,tradeable:true),
+ NexoCatalogItem(id:'frame-30-new-year',name:'New Year Frame',type:NexoItemType.frame,rarity:NexoRarity.mythic,gems:250000,image:'frame-30-new-year.png',tagline:'New Year Frame',description:'New Year Frame',category:'frames',animation:'orbit',sortOrder:134,tradeable:true),
+ NexoCatalogItem(id:'frame-exclusive',name:'NEXO Exclusive Frame',type:NexoItemType.frame,rarity:NexoRarity.mythic,gems:150000,image:'assets/nexo/frames/nexo-exclusive.svg',tagline:'Legacy NEXO Exclusive Frame',description:'NEXO Exclusive Frame',category:'frames',animation:'shine',sortOrder:135,tradeable:false),
+NexoCatalogItem(id:'asset-cosmic',name:'Cosmic Aura Asset',type:NexoItemType.asset,rarity:NexoRarity.epic,gems:1200,image:'assets/nexo/assets/cosmic-aura.svg',tagline:'هالة كونية',description:'هالة خلفية للهوية.',category:'assets',animation:'orbit'),
  NexoCatalogItem(id:'asset-inferno',name:'Inferno Wings Asset',type:NexoItemType.asset,rarity:NexoRarity.legendary,gems:4500,image:'assets/nexo/assets/inferno-wings.svg',tagline:'أجنحة لهب',description:'أجنحة هوية متوهجة.',category:'assets',animation:'float'),
  NexoCatalogItem(id:'asset-halo',name:'Royal Halo Asset',type:NexoItemType.asset,rarity:NexoRarity.legendary,gems:5200,image:'assets/nexo/assets/royal-halo.svg',tagline:'الهالة الملكية',description:'هالة حول الصورة.',category:'assets',animation:'shine'),
  NexoCatalogItem(id:'asset-shield',name:'NEXO Shield Asset',type:NexoItemType.asset,rarity:NexoRarity.rare,gems:800,image:'assets/nexo/assets/nexo-shield.svg',tagline:'درع NEXO',description:'رمز حماية للهوية.',category:'assets',animation:'pulse'),
