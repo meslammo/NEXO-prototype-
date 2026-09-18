@@ -684,7 +684,7 @@ app.post('/games/play',{preHandler:auth},async(req,reply)=>{
     daily_arena:{cost:8,reward:55}
   };
   const defaults=gameDefaults[gameId];
-  if(!game||!key)return reply.code(400).send({error:'INVALID_GAME_INPUT'});
+  if(!defaults||!key)return reply.code(400).send({error:'INVALID_GAME_INPUT'});
   try{
     return await tx(async c=>{
       const game={cost:await settingNumber(c,'games.'+gameId+'.cost',defaults.cost),reward:await settingNumber(c,'games.'+gameId+'.reward',defaults.reward)};
