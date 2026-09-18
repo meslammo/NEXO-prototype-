@@ -4,6 +4,9 @@ concurrency:
   group: nexo-dart.yml-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: ["main", "nexo/fullstack-phases-1-10"]
@@ -46,3 +49,13 @@ jobs:
           name: nexo-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+      - name: Prepare release APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk nexo-release.apk
+      - name: Publish direct APK release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nexo-${{ github.sha }}
+          name: NEXO APK ${{ github.sha }}
+          files: nexo-release.apk
+          generate_release_notes: false
+          make_latest: false
