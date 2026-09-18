@@ -430,28 +430,34 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     if (showToast && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('انتهت المكالمة لأن الطاقة خلصت.')));
   }
 
-  void _openEmojiPanel() {
+  Future<void> _openEmojiPanel() async {
+    final catalog = context.read<NexoCatalogService>();
+    if (NexoApiConfig.configured) { await catalog.refresh(); }
+    final values = catalog.byType(NexoItemType.emoji)
+        .map((x) => x.image.startsWith('emoji:') ? x.image.substring(6) : null)
+        .whereType<String>()
+        .toList(growable:false);
     showModalBottomSheet(
       context: context,
       backgroundColor: NexoColors.surface,
+      isScrollControlled: true,
       builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: ['🔥', '💜', '💎', '👑', '✨', '😂', '⚡', '❤️', '😍', '😎', '🥳', '🤝', '🫶', '🎉', '😈', '🙌'].map(
-              (e) => InkWell(
-                onTap: () { Navigator.pop(context); _insertEmoji(e); },
-                child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: NexoColors.card, borderRadius: BorderRadius.circular(12)), child: Text(e, style: const TextStyle(fontSize: 24))),
-              ),
-            ).toList(),
+          child: GridView.builder(
+            shrinkWrap: true,
+            padding: const EdgeInsets.only(bottom: 10),
+            itemCount: values.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, crossAxisSpacing: 8, mainAxisSpacing: 8),
+            itemBuilder: (_, i) => InkWell(
+              onTap: () { Navigator.pop(context); _insertEmoji(values[i]); },
+              child: Container(alignment: Alignment.center, decoration: BoxDecoration(color: NexoColors.card, borderRadius: BorderRadius.circular(12)), child: Text(values[i], style: const TextStyle(fontSize: 27))),
+            ),
           ),
         ),
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     final lines = _lines;
