@@ -174,7 +174,48 @@ app.get('/catalog', async (req) => {
   const category=String(qs.category||'').trim().toLowerCase();
   const market=String(qs.market||'')==='1';
   const clauses=['active=true'], params=[];
-  if(type){params.push(type);clauses.push('item_type=app.get('/admin/overview',{preHandler:adminAuth},async(req)=>{
+  if(type){params.push(type);clauses.push('item_type=$'+params.length);}
+  if(category){params.push(category);clauses.push('category=$'+params.length);}
+  if(market)clauses.push('market_visible=true');
+  return (await q(CATALOG_SELECT+' WHERE '+clauses.join(' AND ')+' ORDER BY sort_order,gems,name',params)).rows;
+});
+
+app.get('/gifts',async()=> (await q(CATALOG_SELECT+" WHERE active=true AND item_type='gift' ORDER BY sort_order,gems,name")).rows);
+
+app.get('/profile/equipped',{preHandler:auth},async(req)=>{
+  return (await q(`SELECT e.slot,g.id,g.name,g.item_type AS "itemType",g.image,g.rarity,g.gems,g.tradeable,g.animation,g.description
+    FROM nexo.user_equipped e LEFT JOIN nexo.gifts g ON g.id=e.item_id WHERE e.user_id=$1 ORDER BY e.slot`,[uid(req)])).rows;
+});
+
+app.post('/profile/equipped',{preHandler:auth},async(req,reply)=>{
+  const slot=String((req.body||{}).slot||'').trim();
+  const itemId=String((req.body||{}).itemId||'').trim();
+  const slots=new Set(['frame','profile_asset','emoji','name_effect']);
+  if(!slots.has(slot))return reply.code(400).send({error:'INVALID_SLOT'});
+  try{
+    return await tx(async c=>{
+      if(!itemId){
+        await c.query('DELETE FROM nexo.user_equipped WHERE user_id=$1 AND slot=$2',[uid(req),slot]);
+        return {ok:true,slot,itemId:null};
+      }
+      const item=await c.query('SELECT id,item_type,active FROM nexo.gifts WHERE id=$1',[itemId]);
+      if(!item.rowCount||!item.rows[0].active)throw Object.assign(new Error('ITEM_NOT_FOUND'),{code:404});
+      const expected=slot==='frame'?'frame':slot==='profile_asset'?'asset':slot==='emoji'?'emoji':'gift';
+      if(item.rows[0].item_type!==expected)throw Object.assign(new Error('ITEM_SLOT_MISMATCH'),{code:400});
+      const own=await c.query('SELECT quantity FROM nexo.inventory WHERE user_id=$1 AND item_id=$2',[uid(req),itemId]);
+      if(!own.rowCount||Number(own.rows[0].quantity)<1)throw Object.assign(new Error('ITEM_NOT_OWNED'),{code:409});
+      await c.query(`INSERT INTO nexo.user_equipped(user_id,slot,item_id,updated_at) VALUES($1,$2,$3,NOW())
+        ON CONFLICT(user_id,slot) DO UPDATE SET item_id=EXCLUDED.item_id,updated_at=NOW()`,[uid(req),slot,itemId]);
+      return {ok:true,slot,itemId};
+    });
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'EQUIP_FAILED'});}
+});
+
+app.get('/inventory',{preHandler:auth},async req=> (await q(`SELECT i.item_id AS id,g.name,g.rarity,g.gems,g.tradeable,g.image,g.tagline,g.description,
+  g.item_type AS "itemType",g.category,g.animation,g.market_visible AS "marketVisible",i.quantity
+  FROM nexo.inventory i JOIN nexo.gifts g ON g.id=i.item_id WHERE i.user_id=$1 AND i.quantity>0 ORDER BY g.item_type,g.sort_order,g.gems`,[uid(req)])).rows);
+
+app.get('/admin/overview',{preHandler:adminAuth},async(req)=>{
   const [users,items,inventory,trades,security]=await Promise.all([
     q('SELECT COUNT(*)::int AS count FROM nexo.users'),
     q('SELECT COUNT(*)::int AS count FROM nexo.gifts WHERE active=true'),
