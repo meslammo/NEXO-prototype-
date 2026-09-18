@@ -17,7 +17,11 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - run: flutter create --platforms=android --project-name nexo_app --org com.example .
+      - run: |
+          if [ ! -f android/app/build.gradle ] && [ ! -f android/app/build.gradle.kts ]; then
+            flutter create --platforms=android --project-name nexo_app --org com.example .
+          fi
+          test -f android/app/build.gradle || test -f android/app/build.gradle.kts
       - run: flutter build apk --release --dart-define=NEXO_API_URL=$NEXO_API_URL
       - uses: actions/upload-artifact@v4
         with:
@@ -34,7 +38,10 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - run: flutter create --platforms=ios --project-name nexo_app --org com.example .
+      - run: |
+          if [ ! -d ios ]; then flutter create --platforms=ios --project-name nexo_app --org com.example .; fi
+          test -d ios
+          flutter clean
       - run: flutter build ios --release --no-codesign --dart-define=NEXO_API_URL=$NEXO_API_URL
       - name: Package iOS build
         run: ditto -c -k --sequesterRsrc --keepParent build/ios/iphoneos/Runner.app build/ios/Runner-ios-release.zip
@@ -53,7 +60,9 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - run: flutter create --platforms=windows --project-name nexo_app --org com.example .
+      - run: |
+          if [ ! -d windows ]; then flutter create --platforms=windows --project-name nexo_app --org com.example .; fi
+          test -d windows
       - run: flutter build windows --release --dart-define=NEXO_API_URL=$env:NEXO_API_URL
       - uses: actions/upload-artifact@v4
         with:
