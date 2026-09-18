@@ -52,7 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen>{
           const Icon(Icons.style_rounded,color:NexoColors.primary),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
             const Text('Equipped Cosmetics',style:TextStyle(color:Colors.white,fontWeight:FontWeight.bold)),
             Text('Frame: ${frame?['name'] ?? 'None'} · Asset: ${asset?['name'] ?? 'None'}',style:const TextStyle(color:NexoColors.textSecondary,fontSize:11))
-          ])),TextButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const InventoryScreen())),child:const Text('تغيير'))
+          ])),TextButton(onPressed:() async { await Navigator.push(context,MaterialPageRoute(builder:(_)=>const InventoryScreen())); if(mounted)await _loadEquipped(); },child:const Text('تغيير'))
         ])),
         const SizedBox(height:18),const Text('حسابك',style:TextStyle(color:Colors.white,fontSize:16,fontWeight:FontWeight.bold)),const SizedBox(height:10),
         _Menu(icon:Icons.auto_awesome_rounded,title:'Font Colour',subtitle:'لون ووهج الاسم + المعاينة داخل الشات',color:color,onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const NameGlowScreen()))),
