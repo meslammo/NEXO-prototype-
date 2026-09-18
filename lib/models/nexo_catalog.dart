@@ -56,7 +56,7 @@ class NexoCatalogItem {
   final bool tradeable, marketVisible, active;
   final List<String> tags;
 
-  const NexoCatalogItem({required this.id,required this.name,required this.image,required this.tagline,required this.description,required this.category,required this.animation,required this.rarity,required this.type,required this.gems,this.tradeable=true,this.marketVisible=true,this.active=true,this.sortOrder=0,this.tags=const []});
+  const NexoCatalogItem({required this.id,required this.name,required this.image,required this.tagline,required this.description,required this.category,required this.animation,required this.rarity,this.type=NexoItemType.gift,required this.gems,this.tradeable=true,this.marketVisible=true,this.active=true,this.sortOrder=0,this.tags=const []});
 
   factory NexoCatalogItem.fromJson(Map<String,dynamic> json) => NexoCatalogItem(
     id:'${json['id'] ?? ''}', name:'${json['name'] ?? 'Unnamed Item'}', image:'${json['image'] ?? ''}',
