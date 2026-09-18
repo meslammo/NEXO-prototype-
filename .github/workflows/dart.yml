@@ -23,6 +23,12 @@ jobs:
         run: flutter --version
       - name: Get dependencies
         run: flutter pub get
+      - name: Ensure Android host project
+        run: |
+          if [ ! -f android/app/build.gradle ] && [ ! -f android/app/build.gradle.kts ]; then
+            flutter create --platforms=android --project-name nexo_app --org com.example .
+          fi
+          test -f android/app/build.gradle || test -f android/app/build.gradle.kts
       - name: Analyze (non-blocking)
         run: flutter analyze || true
       - name: Tests
