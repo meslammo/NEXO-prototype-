@@ -90,12 +90,6 @@ CREATE TABLE IF NOT EXISTS nexo.payment_orders (
   provider TEXT NOT NULL, provider_transaction_id TEXT UNIQUE, status TEXT NOT NULL DEFAULT 'pending',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), completed_at TIMESTAMPTZ
 );
-CREATE TABLE IF NOT EXISTS nexo.payment_orders (
-  id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
-  package_id TEXT NOT NULL, gems BIGINT NOT NULL, amount_minor BIGINT NOT NULL, currency TEXT NOT NULL,
-  provider TEXT NOT NULL, provider_transaction_id TEXT UNIQUE, status TEXT NOT NULL DEFAULT 'pending',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), completed_at TIMESTAMPTZ
-);
 CREATE TABLE IF NOT EXISTS nexo.purchase_tokens (
   purchase_token TEXT PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
