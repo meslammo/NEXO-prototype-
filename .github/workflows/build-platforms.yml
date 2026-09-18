@@ -1,7 +1,7 @@
 name: Build NEXO platforms
 
 concurrency:
-  group: nexo-build-platforms.yml-{{ github.ref }}
+  group: nexo-build-platforms.yml-${{ github.ref }}
   cancel-in-progress: true
 
 on:
