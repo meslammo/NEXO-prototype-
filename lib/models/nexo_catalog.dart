@@ -20,16 +20,16 @@ extension NexoRarityX on NexoRarity {
       case NexoRarity.exclusive: return Colors.pinkAccent;
     }
   }
-  static NexoRarity parse(String? raw) {
-    final value = (raw ?? '').trim().toLowerCase().replaceAll(' ', '_');
-    switch (value) {
-      case 'rare': return NexoRarity.rare;
-      case 'epic': return NexoRarity.epic;
-      case 'legendary': return NexoRarity.legendary;
-      case 'nexo_exclusive':
-      case 'exclusive': return NexoRarity.exclusive;
-      default: return NexoRarity.common;
-    }
+}
+NexoRarity nexoRarityFromString(String? raw) {
+  final value = (raw ?? '').trim().toLowerCase().replaceAll(' ', '_');
+  switch (value) {
+    case 'rare': return NexoRarity.rare;
+    case 'epic': return NexoRarity.epic;
+    case 'legendary': return NexoRarity.legendary;
+    case 'nexo_exclusive':
+    case 'exclusive': return NexoRarity.exclusive;
+    default: return NexoRarity.common;
   }
 }
 
@@ -45,8 +45,8 @@ extension NexoItemTypeX on NexoItemType {
       case NexoItemType.crafted: return 'Crafted';
     }
   }
-  static NexoItemType parse(String? raw) => NexoItemType.values.firstWhere((x)=>x.name==(raw??'').toLowerCase(),orElse:()=>NexoItemType.gift);
 }
+NexoItemType nexoItemTypeFromString(String? raw) => NexoItemType.values.firstWhere((x)=>x.name==(raw??'').toLowerCase(),orElse:()=>NexoItemType.gift);
 
 class NexoCatalogItem {
   final String id, name, image, tagline, description, category, animation;
@@ -62,8 +62,8 @@ class NexoCatalogItem {
     id:'${json['id'] ?? ''}', name:'${json['name'] ?? 'Unnamed Item'}', image:'${json['image'] ?? ''}',
     tagline:'${json['tagline'] ?? ''}', description:'${json['description'] ?? json['tagline'] ?? ''}',
     category:'${json['category'] ?? 'featured'}', animation:'${json['animation'] ?? 'pulse'}',
-    rarity:NexoRarityX.parse(json['rarity']?.toString()),
-    type:NexoItemTypeX.parse(json['itemType']?.toString() ?? json['type']?.toString()),
+    rarity:nexoRarityFromString(json['rarity']?.toString()),
+    type:nexoItemTypeFromString(json['itemType']?.toString() ?? json['type']?.toString()),
     gems:(json['gems'] as num?)?.toInt() ?? 0, sortOrder:(json['sortOrder'] as num?)?.toInt() ?? 0,
     tradeable:json['tradeable'] != false, marketVisible:json['marketVisible'] != false, active:json['active'] != false,
     tags:(json['tags'] as List?)?.map((e)=>e.toString()).toList() ?? const [],
