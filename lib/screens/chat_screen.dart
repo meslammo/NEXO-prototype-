@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/nexo_catalog.dart';
 import '../services/economy_service.dart';
+import '../services/catalog_service.dart';
 import '../services/social_engine.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
@@ -11,6 +12,7 @@ import '../services/webrtc_call_service.dart';
 import '../services/realtime_service.dart';
 import '../config/api_config.dart';
 import '../theme/nexo_theme.dart';
+import '../widgets/nexo_asset_art.dart';
 import 'trade_screen.dart';
 
 class _ChatLine {
@@ -255,6 +257,8 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   }
 
   Future<void> _openGiftSheet() async {
+    if (NexoApiConfig.configured) { await context.read<NexoCatalogService>().refresh(); }
+    final gifts = context.read<NexoCatalogService>().gifts;
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -281,10 +285,10 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: nexoGifts.length,
+                  itemCount: gifts.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: .72),
                   itemBuilder: (_, i) {
-                    final gift = nexoGifts[i];
+                    final gift = gifts[i];
                     final owned = context.watch<EconomyService>().inventory[gift.id] ?? 0;
                     return InkWell(
                       onTap: () => _giftDetails(gift, owned, sheetContext),
@@ -293,7 +297,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(color: NexoColors.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: gift.rarity.color.withOpacity(.38))),
                         child: Column(children: [
-                          Expanded(child: Image.asset(gift.image, fit: BoxFit.contain)),
+                          Expanded(child: NexoAssetArt(item: gift, size: 70)),
                           Text(gift.name, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
                           const SizedBox(height: 3),
                           Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: gift.rarity.color.withOpacity(.15), borderRadius: BorderRadius.circular(10)), child: Text(gift.rarity.label, style: TextStyle(color: gift.rarity.color, fontSize: 9, fontWeight: FontWeight.bold))),
@@ -319,7 +323,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         backgroundColor: NexoColors.card,
         title: Text(gift.name, style: TextStyle(color: gift.rarity.color, fontWeight: FontWeight.bold)),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          SizedBox(height: 100, child: Image.asset(gift.image, fit: BoxFit.contain)),
+          NexoAssetArt(item: gift, size: 100),
           Text(gift.rarity.label, style: TextStyle(color: gift.rarity.color, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           Text(gift.tagline, style: const TextStyle(color: Colors.white70), textAlign: TextAlign.center),
