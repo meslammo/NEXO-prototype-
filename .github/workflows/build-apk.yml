@@ -52,6 +52,8 @@ jobs:
               s=s.replace("</manifest>", line+"\n</manifest>")
           p.write_text(s)
           PY
+      - name: Tests
+        run: flutter test
       - name: Backend JavaScript syntax
         run: node --check backend/src/server.js
       - name: Build APK
