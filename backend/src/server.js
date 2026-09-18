@@ -332,6 +332,27 @@ app.post('/economy/energy/convert',{preHandler:auth},async(req,reply)=>{
   }catch(e){return reply.code(e.code||500).send({error:e.code||'ENERGY_CONVERT_FAILED'});}
 });
 
+app.post('/craft',{preHandler:auth},async(req,reply)=>{
+  const itemId=String((req.body||{}).itemId||''), key=String((req.body||{}).idempotencyKey||'');
+  const costs={'crafted-shadow-mask':400,'crafted-phoenix-seal':1200,'crafted-prism-token':300,'crafted-nebula-core':800,'crafted-golden-signet':1400,'crafted-arcana':5000};
+  const cost=costs[itemId];
+  if(!cost||!key)return reply.code(400).send({error:'INVALID_RECIPE'});
+  try{
+    return await tx(async c=>{
+      const prior=await c.query('SELECT 1 FROM nexo.wallet_ledger WHERE idempotency_key=$1',[key]);
+      if(prior.rowCount)return {ok:true,idempotent:true,itemId};
+      const item=await c.query("SELECT id,item_type,active FROM nexo.gifts WHERE id=$1",[itemId]);
+      if(!item.rowCount||!item.rows[0].active||item.rows[0].item_type!=='crafted')throw Object.assign(new Error('CRAFT_ITEM_NOT_FOUND'),{code:404});
+      const u=await c.query('SELECT gems FROM nexo.users WHERE id=$1 FOR UPDATE',[uid(req)]);
+      if(Number(u.rows[0].gems)<cost)throw Object.assign(new Error('INSUFFICIENT_GEMS'),{code:409});
+      const gems=Number(u.rows[0].gems)-cost;
+      await c.query('UPDATE nexo.users SET gems=$1 WHERE id=$2',[gems,uid(req)]);
+      await c.query('INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES($1,$2,1) ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=nexo.inventory.quantity+1',[uid(req),itemId]);
+      await c.query('INSERT INTO nexo.wallet_ledger(id,user_id,kind,amount,balance_after,reference_id,idempotency_key) VALUES($1,$2,$3,$4,$5,$6,$7)',[randomUUID(),uid(req),'craft',-cost,gems,itemId,key]);
+      return {ok:true,itemId,gems,cost};
+    });
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'CRAFT_FAILED'});}
+});
 app.post('/gifts/buy',{preHandler:auth},async(req,reply)=>{
   const giftId=String((req.body||{}).giftId||''), key=String((req.body||{}).idempotencyKey||'');
   if(!giftId||!key)return reply.code(400).send({error:'INVALID_INPUT'});
