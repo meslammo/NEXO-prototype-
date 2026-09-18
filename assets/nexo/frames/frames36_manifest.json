@@ -1,0 +1,532 @@
+{
+  "source": "NEXO Frames — 30 user-uploaded + 6 legacy",
+  "total": 36,
+  "legacySix": [
+    "frame-cyan",
+    "frame-violet",
+    "frame-galaxy",
+    "frame-royal",
+    "frame-fire",
+    "frame-exclusive"
+  ],
+  "groups": {
+    "Common": [
+      {
+        "id": "frame-01-sunrise",
+        "name": "Sunrise Frame",
+        "gems": 100
+      },
+      {
+        "id": "frame-02-simple-gold",
+        "name": "Simple Gold",
+        "gems": 150
+      },
+      {
+        "id": "frame-03-ocean-wave",
+        "name": "Ocean Wave",
+        "gems": 200
+      },
+      {
+        "id": "frame-04-papyrus-ring",
+        "name": "Papyrus Ring",
+        "gems": 250
+      },
+      {
+        "id": "frame-cyan",
+        "name": "Cyan Orbit Frame",
+        "gems": 250
+      }
+    ],
+    "Uncommon": [
+      {
+        "id": "frame-05-desert-oasis",
+        "name": "Desert Oasis",
+        "gems": 400
+      },
+      {
+        "id": "frame-06-balloon-party",
+        "name": "Balloon Party",
+        "gems": 500
+      },
+      {
+        "id": "frame-07-zodiac",
+        "name": "Zodiac Frame",
+        "gems": 650
+      },
+      {
+        "id": "frame-08-bronze-lv10",
+        "name": "Bronze Frame (Lv.10)",
+        "gems": 800
+      },
+      {
+        "id": "frame-09-bonded-hearts",
+        "name": "Bonded Hearts Frame",
+        "gems": 1000
+      },
+      {
+        "id": "frame-violet",
+        "name": "Violet Pulse Frame",
+        "gems": 1000
+      }
+    ],
+    "Rare": [
+      {
+        "id": "frame-10-crystal-ring",
+        "name": "Crystal Ring",
+        "gems": 1500
+      },
+      {
+        "id": "frame-11-warrior",
+        "name": "Warrior Frame",
+        "gems": 2000
+      },
+      {
+        "id": "frame-12-love-bloom",
+        "name": "Love Bloom",
+        "gems": 2500
+      },
+      {
+        "id": "frame-13-silver-lv25",
+        "name": "Silver Frame (Lv.25)",
+        "gems": 3000
+      },
+      {
+        "id": "frame-14-ramadan-lantern",
+        "name": "Ramadan Lantern Frame",
+        "gems": 4000
+      },
+      {
+        "id": "frame-galaxy",
+        "name": "Galaxy Ring Frame",
+        "gems": 3000
+      }
+    ],
+    "Epic": [
+      {
+        "id": "frame-15-fire-lion",
+        "name": "Fire Lion",
+        "gems": 6000
+      },
+      {
+        "id": "frame-16-diamond-princess",
+        "name": "Diamond Princess",
+        "gems": 7500
+      },
+      {
+        "id": "frame-17-golden-wings",
+        "name": "Golden Wings",
+        "gems": 9000
+      },
+      {
+        "id": "frame-18-gold-lv50",
+        "name": "Gold Frame (Lv.50)",
+        "gems": 11000
+      },
+      {
+        "id": "frame-19",
+        "name": "Frame 19",
+        "gems": 13000
+      },
+      {
+        "id": "frame-20-eternal-bond",
+        "name": "Eternal Bond Frame",
+        "gems": 15000
+      },
+      {
+        "id": "frame-royal",
+        "name": "Royal Gold Frame",
+        "gems": 11000
+      }
+    ],
+    "Legendary": [
+      {
+        "id": "frame-21-noble",
+        "name": "Noble Frame (Rank 1/6)",
+        "gems": 20000
+      },
+      {
+        "id": "frame-22-scribe",
+        "name": "Scribe Frame (Rank 2/6)",
+        "gems": 25000
+      },
+      {
+        "id": "frame-23-vizier",
+        "name": "Vizier Frame (Rank 3/6)",
+        "gems": 30000
+      },
+      {
+        "id": "frame-24-platinum-lv100",
+        "name": "Platinum Frame (Lv.100)",
+        "gems": 40000
+      },
+      {
+        "id": "frame-25-anniversary",
+        "name": "Anniversary Frame",
+        "gems": 50000
+      },
+      {
+        "id": "frame-fire",
+        "name": "Inferno Frame",
+        "gems": 50000
+      }
+    ],
+    "Mythic": [
+      {
+        "id": "frame-26-high-priest",
+        "name": "High Priest Frame (Rank 4/6)",
+        "gems": 75000
+      },
+      {
+        "id": "frame-27-nomarch",
+        "name": "Nomarch Frame (Rank 5/6)",
+        "gems": 100000
+      },
+      {
+        "id": "frame-28-pharaoh",
+        "name": "Pharaoh Frame (Rank 6/6)",
+        "gems": 150000
+      },
+      {
+        "id": "frame-29-mythic-lv200",
+        "name": "Mythic Frame (Lv.200)",
+        "gems": 200000
+      },
+      {
+        "id": "frame-30-new-year",
+        "name": "New Year Frame",
+        "gems": 250000
+      },
+      {
+        "id": "frame-exclusive",
+        "name": "NEXO Exclusive Frame",
+        "gems": 150000
+      }
+    ]
+  },
+  "items": {
+    "frame-01-sunrise": {
+      "name": "Sunrise Frame",
+      "rarity": "Common",
+      "gems": 100,
+      "tradeable": true,
+      "image": "frame-01-sunrise.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-02-simple-gold": {
+      "name": "Simple Gold",
+      "rarity": "Common",
+      "gems": 150,
+      "tradeable": true,
+      "image": "frame-02-simple-gold.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-03-ocean-wave": {
+      "name": "Ocean Wave",
+      "rarity": "Common",
+      "gems": 200,
+      "tradeable": true,
+      "image": "frame-03-ocean-wave.png",
+      "animation": "float",
+      "legacy": true
+    },
+    "frame-04-papyrus-ring": {
+      "name": "Papyrus Ring",
+      "rarity": "Common",
+      "gems": 250,
+      "tradeable": true,
+      "image": "frame-04-papyrus-ring.png",
+      "animation": "pulse",
+      "legacy": true
+    },
+    "frame-cyan": {
+      "name": "Cyan Orbit Frame",
+      "rarity": "Common",
+      "gems": 250,
+      "tradeable": true,
+      "image": "assets/nexo/frames/cyan-orbit.svg",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-05-desert-oasis": {
+      "name": "Desert Oasis",
+      "rarity": "Uncommon",
+      "gems": 400,
+      "tradeable": true,
+      "image": "frame-05-desert-oasis.png",
+      "animation": "float",
+      "legacy": true
+    },
+    "frame-06-balloon-party": {
+      "name": "Balloon Party",
+      "rarity": "Uncommon",
+      "gems": 500,
+      "tradeable": true,
+      "image": "frame-06-balloon-party.png",
+      "animation": "pulse",
+      "legacy": true
+    },
+    "frame-07-zodiac": {
+      "name": "Zodiac Frame",
+      "rarity": "Uncommon",
+      "gems": 650,
+      "tradeable": true,
+      "image": "frame-07-zodiac.png",
+      "animation": "orbit",
+      "legacy": true
+    },
+    "frame-08-bronze-lv10": {
+      "name": "Bronze Frame (Lv.10)",
+      "rarity": "Uncommon",
+      "gems": 800,
+      "tradeable": true,
+      "image": "frame-08-bronze-lv10.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-09-bonded-hearts": {
+      "name": "Bonded Hearts Frame",
+      "rarity": "Uncommon",
+      "gems": 1000,
+      "tradeable": true,
+      "image": "frame-09-bonded-hearts.png",
+      "animation": "pulse",
+      "legacy": true
+    },
+    "frame-violet": {
+      "name": "Violet Pulse Frame",
+      "rarity": "Uncommon",
+      "gems": 1000,
+      "tradeable": true,
+      "image": "assets/nexo/frames/violet-pulse.svg",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-10-crystal-ring": {
+      "name": "Crystal Ring",
+      "rarity": "Rare",
+      "gems": 1500,
+      "tradeable": true,
+      "image": "frame-10-crystal-ring.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-11-warrior": {
+      "name": "Warrior Frame",
+      "rarity": "Rare",
+      "gems": 2000,
+      "tradeable": true,
+      "image": "frame-11-warrior.png",
+      "animation": "float",
+      "legacy": true
+    },
+    "frame-12-love-bloom": {
+      "name": "Love Bloom",
+      "rarity": "Rare",
+      "gems": 2500,
+      "tradeable": true,
+      "image": "frame-12-love-bloom.png",
+      "animation": "pulse",
+      "legacy": true
+    },
+    "frame-13-silver-lv25": {
+      "name": "Silver Frame (Lv.25)",
+      "rarity": "Rare",
+      "gems": 3000,
+      "tradeable": true,
+      "image": "frame-13-silver-lv25.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-14-ramadan-lantern": {
+      "name": "Ramadan Lantern Frame",
+      "rarity": "Rare",
+      "gems": 4000,
+      "tradeable": true,
+      "image": "frame-14-ramadan-lantern.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-galaxy": {
+      "name": "Galaxy Ring Frame",
+      "rarity": "Rare",
+      "gems": 3000,
+      "tradeable": true,
+      "image": "assets/nexo/frames/galaxy-ring.svg",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-15-fire-lion": {
+      "name": "Fire Lion",
+      "rarity": "Epic",
+      "gems": 6000,
+      "tradeable": true,
+      "image": "frame-15-fire-lion.png",
+      "animation": "float",
+      "legacy": true
+    },
+    "frame-16-diamond-princess": {
+      "name": "Diamond Princess",
+      "rarity": "Epic",
+      "gems": 7500,
+      "tradeable": true,
+      "image": "frame-16-diamond-princess.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-17-golden-wings": {
+      "name": "Golden Wings",
+      "rarity": "Epic",
+      "gems": 9000,
+      "tradeable": true,
+      "image": "frame-17-golden-wings.png",
+      "animation": "float",
+      "legacy": true
+    },
+    "frame-18-gold-lv50": {
+      "name": "Gold Frame (Lv.50)",
+      "rarity": "Epic",
+      "gems": 11000,
+      "tradeable": true,
+      "image": "frame-18-gold-lv50.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-19": {
+      "name": "Frame 19",
+      "rarity": "Epic",
+      "gems": 13000,
+      "tradeable": true,
+      "image": "frame-19-frame-19.png",
+      "animation": "pulse",
+      "legacy": true
+    },
+    "frame-20-eternal-bond": {
+      "name": "Eternal Bond Frame",
+      "rarity": "Epic",
+      "gems": 15000,
+      "tradeable": true,
+      "image": "frame-20-eternal-bond.png",
+      "animation": "pulse",
+      "legacy": true
+    },
+    "frame-royal": {
+      "name": "Royal Gold Frame",
+      "rarity": "Epic",
+      "gems": 11000,
+      "tradeable": true,
+      "image": "assets/nexo/frames/royal-gold.svg",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-21-noble": {
+      "name": "Noble Frame (Rank 1/6)",
+      "rarity": "Legendary",
+      "gems": 20000,
+      "tradeable": true,
+      "image": "frame-21-noble.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-22-scribe": {
+      "name": "Scribe Frame (Rank 2/6)",
+      "rarity": "Legendary",
+      "gems": 25000,
+      "tradeable": true,
+      "image": "frame-22-scribe.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-23-vizier": {
+      "name": "Vizier Frame (Rank 3/6)",
+      "rarity": "Legendary",
+      "gems": 30000,
+      "tradeable": true,
+      "image": "frame-23-vizier.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-24-platinum-lv100": {
+      "name": "Platinum Frame (Lv.100)",
+      "rarity": "Legendary",
+      "gems": 40000,
+      "tradeable": true,
+      "image": "frame-24-platinum-lv100.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-25-anniversary": {
+      "name": "Anniversary Frame",
+      "rarity": "Legendary",
+      "gems": 50000,
+      "tradeable": true,
+      "image": "frame-25-anniversary.png",
+      "animation": "pulse",
+      "legacy": true
+    },
+    "frame-fire": {
+      "name": "Inferno Frame",
+      "rarity": "Legendary",
+      "gems": 50000,
+      "tradeable": true,
+      "image": "assets/nexo/frames/fire-ring.svg",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-26-high-priest": {
+      "name": "High Priest Frame (Rank 4/6)",
+      "rarity": "Mythic",
+      "gems": 75000,
+      "tradeable": true,
+      "image": "frame-26-high-priest.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-27-nomarch": {
+      "name": "Nomarch Frame (Rank 5/6)",
+      "rarity": "Mythic",
+      "gems": 100000,
+      "tradeable": true,
+      "image": "frame-27-nomarch.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-28-pharaoh": {
+      "name": "Pharaoh Frame (Rank 6/6)",
+      "rarity": "Mythic",
+      "gems": 150000,
+      "tradeable": true,
+      "image": "frame-28-pharaoh.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-29-mythic-lv200": {
+      "name": "Mythic Frame (Lv.200)",
+      "rarity": "Mythic",
+      "gems": 200000,
+      "tradeable": true,
+      "image": "frame-29-mythic-lv200.png",
+      "animation": "shine",
+      "legacy": true
+    },
+    "frame-30-new-year": {
+      "name": "New Year Frame",
+      "rarity": "Mythic",
+      "gems": 250000,
+      "tradeable": true,
+      "image": "frame-30-new-year.png",
+      "animation": "orbit",
+      "legacy": true
+    },
+    "frame-exclusive": {
+      "name": "NEXO Exclusive Frame",
+      "rarity": "Mythic",
+      "gems": 150000,
+      "tradeable": false,
+      "image": "assets/nexo/frames/nexo-exclusive.svg",
+      "animation": "shine",
+      "legacy": true
+    }
+  }
+}
