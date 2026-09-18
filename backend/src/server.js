@@ -1384,7 +1384,7 @@ app.post('/profile/equipped',{preHandler:auth},async(req,reply)=>{
         return {ok:true,slot,itemId:null};
       }
       const item=await c.query('SELECT id,item_type,active FROM nexo.gifts WHERE id=$1',[itemId]);
-      if(!item.rowCount||!item.rows[0].active)return reply.code(404).send({error:'ITEM_NOT_FOUND'});
+      if(!item.rowCount||!item.rows[0].active)throw Object.assign(new Error('ITEM_NOT_FOUND'),{code:404});
       const expected=slot==='frame'?'frame':slot==='profile_asset'?'asset':slot==='emoji'?'emoji':'gift';
       if(item.rows[0].item_type!==expected)return reply.code(400).send({error:'ITEM_SLOT_MISMATCH'});
       const own=await c.query('SELECT quantity FROM nexo.inventory WHERE user_id=$1 AND item_id=$2',[uid(req),itemId]);
