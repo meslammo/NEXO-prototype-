@@ -194,12 +194,12 @@ INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,item_type,cat
 ('emoji-love','Love Emoji','Rare',90,true,'assets/nexo/emoji/love.svg','حب','emoji','emoji','إيموجي حب.','shine',true,145),
 ('emoji-rocket','Rocket Emoji','Epic',150,true,'assets/nexo/emoji/rocket.svg','انطلق','emoji','emoji','إيموجي صاروخ.','float',true,146),
 ('emoji-snow','Snow Emoji','Rare',65,true,'assets/nexo/emoji/snow.svg','ثلج نيون','emoji','emoji','إيموجي ثلجي.','orbit',true,147),
-('crafted-shadow-mask','Shadow Mask','Epic',0,true,'assets/nexo/crafted/shadow-mask.svg','مصنوع بالـWorkshop','crafted','crafted','قطعة تصنيع.','pulse',false,200),
-('crafted-phoenix-seal','Phoenix Seal','Legendary',0,true,'assets/nexo/crafted/phoenix-seal.svg','ختم الفينيكس','crafted','crafted','قطعة تصنيع نادرة.','shine',false,201),
-('crafted-prism-token','Prism Token','Rare',0,true,'assets/nexo/crafted/prism-token.svg','توكن طيفي','crafted','crafted','قطعة مصنعة.','rainbow',false,202),
-('crafted-nebula-core','Nebula Core','Epic',0,true,'assets/nexo/crafted/nebula-core.svg','نواة سديم','crafted','crafted','نواة مصنعة.','orbit',false,203),
-('crafted-golden-signet','Golden Signet','Legendary',0,true,'assets/nexo/crafted/golden-signet.svg','خاتم ذهبي مصنوع','crafted','crafted','ختم ملكي مصنوع.','shine',false,204),
-('crafted-arcana','NEXO Arcana','NEXO Exclusive',0,false,'assets/nexo/crafted/nexo-arcana.svg','أركانا NEXO','crafted','crafted','قطعة تصنيع حصرية.','orbit',false,205)
+('crafted-shadow-mask','Shadow Mask','Epic',1,true,'assets/nexo/crafted/shadow-mask.svg','مصنوع بالـWorkshop','crafted','crafted','قطعة تصنيع.','pulse',false,200),
+('crafted-phoenix-seal','Phoenix Seal','Legendary',1,true,'assets/nexo/crafted/phoenix-seal.svg','ختم الفينيكس','crafted','crafted','قطعة تصنيع نادرة.','shine',false,201),
+('crafted-prism-token','Prism Token','Rare',1,true,'assets/nexo/crafted/prism-token.svg','توكن طيفي','crafted','crafted','قطعة مصنعة.','rainbow',false,202),
+('crafted-nebula-core','Nebula Core','Epic',1,true,'assets/nexo/crafted/nebula-core.svg','نواة سديم','crafted','crafted','نواة مصنعة.','orbit',false,203),
+('crafted-golden-signet','Golden Signet','Legendary',1,true,'assets/nexo/crafted/golden-signet.svg','خاتم ذهبي مصنوع','crafted','crafted','ختم ملكي مصنوع.','shine',false,204),
+('crafted-arcana','NEXO Arcana','NEXO Exclusive',1,false,'assets/nexo/crafted/nexo-arcana.svg','أركانا NEXO','crafted','crafted','قطعة تصنيع حصرية.','orbit',false,205)
 ON CONFLICT (id) DO UPDATE SET
   name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,tradeable=EXCLUDED.tradeable,image=EXCLUDED.image,
   tagline=EXCLUDED.tagline,item_type=EXCLUDED.item_type,category=EXCLUDED.category,description=EXCLUDED.description,
