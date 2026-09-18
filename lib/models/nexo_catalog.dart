@@ -128,12 +128,7 @@ final nexoCatalogSeed=<NexoCatalogItem>[
  NexoCatalogItem(id:'crafted-nebula-core',name:'Nebula Core',type:NexoItemType.crafted,rarity:NexoRarity.epic,gems:0,image:'assets/nexo/crafted/nebula-core.svg',tagline:'نواة سديم',description:'نواة مصنعة.',category:'crafted',animation:'orbit',marketVisible:false),
  NexoCatalogItem(id:'crafted-golden-signet',name:'Golden Signet',type:NexoItemType.crafted,rarity:NexoRarity.legendary,gems:0,image:'assets/nexo/crafted/golden-signet.svg',tagline:'خاتم ذهبي مصنوع',description:'ختم ملكي مصنوع.',category:'crafted',animation:'shine',marketVisible:false),
  NexoCatalogItem(id:'crafted-arcana',name:'NEXO Arcana',type:NexoItemType.crafted,rarity:NexoRarity.exclusive,gems:0,image:'assets/nexo/crafted/nexo-arcana.svg',tagline:'أركانا NEXO',description:'قطعة تصنيع حصرية.',category:'crafted',animation:'orbit',tradeable:false,marketVisible:false),
-];
-
-final nexoGifts=nexoCatalogSeed.where((e)=>e.type==NexoItemType.gift).toList(growable:false);
-final nexoFrames=nexoCatalogSeed.where((e)=>e.type==NexoItemType.frame).toList(growable:false);
-final nexoAssets=nexoCatalogSeed.where((e)=>e.type==NexoItemType.asset).toList(growable:false);
-NexoGift? giftById(String id){for(final gift in nexoGifts){if(gift.id==id)return gift;}return null;}  NexoCatalogItem(id:'asset-sky-plane',name:'NEXO Sky Plane',type:NexoItemType.asset,rarity:NexoRarity.rare,gems:1600,image:'assets/nexo/assets/sky-plane.svg',tagline:'طائرة NEXO النيون',description:'طائرة نيون تحلق حول الهوية.',category:'assets',animation:'float',sortOrder:15),
+  NexoCatalogItem(id:'asset-sky-plane',name:'NEXO Sky Plane',type:NexoItemType.asset,rarity:NexoRarity.rare,gems:1600,image:'assets/nexo/assets/sky-plane.svg',tagline:'طائرة NEXO النيون',description:'طائرة نيون تحلق حول الهوية.',category:'assets',animation:'float',sortOrder:15),
   NexoCatalogItem(id:'asset-galaxy',name:'Galaxy',type:NexoItemType.asset,rarity:NexoRarity.epic,gems:3200,image:'assets/nexo/assets/galaxy.svg',tagline:'مجرة NEXO',description:'مجرة طيفية تدور حول الهوية.',category:'assets',animation:'orbit',sortOrder:16),
   NexoCatalogItem(id:'emoji-grinning',name:'Grinning',type:NexoItemType.emoji,rarity:NexoRarity.common,gems:20,image:'emoji:😀',tagline:'Grinning',description:'Standard emoji for chat and collection.',category:'emoji',animation:'pulse'),
   NexoCatalogItem(id:'emoji-joy',name:'Joy',type:NexoItemType.emoji,rarity:NexoRarity.common,gems:25,image:'emoji:😂',tagline:'Joy',description:'Standard emoji for chat and collection.',category:'emoji',animation:'pulse'),
@@ -169,3 +164,9 @@ NexoGift? giftById(String id){for(final gift in nexoGifts){if(gift.id==id)return
   NexoCatalogItem(id:'emoji-handshake',name:'Handshake',type:NexoItemType.emoji,rarity:NexoRarity.common,gems:30,image:'emoji:🤝',tagline:'Handshake',description:'Standard emoji for chat and collection.',category:'emoji',animation:'pulse'),
   NexoCatalogItem(id:'emoji-hearts',name:'Heart Hands',type:NexoItemType.emoji,rarity:NexoRarity.rare,gems:40,image:'emoji:🫶',tagline:'Heart Hands',description:'Standard emoji for chat and collection.',category:'emoji',animation:'pulse'),
 
+];
+
+final nexoGifts=nexoCatalogSeed.where((e)=>e.type==NexoItemType.gift).toList(growable:false);
+final nexoFrames=nexoCatalogSeed.where((e)=>e.type==NexoItemType.frame).toList(growable:false);
+final nexoAssets=nexoCatalogSeed.where((e)=>e.type==NexoItemType.asset).toList(growable:false);
+NexoGift? giftById(String id){for(final gift in nexoGifts){if(gift.id==id)return gift;}return null;}
