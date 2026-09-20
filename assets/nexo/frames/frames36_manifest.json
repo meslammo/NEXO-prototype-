@@ -209,7 +209,7 @@
       "rarity": "Common",
       "gems": 100,
       "tradeable": true,
-      "image": "frame-01-sunrise.png",
+      "image": "assets/nexo/frames/original_30/frame-01-sunrise.png",
       "animation": "shine",
       "legacy": true
     },
@@ -218,7 +218,7 @@
       "rarity": "Common",
       "gems": 150,
       "tradeable": true,
-      "image": "frame-02-simple-gold.png",
+      "image": "assets/nexo/frames/original_30/frame-02-simple-gold.png",
       "animation": "shine",
       "legacy": true
     },
@@ -227,7 +227,7 @@
       "rarity": "Common",
       "gems": 200,
       "tradeable": true,
-      "image": "frame-03-ocean-wave.png",
+      "image": "assets/nexo/frames/original_30/frame-03-ocean-wave.png",
       "animation": "float",
       "legacy": true
     },
@@ -236,7 +236,7 @@
       "rarity": "Common",
       "gems": 250,
       "tradeable": true,
-      "image": "frame-04-papyrus-ring.png",
+      "image": "assets/nexo/frames/original_30/frame-04-papyrus-ring.png",
       "animation": "pulse",
       "legacy": true
     },
@@ -254,7 +254,7 @@
       "rarity": "Uncommon",
       "gems": 400,
       "tradeable": true,
-      "image": "frame-05-desert-oasis.png",
+      "image": "assets/nexo/frames/original_30/frame-05-desert-oasis.png",
       "animation": "float",
       "legacy": true
     },
@@ -263,7 +263,7 @@
       "rarity": "Uncommon",
       "gems": 500,
       "tradeable": true,
-      "image": "frame-06-balloon-party.png",
+      "image": "assets/nexo/frames/original_30/frame-06-balloon-party.png",
       "animation": "pulse",
       "legacy": true
     },
@@ -272,7 +272,7 @@
       "rarity": "Uncommon",
       "gems": 650,
       "tradeable": true,
-      "image": "frame-07-zodiac.png",
+      "image": "assets/nexo/frames/original_30/frame-07-zodiac.png",
       "animation": "orbit",
       "legacy": true
     },
@@ -281,7 +281,7 @@
       "rarity": "Uncommon",
       "gems": 800,
       "tradeable": true,
-      "image": "frame-08-bronze-lv10.png",
+      "image": "assets/nexo/frames/original_30/frame-08-bronze-lv10.png",
       "animation": "shine",
       "legacy": true
     },
@@ -290,7 +290,7 @@
       "rarity": "Uncommon",
       "gems": 1000,
       "tradeable": true,
-      "image": "frame-09-bonded-hearts.png",
+      "image": "assets/nexo/frames/original_30/frame-09-bonded-hearts.png",
       "animation": "pulse",
       "legacy": true
     },
@@ -308,7 +308,7 @@
       "rarity": "Rare",
       "gems": 1500,
       "tradeable": true,
-      "image": "frame-10-crystal-ring.png",
+      "image": "assets/nexo/frames/original_30/frame-10-crystal-ring.png",
       "animation": "shine",
       "legacy": true
     },
@@ -317,7 +317,7 @@
       "rarity": "Rare",
       "gems": 2000,
       "tradeable": true,
-      "image": "frame-11-warrior.png",
+      "image": "assets/nexo/frames/original_30/frame-11-warrior.png",
       "animation": "float",
       "legacy": true
     },
@@ -326,7 +326,7 @@
       "rarity": "Rare",
       "gems": 2500,
       "tradeable": true,
-      "image": "frame-12-love-bloom.png",
+      "image": "assets/nexo/frames/original_30/frame-12-love-bloom.png",
       "animation": "pulse",
       "legacy": true
     },
@@ -335,7 +335,7 @@
       "rarity": "Rare",
       "gems": 3000,
       "tradeable": true,
-      "image": "frame-13-silver-lv25.png",
+      "image": "assets/nexo/frames/original_30/frame-13-silver-lv25.png",
       "animation": "shine",
       "legacy": true
     },
@@ -344,7 +344,7 @@
       "rarity": "Rare",
       "gems": 4000,
       "tradeable": true,
-      "image": "frame-14-ramadan-lantern.png",
+      "image": "assets/nexo/frames/original_30/frame-14-ramadan-lantern.png",
       "animation": "shine",
       "legacy": true
     },
@@ -362,7 +362,7 @@
       "rarity": "Epic",
       "gems": 6000,
       "tradeable": true,
-      "image": "frame-15-fire-lion.png",
+      "image": "assets/nexo/frames/original_30/frame-15-fire-lion.png",
       "animation": "float",
       "legacy": true
     },
@@ -371,7 +371,7 @@
       "rarity": "Epic",
       "gems": 7500,
       "tradeable": true,
-      "image": "frame-16-diamond-princess.png",
+      "image": "assets/nexo/frames/original_30/frame-16-diamond-princess.png",
       "animation": "shine",
       "legacy": true
     },
@@ -380,7 +380,7 @@
       "rarity": "Epic",
       "gems": 9000,
       "tradeable": true,
-      "image": "frame-17-golden-wings.png",
+      "image": "assets/nexo/frames/original_30/frame-17-golden-wings.png",
       "animation": "float",
       "legacy": true
     },
@@ -389,7 +389,7 @@
       "rarity": "Epic",
       "gems": 11000,
       "tradeable": true,
-      "image": "frame-18-gold-lv50.png",
+      "image": "assets/nexo/frames/original_30/frame-18-gold-lv50.png",
       "animation": "shine",
       "legacy": true
     },
@@ -398,7 +398,7 @@
       "rarity": "Epic",
       "gems": 13000,
       "tradeable": true,
-      "image": "frame-19-frame-19.png",
+      "image": "assets/nexo/frames/original_30/frame-19-frame-19.png",
       "animation": "pulse",
       "legacy": true
     },
@@ -407,7 +407,7 @@
       "rarity": "Epic",
       "gems": 15000,
       "tradeable": true,
-      "image": "frame-20-eternal-bond.png",
+      "image": "assets/nexo/frames/original_30/frame-20-eternal-bond.png",
       "animation": "pulse",
       "legacy": true
     },
@@ -425,7 +425,7 @@
       "rarity": "Legendary",
       "gems": 20000,
       "tradeable": true,
-      "image": "frame-21-noble.png",
+      "image": "assets/nexo/frames/original_30/frame-21-noble.png",
       "animation": "shine",
       "legacy": true
     },
@@ -434,7 +434,7 @@
       "rarity": "Legendary",
       "gems": 25000,
       "tradeable": true,
-      "image": "frame-22-scribe.png",
+      "image": "assets/nexo/frames/original_30/frame-22-scribe.png",
       "animation": "shine",
       "legacy": true
     },
@@ -443,7 +443,7 @@
       "rarity": "Legendary",
       "gems": 30000,
       "tradeable": true,
-      "image": "frame-23-vizier.png",
+      "image": "assets/nexo/frames/original_30/frame-23-vizier.png",
       "animation": "shine",
       "legacy": true
     },
@@ -452,7 +452,7 @@
       "rarity": "Legendary",
       "gems": 40000,
       "tradeable": true,
-      "image": "frame-24-platinum-lv100.png",
+      "image": "assets/nexo/frames/original_30/frame-24-platinum-lv100.png",
       "animation": "shine",
       "legacy": true
     },
@@ -461,7 +461,7 @@
       "rarity": "Legendary",
       "gems": 50000,
       "tradeable": true,
-      "image": "frame-25-anniversary.png",
+      "image": "assets/nexo/frames/original_30/frame-25-anniversary.png",
       "animation": "pulse",
       "legacy": true
     },
@@ -479,7 +479,7 @@
       "rarity": "Mythic",
       "gems": 75000,
       "tradeable": true,
-      "image": "frame-26-high-priest.png",
+      "image": "assets/nexo/frames/original_30/frame-26-high-priest.png",
       "animation": "shine",
       "legacy": true
     },
@@ -488,7 +488,7 @@
       "rarity": "Mythic",
       "gems": 100000,
       "tradeable": true,
-      "image": "frame-27-nomarch.png",
+      "image": "assets/nexo/frames/original_30/frame-27-nomarch.png",
       "animation": "shine",
       "legacy": true
     },
@@ -497,7 +497,7 @@
       "rarity": "Mythic",
       "gems": 150000,
       "tradeable": true,
-      "image": "frame-28-pharaoh.png",
+      "image": "assets/nexo/frames/original_30/frame-28-pharaoh.png",
       "animation": "shine",
       "legacy": true
     },
@@ -506,7 +506,7 @@
       "rarity": "Mythic",
       "gems": 200000,
       "tradeable": true,
-      "image": "frame-29-mythic-lv200.png",
+      "image": "assets/nexo/frames/original_30/frame-29-mythic-lv200.png",
       "animation": "shine",
       "legacy": true
     },
@@ -515,7 +515,7 @@
       "rarity": "Mythic",
       "gems": 250000,
       "tradeable": true,
-      "image": "frame-30-new-year.png",
+      "image": "assets/nexo/frames/original_30/frame-30-new-year.png",
       "animation": "orbit",
       "legacy": true
     },
