@@ -40,6 +40,7 @@ flutter:
     - vip_emblem.png
     - assets/nexo/gifts/
     - assets/nexo/frames/
+    - assets/nexo/frames/original_30/
     - assets/nexo/assets/
     - assets/nexo/emoji/
     - assets/nexo/crafted/
