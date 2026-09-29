@@ -94,9 +94,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ]))
             ),
             const SizedBox(height:12),
-            InkWell(onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const FontColorScreen())),borderRadius:BorderRadius.circular(16),child:Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:NexoColors.card,borderRadius:BorderRadius.circular(16),border:Border.all(color:nameColor.withOpacity(.35))),child:Row(children:[
-              CircleAvatar(backgroundColor:nameColor.withOpacity(.15),child:Text('Aa',style:TextStyle(color:nameColor,fontWeight:FontWeight.w900))),const SizedBox(width:10),const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Font Color',style:TextStyle(color:Colors.white,fontWeight:FontWeight.bold)),Text('اختار لون اسمك من المتجر والكولكشن',style:TextStyle(color:NexoColors.textSecondary,fontSize:10))])),Icon(Icons.chevron_left_rounded,color:nameColor)
-            ])),
+            InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FontColorScreen()),
+              ),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: NexoColors.card,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: nameColor.withOpacity(.35)),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: nameColor.withOpacity(.15),
+                      child: Text('Aa', style: TextStyle(color: nameColor, fontWeight: FontWeight.w900)),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Font Color', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          Text('اختار لون اسمك من المتجر والكولكشن', style: TextStyle(color: NexoColors.textSecondary, fontSize: 10)),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_left_rounded, color: nameColor),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height:14),
             const _SectionTitle('My Profile'),
             _featureGrid([
