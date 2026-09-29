@@ -55,7 +55,23 @@ extension NexoItemTypeX on NexoItemType {
     }
   }
 }
-NexoItemType nexoItemTypeFromString(String? raw) => NexoItemType.values.firstWhere((x)=>x.name==(raw??'').toLowerCase(),orElse:()=>NexoItemType.gift);
+NexoItemType nexoItemTypeFromString(String? raw) {
+  final value=(raw??'').trim().toLowerCase();
+  switch(value){
+    case 'gift': return NexoItemType.gift;
+    case 'frame': return NexoItemType.frame;
+    case 'asset': return NexoItemType.asset;
+    case 'emoji': return NexoItemType.emoji;
+    case 'crafted': return NexoItemType.crafted;
+    case 'namecolor':
+    case 'name_color': return NexoItemType.nameColor;
+    case 'entranceeffect':
+    case 'entrance_effect': return NexoItemType.entranceEffect;
+    case 'roombackground':
+    case 'room_background': return NexoItemType.roomBackground;
+    default: return NexoItemType.gift;
+  }
+}
 
 class NexoCatalogItem {
   final String id, name, image, tagline, description, category, animation;
