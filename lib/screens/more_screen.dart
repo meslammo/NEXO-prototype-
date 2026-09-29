@@ -4,6 +4,7 @@ import 'inventory_screen.dart';
 import 'recharge_screen.dart';
 import 'rewards_screen.dart';
 import 'powers_collection_screen.dart';
+import 'frames_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -11,6 +12,7 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
+      {'title': 'Frames', 'subtitle': '30 profile frames across 6 rarity tiers', 'icon': Icons.blur_circular_rounded, 'color': Color(0xFFE040FB), 'screen': const FramesScreen()},
       {'title': 'الـ Powers', 'subtitle': 'الكولكشن · تفعيل وإيقاف القوى', 'icon': Icons.auto_awesome, 'color': Color(0xFFE040FB), 'screen': const PowersCollectionScreen()},
       {'title': 'المخزون', 'subtitle': 'عرض كل العناصر والتذاكر', 'icon': Icons.inventory_2_rounded, 'color': Color(0xFF7B5CFF), 'screen': const InventoryScreen()},
       {'title': 'الشحن والعروض', 'subtitle': 'شراء تذاكر وعضوية VIP', 'icon': Icons.account_balance_wallet_rounded, 'color': Color(0xFFFFB300), 'screen': const RechargeScreen()},
