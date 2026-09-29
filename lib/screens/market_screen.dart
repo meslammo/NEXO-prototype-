@@ -99,7 +99,7 @@ class _MarketScreenState extends State<MarketScreen> with SingleTickerProviderSt
       return Container(width:size,height:size,decoration:BoxDecoration(shape:BoxShape.circle,gradient:const LinearGradient(colors:[Color(0xFF54D6FF),Color(0xFFB44CFF),Color(0xFFFF6B9D)]),boxShadow:[BoxShadow(color:NexoColors.primary.withOpacity(.35),blurRadius:18)]),child:const Icon(Icons.auto_awesome,color:Colors.white,size:30));
     }
     if(item.type==NexoItemType.roomBackground){
-      return Container(width:size,height:size,borderRadius:BorderRadius.circular(size*.2),decoration:const BoxDecoration(gradient:LinearGradient(colors:[Color(0xFF10162B),Color(0xFF3A1C5A)])),child:const Icon(Icons.meeting_room_rounded,color:Colors.white70,size:34));
+      return Container(width:size,height:size,decoration:const BoxDecoration(borderRadius:BorderRadius.all(Radius.circular(16)),gradient:LinearGradient(colors:[Color(0xFF10162B),Color(0xFF3A1C5A)])),child:const Icon(Icons.meeting_room_rounded,color:Colors.white70,size:34));
     }
     return NexoAssetArt(item:item,size:size);
   }
