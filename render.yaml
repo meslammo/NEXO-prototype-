@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: nexo-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    repo: https://github.com/meslammo/NEXO-prototype-
+    branch: nexo/fullstack-phases-1-10
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nexo-postgres
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NEXO_ADMIN_KEY
+        generateValue: true
+      - key: PAYMENT_PROVIDER
+        value: test
+      - key: PAYMENT_CURRENCY
+        value: USD
+databases:
+  - name: nexo-postgres
+    plan: free
+    region: frankfurt
+    databaseName: nexo
+    user: nexo
