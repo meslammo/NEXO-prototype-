@@ -10,7 +10,7 @@
 <section class="hero">
   <div class="topline"><span class="tag">NEXO ADMIN • FULL CONTROL</span><span id="clock" class="small"></span></div>
   <h1>🛠 NEXO Control Center</h1>
-  <p class="muted">تحكم مركزي في الـCatalog والأسعار والـFrames والـEmoji والـGifts والـAssets والمستخدمين والتجارة والاقتصاد والأمان والإعلانات.</p>
+  <p class="muted">تحكم مركزي في الـCatalog والأسعار والـFrames والـEmoji والـGifts والمستخدمين والاقتصاد والأمان والإعلانات.</p>
   <div class="grid">
     <div class="field"><label>API URL</label><input id="api" value="" placeholder="اتركه فارغًا لاستخدام نفس الموقع"></div>
     <div class="field"><label>Admin Key</label><input id="key" type="password" placeholder="NEXO_ADMIN_KEY"></div>
@@ -26,18 +26,17 @@
   <button class="btn alt" onclick="tab('pricing',this)">💎 الأسعار</button>
   <button class="btn alt" onclick="tab('users',this)">👥 Users</button>
   <button class="btn alt" onclick="tab('messages',this)">💬 Chat Audit</button>
-  <button class="btn alt" onclick="tab('trades',this)">🔁 Trades</button>
   <button class="btn alt" onclick="tab('security',this)">🛡 Security</button>
   <button class="btn alt" onclick="tab('settings',this)">⚙️ Runtime</button>
   <button class="btn alt" onclick="tab('announce',this)">📢 Announcement</button>
 </div>
 
 <section id="catalog" class="card section tab active">
-  <div class="sectionHead"><div><h2>Catalog Manager</h2><p class="small">إضافة وتعديل وتفعيل وتعطيل أي Gift / Frame / Asset / Emoji / Crafted.</p></div><button class="btn alt" onclick="clearItem()">+ عنصر جديد</button></div>
+  <div class="sectionHead"><div><h2>Catalog Manager</h2><p class="small">إضافة وتعديل وتفعيل وتعطيل عناصر NEXO Store وCosmetics وGifts الخاصة بالشات.</p></div><button class="btn alt" onclick="clearItem()">+ عنصر جديد</button></div>
   <div class="grid">
     <div class="field"><label>ID</label><input id="c-id" placeholder="dragon"></div>
     <div class="field"><label>Name</label><input id="c-name" placeholder="Dragon"></div>
-    <div class="field"><label>Type</label><select id="c-type"><option>gift</option><option>frame</option><option>asset</option><option>emoji</option><option>crafted</option></select></div>
+    <div class="field"><label>Type</label><select id="c-type"><option>gift</option><option>frame</option><option>asset</option><option>emoji</option><option>name_color</option><option>entrance_effect</option><option>room_background</option></select></div>
     <div class="field"><label>Rarity</label><select id="c-rarity"><option>Common</option><option>Uncommon</option><option>Rare</option><option>Epic</option><option>Legendary</option><option>Mythic</option><option>NEXO Exclusive</option></select></div>
     <div class="field"><label>Gems</label><input id="c-gems" type="number" min="0" value="100"></div>
     <div class="field"><label>Category</label><input id="c-category" placeholder="gifts"></div>
@@ -86,18 +85,13 @@
   <div id="messagesTable" class="tableWrap"></div>
 </section>
 
-<section id="trades" class="card section tab">
-  <h2>🔁 Trade Monitor</h2><p class="small">متابعة حالات الصفقات، Gems والـEscrow ورسوم 5%.</p>
-  <div id="tradesTable" class="tableWrap"></div>
-</section>
-
 <section id="security" class="card section tab">
   <h2>🛡 Security Logs</h2>
   <div id="securityTable" class="tableWrap"></div>
 </section>
 
 <section id="settings" class="card section tab">
-  <h2>⚙️ Runtime Controls</h2><p class="small">تحكم في Energy، معدلات Voice/Video، تحويل Energy إلى Gems، Trade fee، ومكافآت الألعاب.</p>
+  <h2>⚙️ Runtime Controls</h2><p class="small">تحكم في Energy، معدلات Voice/Video، تحويل Energy إلى Gems، رسوم النظام، ومكافآت الألعاب.</p>
   <div id="settingsTable" class="tableWrap"></div>
 </section>
 
