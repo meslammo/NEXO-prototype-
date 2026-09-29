@@ -142,7 +142,7 @@ class _ProfileFeatureScreenState extends State<ProfileFeatureScreen> {
     final level = (data['aristocracyLevel'] as num?)?.toInt() ?? 0;
     const names = ['None','Baron','Viscount','Count','Marquis','Duke','Royal'];
     return ListView(padding: const EdgeInsets.all(16), children: [
-      _heroStat(Icons.account_balance, 'Aristocracy', names[level.clamp(0, 6)], 'المستوى الحالي ' + level.toString() + ' / 6'),
+      _heroStat(Icons.account_balance, 'Aristocracy', names[level.clamp(0, 6).toInt()], 'المستوى الحالي ' + level.toString() + ' / 6'),
       const SizedBox(height: 14),
       ...List.generate(6, (i) {
         final active = i < level;
