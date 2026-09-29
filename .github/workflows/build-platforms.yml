@@ -10,7 +10,7 @@ on:
     branches: ["nexo/fullstack-phases-1-10"]
 
 env:
-  NEXO_API_URL: https://nexo-api-production-05d3.up.railway.app
+  NEXO_API_URL: https://nexo-online-control.hatchable.site/api/nexo
 
 jobs:
   android:
