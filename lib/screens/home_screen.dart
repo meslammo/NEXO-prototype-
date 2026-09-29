@@ -41,9 +41,9 @@ class HomeScreen extends StatelessWidget {
               )),
               const SliverToBoxAdapter(child: _FeedPost(
                 name: 'Prince_X',
-                text: 'Trade request جاهز في Market',
+                text: 'مهام الـTribe الجديدة وصلت 🎯',
                 meta: 'منذ 17 دقيقة',
-                icon: Icons.swap_horiz_rounded,
+                icon: Icons.groups_rounded,
               )),
               const SliverToBoxAdapter(child: SizedBox(height: 90)),
             ],
