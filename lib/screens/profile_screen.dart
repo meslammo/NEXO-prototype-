@@ -1,69 +1,173 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/nexo_service.dart';
 import '../services/economy_service.dart';
-import '../services/api_client.dart';
 import '../services/auth_service.dart';
-import '../services/catalog_service.dart';
-import '../config/api_config.dart';
 import '../theme/nexo_theme.dart';
-import '../widgets/nexo_asset_art.dart';
-import 'name_glow_screen.dart';
 import 'inventory_screen.dart';
 import 'our_club_screen.dart';
+import 'missions_screen.dart';
 import 'recharge_screen.dart';
-import 'craft_screen.dart';
 
-class ProfileScreen extends StatefulWidget{const ProfileScreen({super.key});@override State<ProfileScreen> createState()=>_ProfileScreenState();}
-class _ProfileScreenState extends State<ProfileScreen>{
-  Map<String,Map<String,dynamic>> equipped={};
-  @override void initState(){super.initState();WidgetsBinding.instance.addPostFrameCallback((_){_loadEquipped();});}
-  Future<void> _loadEquipped() async{
-    final auth=context.read<AuthService>();if(!(NexoApiConfig.configured&&auth.online))return;
-    try{
-      final r=await context.read<ApiClient>().getJson('/profile/equipped');final raw=r['data'];final out=<String,Map<String,dynamic>>{};
-      if(raw is List){for(final row in raw.whereType<Map>()){out['${row['slot']}']=Map<String,dynamic>.from(row);}}
-      if(mounted)setState(()=>equipped=out);
-    }catch(_){}
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor:NexoColors.background,
+      appBar:AppBar(
+        backgroundColor:NexoColors.background,
+        elevation:0,
+        actions:[
+          IconButton(onPressed:(){},icon:const Icon(Icons.settings_outlined,color:Colors.white70)),
+          IconButton(onPressed:(){},icon:const Icon(Icons.more_horiz_rounded,color:Colors.white70)),
+        ],
+      ),
+      body:Consumer2<AuthService,EconomyService>(
+        builder:(context,auth,economy,_){
+          final u=auth.user ?? const <String,dynamic>{
+            'username':'NEXO_KING','displayName':'NEXO Player','avatar':'N',
+            'level':12,'reputation':850,'gems':12450,'vipLevel':'Premium'
+          };
+          final name=(u['displayName']??u['username']??'NEXO Player').toString();
+          final username=(u['username']??'nexo_player').toString();
+          final avatar=(u['avatar']??name).toString();
+          final level=(u['level'] as num?)?.toInt()??1;
+          final rep=(u['reputation'] as num?)?.toInt()??0;
+          final vip=(u['vipLevel']??'Base').toString();
+
+          return ListView(
+            padding:const EdgeInsets.fromLTRB(14,0,14,28),
+            children:[
+              _profileTop(name,username,avatar,level),
+              const SizedBox(height:8),
+              Row(children:[
+                Expanded(child:_stat('Friends','1')),
+                const SizedBox(width:6),
+                Expanded(child:_stat('Following','1')),
+                const SizedBox(width:6),
+                Expanded(child:_stat('Followers','10')),
+              ]),
+              const SizedBox(height:12),
+              _wallet(economy.gems),
+              const SizedBox(height:12),
+              _featureGrid(context,vip,rep),
+              const SizedBox(height:16),
+              _section('My Space'),
+              _menu(context,'Moments','منشوراتك وذكرياتك',Icons.photo_library_outlined,()=>_snack(context,'Moments قريبًا')),
+              _menu(context,'My Room','الغرفة الشخصية والديكور',Icons.meeting_room_outlined,()=>_snack(context,'My Room قريبًا')),
+              _menu(context,'Hall Of Honor','الترتيب والإنجازات',Icons.emoji_events_outlined,()=>_snack(context,'Hall Of Honor قريبًا')),
+              _menu(context,'My Couple','رابط اجتماعي خاص',Icons.favorite_border_rounded,()=>_snack(context,'My Couple قريبًا')),
+              _menu(context,'Collection','Gifts · Frames · Assets · Emoji',Icons.inventory_2_outlined,()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const InventoryScreen()))),
+            ],
+          );
+        },
+      ),
+    );
   }
-  Color _parseColor(String value){try{return Color(int.parse('0xFF'+value.replaceFirst('#','')));}catch(_){return NexoColors.primary;}}
-  Widget _avatar(NexoCatalogService catalog,String avatar,Color color){
-    final frameId=equipped['frame']?['id']?.toString(),assetId=equipped['profile_asset']?['id']?.toString();
-    final frame=frameId==null?null:catalog.getById(frameId),asset=assetId==null?null:catalog.getById(assetId);
-    return SizedBox(width:150,height:150,child:Stack(alignment:Alignment.center,children:[
-      if(asset!=null)NexoAssetArt(item:asset,size:146),
-      CircleAvatar(radius:51,backgroundColor:NexoColors.card,child:Text(avatar.isEmpty?'N':avatar[0],style:TextStyle(color:color,fontSize:34,fontWeight:FontWeight.bold))),
-      if(frame!=null)NexoAssetArt(item:frame,size:136),
-    ]));
-  }
-  @override Widget build(BuildContext context)=>Scaffold(
-    backgroundColor:NexoColors.background,
-    appBar:AppBar(title:const Text('Profile'),centerTitle:true,backgroundColor:NexoColors.background,actions:[IconButton(onPressed:_loadEquipped,icon:const Icon(Icons.refresh_rounded))]),
-    body:Consumer3<NexoService,EconomyService,NexoCatalogService>(builder:(context,nexo,economy,catalog,_){
-      final user=nexo.currentUser,color=_parseColor(user.nameColor),frame=equipped['frame'],asset=equipped['profile_asset'];
-      return ListView(padding:const EdgeInsets.fromLTRB(16,10,16,30),children:[
-        Center(child:_avatar(catalog,user.avatar,color)),const SizedBox(height:4),
-        Center(child:Text(user.displayName,style:TextStyle(color:color,fontSize:22,fontWeight:FontWeight.bold,shadows:user.glow?[Shadow(color:color,blurRadius:14),Shadow(color:color.withOpacity(.45),blurRadius:26)]:null))),
-        const SizedBox(height:4),Center(child:Text('💎 ${economy.gems} Gems',style:const TextStyle(color:NexoColors.primary,fontWeight:FontWeight.bold))),
-        const SizedBox(height:12),
-        Row(children:[Expanded(child:_Stat('Level',user.level.toString())),const SizedBox(width:8),Expanded(child:_Stat('Reputation',user.reputation.toString())),const SizedBox(width:8),Expanded(child:_Stat('NEXO Score',user.nexoScore.toString()))]),
-        const SizedBox(height:18),
-        Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:NexoColors.card,borderRadius:BorderRadius.circular(16),border:Border.all(color:NexoColors.primary.withOpacity(.22))),child:Row(children:[
-          const Icon(Icons.style_rounded,color:NexoColors.primary),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-            const Text('Equipped Cosmetics',style:TextStyle(color:Colors.white,fontWeight:FontWeight.bold)),
-            Text('Frame: ${frame?['name'] ?? 'None'} · Asset: ${asset?['name'] ?? 'None'}',style:const TextStyle(color:NexoColors.textSecondary,fontSize:11))
-          ])),TextButton(onPressed:() async { await Navigator.push(context,MaterialPageRoute(builder:(_)=>const InventoryScreen())); if(mounted)await _loadEquipped(); },child:const Text('تغيير'))
+
+  Widget _profileTop(String name,String username,String avatar,int level)=>Container(
+    padding:const EdgeInsets.fromLTRB(6,4,6,16),
+    child:Row(
+      children:[
+        Container(
+          width:78,height:78,
+          decoration:BoxDecoration(shape:BoxShape.circle,border:Border.all(color:NexoColors.primary.withOpacity(.65),width:2.2),color:NexoColors.card),
+          child:CircleAvatar(backgroundColor:NexoColors.surface,child:Text(avatar.isEmpty?'N':avatar[0],style:const TextStyle(color:NexoColors.primary,fontSize:30,fontWeight:FontWeight.bold))),
+        ),
+        const SizedBox(width:12),
+        Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text(name,style:const TextStyle(color:Colors.white,fontSize:21,fontWeight:FontWeight.w800)),
+          const SizedBox(height:3),
+          Text('UID: ' + username,style:const TextStyle(color:NexoColors.textSecondary,fontSize:11)),
+          const SizedBox(height:6),
+          Row(children:[
+            _badge('Lv.' + level.toString(),NexoColors.success),
+            const SizedBox(width:6),
+            _badge('NEXO',NexoColors.primary),
+          ]),
         ])),
-        const SizedBox(height:18),const Text('حسابك',style:TextStyle(color:Colors.white,fontSize:16,fontWeight:FontWeight.bold)),const SizedBox(height:10),
-        _Menu(icon:Icons.auto_awesome_rounded,title:'Font Colour',subtitle:'لون ووهج الاسم + المعاينة داخل الشات',color:color,onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const NameGlowScreen()))),
-        _Menu(icon:Icons.inventory_2_rounded,title:'Collection / Inventory',subtitle:'Gifts · Frames · Assets · Emoji · Crafted',color:const Color(0xFF7B5CFF),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const InventoryScreen()))),
-        _Menu(icon:Icons.handyman_rounded,title:'Workshop / Craft',subtitle:'التصنيع يدخل المنتج إلى المخزون',color:Colors.deepPurpleAccent,onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const CraftScreen()))),
-        _Menu(icon:Icons.groups_rounded,title:'Our Club',subtitle:'المجتمع والعضوية والنشاط',color:NexoColors.primary,onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const OurClubScreen()))),
-        _Menu(icon:Icons.military_tech_rounded,title:'Badges',subtitle:user.badges.isEmpty?'لا توجد شارات بعد':user.badges.join(' · '),color:Colors.amber,onTap:(){}),
-        _Menu(icon:Icons.workspace_premium_rounded,title:'VIP / Recharge',subtitle:'العضوية والمزايا وشحن Gems',color:Colors.amber,onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const RechargeScreen()))),
-      ]);
-    }),
+        IconButton(onPressed:(){},icon:const Icon(Icons.edit_outlined,color:Colors.white70)),
+      ],
+    ),
   );
+
+  Widget _badge(String text,Color color)=>Container(
+    padding:const EdgeInsets.symmetric(horizontal:8,vertical:4),
+    decoration:BoxDecoration(color:color.withOpacity(.12),borderRadius:BorderRadius.circular(10),border:Border.all(color:color.withOpacity(.28))),
+    child:Text(text,style:TextStyle(color:color,fontSize:9,fontWeight:FontWeight.bold)),
+  );
+
+  Widget _stat(String label,String value)=>Container(
+    padding:const EdgeInsets.symmetric(vertical:11),
+    decoration:BoxDecoration(color:NexoColors.card,borderRadius:BorderRadius.circular(13)),
+    child:Column(children:[Text(value,style:const TextStyle(color:Colors.white,fontSize:17,fontWeight:FontWeight.w800)),const SizedBox(height:2),Text(label,style:const TextStyle(color:NexoColors.textSecondary,fontSize:10))]),
+  );
+
+  Widget _wallet(int gems)=>Container(
+    padding:const EdgeInsets.all(15),
+    decoration:BoxDecoration(
+      gradient:const LinearGradient(begin:Alignment.centerLeft,end:Alignment.centerRight,colors:[Color(0xFF39205F),Color(0xFF17182E)]),
+      borderRadius:BorderRadius.circular(16),
+      border:Border.all(color:const Color(0xFF8C5BFF).withOpacity(.35)),
+    ),
+    child:Row(children:[
+      const Icon(Icons.account_balance_wallet_outlined,color:Color(0xFFC89BFF),size:24),
+      const SizedBox(width:10),
+      const Expanded(child:Text('My Wallet',style:TextStyle(color:Colors.white,fontWeight:FontWeight.bold))),
+      Text(gems.toString(),style:const TextStyle(color:Color(0xFFC89BFF),fontWeight:FontWeight.w800,fontSize:17)),
+      const SizedBox(width:4),
+      const Icon(Icons.diamond_rounded,color:Color(0xFFC89BFF),size:16),
+      const Icon(Icons.chevron_left_rounded,color:Colors.white54),
+    ]),
+  );
+
+  Widget _featureGrid(BuildContext context,String vip,int rep)=>GridView.count(
+    crossAxisCount:4,
+    shrinkWrap:true,
+    physics:const NeverScrollableScrollPhysics(),
+    mainAxisSpacing:8,crossAxisSpacing:8,
+    childAspectRatio:.92,
+    children:[
+      _feature(context,'Wealth Level','💎',()=>_snack(context,'Wealth Level: ' + rep.clamp(1,99).toString())),
+      _feature(context,'SVIP','👑',()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const RechargeScreen()))),
+      _feature(context,'Aristocracy','🏛️',()=>_snack(context,'Aristocracy — ' + vip)),
+      _feature(context,'Charm Level','💜',()=>_snack(context,'Charm Level قريبًا')),
+      _feature(context,'Shop','🛍️',()=>_snack(context,'افتح Market من الشريط السفلي')),
+      _feature(context,'Points Bank','🏦',()=>_snack(context,'Points Bank قريبًا')),
+      _feature(context,'Family / Tribe','🏠',()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const OurClubScreen()))),
+      _feature(context,'Task','📋',()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MissionsScreen()))),
+    ],
+  );
+
+  Widget _feature(BuildContext context,String title,String emoji,VoidCallback onTap)=>InkWell(
+    onTap:onTap,
+    borderRadius:BorderRadius.circular(15),
+    child:Container(
+      padding:const EdgeInsets.symmetric(horizontal:4,vertical:9),
+      decoration:BoxDecoration(color:NexoColors.card,borderRadius:BorderRadius.circular(15),border:Border.all(color:NexoColors.cardBorder)),
+      child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[
+        Text(emoji,style:const TextStyle(fontSize:22)),
+        const SizedBox(height:5),
+        Text(title,textAlign:TextAlign.center,maxLines:2,style:const TextStyle(color:Colors.white70,fontSize:9,fontWeight:FontWeight.w600)),
+      ]),
+    ),
+  );
+
+  Widget _section(String title)=>Padding(padding:const EdgeInsets.only(bottom:8),child:Text(title,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.bold,fontSize:16)));
+
+  Widget _menu(BuildContext context,String title,String subtitle,IconData icon,VoidCallback onTap)=>Container(
+    margin:const EdgeInsets.only(bottom:8),
+    decoration:BoxDecoration(color:NexoColors.card,borderRadius:BorderRadius.circular(15),border:Border.all(color:NexoColors.cardBorder)),
+    child:ListTile(
+      onTap:onTap,
+      dense:true,
+      leading:CircleAvatar(backgroundColor:NexoColors.primary.withOpacity(.11),child:Icon(icon,color:NexoColors.primary,size:20)),
+      title:Text(title,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w700,fontSize:13)),
+      subtitle:Text(subtitle,style:const TextStyle(color:NexoColors.textSecondary,fontSize:10)),
+      trailing:const Icon(Icons.chevron_left_rounded,color:Colors.white54),
+    ),
+  );
+
+  void _snack(BuildContext context,String text)=>ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(text)));
 }
-class _Stat extends StatelessWidget{final String label,value;const _Stat(this.label,this.value);@override Widget build(BuildContext context)=>Container(padding:const EdgeInsets.symmetric(vertical:13,horizontal:8),decoration:BoxDecoration(color:NexoColors.card,borderRadius:BorderRadius.circular(14),border:Border.all(color:NexoColors.cardBorder)),child:Column(children:[Text(label,style:const TextStyle(color:NexoColors.textSecondary,fontSize:10)),const SizedBox(height:4),Text(value,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.bold,fontSize:17))]));}
-class _Menu extends StatelessWidget{final IconData icon;final String title,subtitle;final Color color;final VoidCallback onTap;const _Menu({required this.icon,required this.title,required this.subtitle,required this.color,required this.onTap});@override Widget build(BuildContext context)=>Container(margin:const EdgeInsets.only(bottom:10),decoration:BoxDecoration(color:NexoColors.card,borderRadius:BorderRadius.circular(16),border:Border.all(color:color.withOpacity(.3))),child:ListTile(onTap:onTap,leading:CircleAvatar(backgroundColor:color.withOpacity(.14),child:Icon(icon,color:color)),title:Text(title,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.bold)),subtitle:Text(subtitle,style:const TextStyle(color:NexoColors.textSecondary,fontSize:11)),trailing:const Icon(Icons.chevron_left_rounded,color:Colors.white54)));}
