@@ -106,7 +106,7 @@ class _ProfileFeatureScreenState extends State<ProfileFeatureScreen> {
     }
   }
 
-  int _level(int score) => score <= 0 ? 1 : (score / 100).floor().clamp(1, 999);
+  int _level(int score) => score <= 0 ? 1 : (score / 100).floor().clamp(1, 999).toInt();
   Widget _levelCard(String label, int score, IconData icon, String help) {
     final level = _level(score);
     final progress = (score % 100) / 100;
