@@ -270,6 +270,15 @@ app.post('/admin/catalog/:id/toggle',{preHandler:adminAuth},async(req,reply)=>{
   const r=await q('UPDATE nexo.gifts SET active=NOT active WHERE id=$1 RETURNING id,active',[req.params.id]);
   if(!r.rowCount)return reply.code(404).send({error:'ITEM_NOT_FOUND'}); await adminAudit(req,'catalog_toggle',req.params.id,r.rows[0]); return r.rows[0];
 });
+
+app.post('/admin/catalog/price-filter',{preHandler:adminAuth},async(req,reply)=>{
+  const b=req.body||{},type=String(b.itemType||'').trim().toLowerCase(),rarity=String(b.rarity||'').trim(),gems=Number(b.gems);
+  const validTypes=['gift','frame','asset','emoji','crafted'];
+  if(!validTypes.includes(type)||!rarity||!Number.isInteger(gems)||gems<0)return reply.code(400).send({error:'INVALID_PRICE_FILTER'});
+  const r=await q('UPDATE nexo.gifts SET gems=$1 WHERE item_type=$2 AND rarity=$3 RETURNING id',[gems,type,rarity]);
+  await adminAudit(req,'catalog_price_filter',null,{itemType:type,rarity,gems,count:r.rowCount});
+  return {ok:true,updated:r.rowCount,itemType:type,rarity,gems};
+});
 app.get('/admin/users',{preHandler:adminAuth},async()=> (await q(`SELECT id,username,display_name AS "displayName",avatar,gems,energy,level,reputation,vip_level AS "vipLevel",role,banned,last_active AS "lastActive"
   FROM nexo.users ORDER BY last_active DESC LIMIT 250`)).rows);
 app.post('/admin/users/:id/wallet',{preHandler:adminAuth},async(req,reply)=>{
@@ -282,8 +291,26 @@ app.post('/admin/users/:id/status',{preHandler:adminAuth},async(req,reply)=>{
   const banned=Boolean((req.body||{}).banned),r=await q('UPDATE nexo.users SET banned=$1 WHERE id=$2 RETURNING id,banned',[banned,req.params.id]);
   if(!r.rowCount)return reply.code(404).send({error:'USER_NOT_FOUND'}); await adminAudit(req,banned?'ban_user':'unban_user',req.params.id,{banned}); return r.rows[0];
 });
+
+app.post('/admin/users/:id/inventory',{preHandler:adminAuth},async(req,reply)=>{
+  const itemId=String((req.body||{}).itemId||'').trim(),quantity=Number((req.body||{}).quantity||0);
+  if(!itemId||!Number.isInteger(quantity)||quantity<1||quantity>100000)return reply.code(400).send({error:'INVALID_GRANT'});
+  try{return await tx(async c=>{
+    const item=await c.query('SELECT id,active FROM nexo.gifts WHERE id=$1',[itemId]);
+    if(!item.rowCount||!item.rows[0].active)throw Object.assign(new Error('ITEM_NOT_FOUND'),{code:404});
+    const r=await c.query('INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES($1,$2,$3) ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=nexo.inventory.quantity+EXCLUDED.quantity RETURNING quantity',[req.params.id,itemId,quantity]);
+    await adminAudit(req,'inventory_grant',req.params.id,{itemId,quantity});
+    return {ok:true,userId:req.params.id,itemId,quantity:r.rows[0].quantity};
+  });}catch(e){return reply.code(e.code||500).send({error:e.code||'GRANT_FAILED'});}
+});
 app.get('/admin/security-events',{preHandler:adminAuth},async()=> (await q(`SELECT id,user_id AS "userId",event_type AS "eventType",severity,ip,details,created_at AS "createdAt"
   FROM nexo.security_events ORDER BY created_at DESC LIMIT 250`)).rows);
+
+app.get('/admin/messages',{preHandler:adminAuth},async(req)=>{
+  const limit=Math.min(250,Math.max(1,Number((req.query||{}).limit||100)));
+  return (await q(`SELECT m.id,m.sender_id AS "senderId",su.username AS "senderUsername",m.recipient_id AS "recipientId",ru.username AS "recipientUsername",m.kind,m.body,m.gift_id AS "giftId",m.created_at AS "createdAt"
+    FROM nexo.messages m JOIN nexo.users su ON su.id=m.sender_id JOIN nexo.users ru ON ru.id=m.recipient_id ORDER BY m.created_at DESC LIMIT $1`,[limit])).rows;
+});
 app.get('/admin/trades',{preHandler:adminAuth},async()=> (await q(`SELECT id,from_user_id AS "fromUserId",to_user_id AS "toUserId",status,from_items AS "fromItems",to_items AS "toItems",
   from_gems AS "fromGems",to_gems AS "toGems",fee_gems AS "feeGems",created_at AS "createdAt",expires_at AS "expiresAt"
   FROM nexo.trades ORDER BY created_at DESC LIMIT 250`)).rows);
