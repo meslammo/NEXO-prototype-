@@ -30,16 +30,66 @@ final Map<String, List<_ChatLine>> _chatMessages = {
   'mdark': [_ChatLine('M:Dark', 'نقابلك في الروم؟')],
 };
 
-class ChatScreen extends StatelessWidget {
+class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
 
-  static const people = [
+class _ChatScreenState extends State<ChatScreen> {
+  static const _demoPeople = <_Person>[
     _Person('Shadoww', 'shadoww', true, Color(0xFFB44CFF)),
     _Person('GalaxyGirl', 'galaxygirl', true, Color(0xFFFF6B9D)),
     _Person('Prince_X', 'prince', false, Color(0xFFF5C14A)),
     _Person('Ahmed', 'ahmed', false, Color(0xFF3EE08A)),
     _Person('M:Dark', 'mdark', true, Color(0xFF6EB6FF)),
   ];
+  List<_Person> _people = _demoPeople;
+  Timer? _peopleTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPeople();
+    _peopleTimer = Timer.periodic(const Duration(seconds: 5), (_) => _loadPeople());
+  }
+
+  Future<void> _loadPeople() async {
+    final auth = context.read<AuthService>();
+    if (!NexoApiConfig.configured || !auth.online) return;
+    try {
+      final raw = await context.read<ApiClient>().getJson('/users');
+      if (!mounted || raw['data'] is! List) return;
+      final colors = <Color>[
+        const Color(0xFFB44CFF), const Color(0xFFFF6B9D), const Color(0xFFF5C14A),
+        const Color(0xFF3EE08A), const Color(0xFF6EB6FF),
+      ];
+      final remote = (raw['data'] as List).whereType<Map>().map((u) {
+        final id = u['id']?.toString() ?? '';
+        if (id.isEmpty) return null;
+        final name = u['display_name']?.toString().trim().isNotEmpty == true
+            ? u['display_name'].toString()
+            : (u['username']?.toString() ?? id);
+        final online = u['online'] == true;
+        final color = colors[id.hashCode.abs() % colors.length];
+        return _Person(name, id, online, color);
+      }).whereType<_Person>();
+      final seen = <String>{};
+      final merged = <_Person>[];
+      for (final p in [...remote, ..._demoPeople]) {
+        if (p.id == auth.userId || seen.contains(p.id)) continue;
+        seen.add(p.id);
+        merged.add(p);
+      }
+      setState(() => _people = merged.take(100).toList());
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _peopleTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +128,7 @@ class ChatScreen extends StatelessWidget {
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: people.where((p) => p.online).map((p) => GestureDetector(
+              children: _people.where((p) => p.online).map((p) => GestureDetector(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatThreadScreen(person: p))),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -90,7 +140,7 @@ class ChatScreen extends StatelessWidget {
           const Divider(color: NexoColors.cardBorder, height: 1),
           Expanded(
             child: ListView(
-              children: people.map((p) {
+              children: _people.map((p) {
                 final list = _chatMessages[p.id] ?? const <_ChatLine>[];
                 final preview = list.isEmpty ? 'بدون رسائل' : (list.last.giftId != null ? '🎁 هدية' : list.last.text);
                 return ListTile(
@@ -136,6 +186,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   StreamSubscription<Map<String,dynamic>>? _chatEventSubscription;
   MediaStream? _remoteStream;
   final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
+  Timer? _chatPollTimer;
 
   bool get _remoteMode {
     final auth = context.read<AuthService>();
@@ -167,6 +218,9 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
       });
       await _callService.listenForIncoming(widget.person.id);
       await _loadRemoteHistory();
+      if (mounted && _remoteMode) {
+        _chatPollTimer = Timer.periodic(const Duration(seconds: 2), (_) => _loadRemoteHistory());
+      }
     });
   }
 
@@ -193,6 +247,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   @override
   void dispose() {
     _callTimer?.cancel();
+    _chatPollTimer?.cancel();
     _remoteStreamSubscription?.cancel();
     _chatEventSubscription?.cancel();
     _remoteRenderer.dispose();
@@ -512,7 +567,8 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
             itemCount: lines.length,
             itemBuilder: (_, i) {
               final line = lines[i];
-              final mine = line.from == 'NEXO_KING';
+              final currentName = context.read<AuthService>().user?['username']?.toString() ?? 'NEXO_KING';
+              final mine = line.from == currentName;
               final person = mine ? const _Person('NEXO_KING', 'me', true, NexoColors.primary) : widget.person;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 13),
