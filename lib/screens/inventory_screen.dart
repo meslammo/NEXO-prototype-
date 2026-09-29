@@ -11,7 +11,7 @@ import '../widgets/nexo_asset_art.dart';
 
 class InventoryScreen extends StatefulWidget{const InventoryScreen({super.key});@override State<InventoryScreen> createState()=>_InventoryScreenState();}
 class _InventoryScreenState extends State<InventoryScreen>{
-  final _labels=['Gifts','Frames','Assets','Emoji'];
+  final _labels=['Gifts','Frames','Font Color','Entrance','Rooms'];
   final Map<String,String?> equipped={};
   Future<void> _equip(BuildContext context,NexoCatalogItem item,String slot) async {
     final auth=context.read<AuthService>();
@@ -23,8 +23,8 @@ class _InventoryScreenState extends State<InventoryScreen>{
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر التجهيز: $e'),backgroundColor:Colors.redAccent));}
   }
   Future<void> _openDetails(NexoCatalogItem item,int qty) async {
-    final canEquip=item.type==NexoItemType.frame||item.type==NexoItemType.asset;
-    final slot=item.type==NexoItemType.frame?'frame':'profile_asset';
+    final canEquip=item.type==NexoItemType.frame||item.type==NexoItemType.nameColor||item.type==NexoItemType.entranceEffect||item.type==NexoItemType.roomBackground;
+    final slot=item.type==NexoItemType.frame?'frame':item.type==NexoItemType.nameColor?'name_color':item.type==NexoItemType.entranceEffect?'entrance_effect':'room_background';
     await showDialog(context:context,builder:(_)=>AlertDialog(
       backgroundColor:NexoColors.card,title:Text(item.name,style:TextStyle(color:item.rarity.color,fontWeight:FontWeight.bold)),
       content:Column(mainAxisSize:MainAxisSize.min,children:[
@@ -54,19 +54,19 @@ class _InventoryScreenState extends State<InventoryScreen>{
             Text(item.name,maxLines:1,overflow:TextOverflow.ellipsis,textAlign:TextAlign.center,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.bold,fontSize:11)),
             Text(item.rarity.label,style:TextStyle(color:item.rarity.color,fontSize:9)),
             Text(qty>0?'x$qty':'غير مملوك',style:TextStyle(color:qty>0?NexoColors.success:NexoColors.textSecondary,fontWeight:FontWeight.bold,fontSize:10)),
-            if((item.type==NexoItemType.frame||item.type==NexoItemType.asset)&&qty>0)
-              TextButton(onPressed:()=>_equip(context,item,item.type==NexoItemType.frame?'frame':'profile_asset'),child:const Text('تجهيز',style:TextStyle(fontSize:10))),
+            if((item.type==NexoItemType.frame||item.type==NexoItemType.nameColor||item.type==NexoItemType.entranceEffect||item.type==NexoItemType.roomBackground)&&qty>0)
+              TextButton(onPressed:()=>_equip(context,item,item.type==NexoItemType.frame?'frame':item.type==NexoItemType.nameColor?'name_color':item.type==NexoItemType.entranceEffect?'entrance_effect':'room_background'),child:const Text('تجهيز',style:TextStyle(fontSize:10))),
           ]),
         ));
       },
     );
   }
   @override Widget build(BuildContext context){
-    return DefaultTabController(length:4,child:Scaffold(
+    return DefaultTabController(length:5,child:Scaffold(
       backgroundColor:NexoColors.background,
       appBar:AppBar(backgroundColor:NexoColors.background,title:const Text('Collection / Inventory'),centerTitle:true,leading:const BackButton(color:Colors.white),bottom:TabBar(isScrollable:true,tabs:_labels.map((x)=>Tab(text:x)).toList())),
       body:Consumer2<NexoCatalogService,EconomyService>(builder:(_,catalog,economy,__){
-        final types=[NexoItemType.gift,NexoItemType.frame,NexoItemType.asset,NexoItemType.emoji];
+        final types=[NexoItemType.gift,NexoItemType.frame,NexoItemType.nameColor,NexoItemType.entranceEffect,NexoItemType.roomBackground];
         return TabBarView(children:types.map((t)=>_tab(t,catalog,economy)).toList());
       }),
     ));
