@@ -5,7 +5,7 @@ export const access = "public";
 const json = (req) => req.body && typeof req.body === "object" ? req.body : {};
 const route = (req) => "/" + (Array.isArray(req.params?.path) ? req.params.path.join("/") : "");
 const authHeader = (req) => String(req.headers?.authorization || "");
-const tokenOf = (req) => authHeader(req).toLowerCase().startsWith("bearer ") ? authHeader(req).slice(7).trim() : "";
+const tokenOf = (req) => { const h=authHeader(req); if(h.toLowerCase().startsWith("bearer ")) return h.slice(7).trim(); return String(req.query?.token || "").trim(); };
 
 async function hashToken(token) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
