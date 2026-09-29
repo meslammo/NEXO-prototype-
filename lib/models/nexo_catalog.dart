@@ -39,7 +39,7 @@ NexoRarity nexoRarityFromString(String? raw) {
   }
 }
 
-enum NexoItemType { gift, frame, asset, emoji, crafted }
+enum NexoItemType { gift, frame, asset, emoji, crafted, nameColor, entranceEffect, roomBackground }
 extension NexoItemTypeX on NexoItemType {
   String get apiValue => name;
   String get label {
@@ -49,6 +49,9 @@ extension NexoItemTypeX on NexoItemType {
       case NexoItemType.asset: return 'Assets';
       case NexoItemType.emoji: return 'Emoji';
       case NexoItemType.crafted: return 'Crafted';
+      case NexoItemType.nameColor: return 'Font Color';
+      case NexoItemType.entranceEffect: return 'Entrance Effects';
+      case NexoItemType.roomBackground: return 'Room Backgrounds';
     }
   }
 }
