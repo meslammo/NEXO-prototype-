@@ -14,7 +14,6 @@ import 'services/economy_service.dart';
 import 'services/mining_service.dart';
 import 'services/nexo_service.dart';
 import 'services/social_engine.dart';
-import 'services/trade_service.dart';
 import 'services/power_service.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';
@@ -87,7 +86,6 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => MiningService()),
         ChangeNotifierProvider(create: (_) => NexoService()),
         ChangeNotifierProvider(create: (_) => SocialEngine()),
-        ChangeNotifierProvider(create: (_) => TradeService()),
         ChangeNotifierProvider(create: (_) => PowerService()),
       ],
       child: const NexoApp(),
