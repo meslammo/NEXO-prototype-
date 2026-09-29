@@ -45,7 +45,7 @@ Future<void> main() async {
     try {
       final wallet = await apiClient.getJson('/wallet');
       final inventoryResponse = await apiClient.getJson('/inventory');
-      final rows = inventoryResponse['data'];
+      final rows = inventoryResponse is List ? inventoryResponse : inventoryResponse['data'];
       final inventory = <String, int>{};
       if (rows is List) {
         for (final row in rows) {
