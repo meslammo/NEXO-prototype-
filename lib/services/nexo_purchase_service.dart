@@ -28,7 +28,9 @@ class NexoPurchaseService {
       'starter_499',
       'plus_999',
       'pro_1999',
-      'ultra_24999',
+      'ultra_4999',
+      'nexo_9999',
+      'nexo_24999',
     };
     final response = await _iap.queryProductDetails(ids);
     _products

@@ -8,6 +8,8 @@ import 'profile_feature_screen.dart';
 import 'font_color_screen.dart';
 import 'inventory_screen.dart';
 import 'our_club_screen.dart';
+import 'settings_screen.dart';
+import 'membership_screen.dart;
 import 'missions_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -32,7 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Color(int.tryParse(s,radix:16)??0xFF54D6FF);
   }
 
-  void _open(ProfileFeature f)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>ProfileFeatureScreen(feature:f))).then((_)=>_load());
+  void _open(ProfileFeature f){if(f==ProfileFeature.svip){Navigator.push(context,MaterialPageRoute(builder:(_)=>const MembershipScreen())).then((_)=>_load());return;}Navigator.push(context,MaterialPageRoute(builder:(_)=>ProfileFeatureScreen(feature:f))).then((_)=>_load());}
 
   @override Widget build(BuildContext context){
     final auth=context.watch<AuthService>();
@@ -51,7 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor:NexoColors.background,
       appBar:AppBar(backgroundColor:NexoColors.background,elevation:0,actions:[
         IconButton(onPressed:()=>_open(ProfileFeature.connections),icon:const Icon(Icons.person_add_alt_1_rounded,color:Colors.white70)),
-        IconButton(onPressed:(){},icon:const Icon(Icons.settings_outlined,color:Colors.white70)),
+        IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const SettingsScreen())).then((_)=>_load()),icon:const Icon(Icons.settings_outlined,color:Colors.white70)),
       ]),
       body:loading
         ? const Center(child:CircularProgressIndicator())

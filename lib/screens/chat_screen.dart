@@ -424,6 +424,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   }
 
   void _insertEmoji(String emoji) {
+    if (_remoteMode) { context.read<ApiClient>().postJson('/activity', {'type':'emoji_use','quantity':1}); }
     final text = _controller.text;
     final sel = _controller.selection;
     final start = sel.start < 0 ? text.length : sel.start;
@@ -468,6 +469,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         if (mounted) setState(() => _callMinutes++);
       });
       context.read<SocialEngine>().logActivity(kind == 'video' ? 'video_call' : 'voice_call');
+      if (_remoteMode) { context.read<ApiClient>().postJson('/activity', {'type':'voice_activity','quantity':1}); }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر بدء المكالمة: $e'), backgroundColor: Colors.redAccent));
     }

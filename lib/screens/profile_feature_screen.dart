@@ -10,6 +10,7 @@ import '../theme/nexo_theme.dart';
 import 'market_screen.dart';
 import 'recharge_screen.dart';
 import 'our_club_screen.dart';
+import 'membership_screen.dart';
 
 enum ProfileFeature { wealth, charm, shop, svip, aristocracy, pointsBank, moments, room, couple, connections, hallOfHonor }
 
@@ -59,7 +60,7 @@ class _ProfileFeatureScreenState extends State<ProfileFeatureScreen> {
 
   @override Widget build(BuildContext context) {
     if (widget.feature == ProfileFeature.shop) return const MarketScreen();
-    if (widget.feature == ProfileFeature.svip) return const RechargeScreen();
+    if (widget.feature == ProfileFeature.svip) return const MembershipScreen();
     return Scaffold(
       backgroundColor: NexoColors.background,
       appBar: AppBar(

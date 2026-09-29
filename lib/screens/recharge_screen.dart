@@ -12,12 +12,7 @@ import '../theme/nexo_theme.dart';
 
 class RechargeScreen extends StatefulWidget {
   const RechargeScreen({super.key});
-  static const packs = [
-    {'id':'starter_499','gems':500,'price':'4.99'},
-    {'id':'plus_999','gems':1200,'price':'9.99'},
-    {'id':'pro_1999','gems':3000,'price':'19.99'},
-    {'id':'ultra_24999','gems':8000,'price':'49.99'},
-  ];
+  static const packs = <Map<String,Object>>[];
   @override
   State<RechargeScreen> createState() => _RechargeScreenState();
 }
@@ -28,6 +23,7 @@ class _RechargeScreenState extends State<RechargeScreen> {
   final Map<String,String> _pendingOrders = {};
   bool _storeAvailable = false;
   bool _loading = true;
+  List<Map<String,Object>> _packs = [];
 
   @override
   void initState() {
@@ -35,6 +31,21 @@ class _RechargeScreenState extends State<RechargeScreen> {
     _purchases = NexoPurchaseService();
     _purchaseSubscription = _purchases.updates.listen(_handlePurchase);
     _initializeStore();
+    _loadPacks();
+  }
+
+  Future<void> _loadPacks() async {
+    try {
+      if (!NexoApiConfig.configured) return;
+      final r = await context.read<ApiClient>().getJson('/recharge/catalog');
+      final raw = r['data'];
+      if (raw is List && mounted) setState(() => _packs = raw.whereType<Map>().map((x) => <String,Object>{
+        'id': x['id']?.toString() ?? '', 'gems': (x['gems'] as num?)?.toInt() ?? 0,
+        'bonusGems': (x['bonusGems'] as num?)?.toInt() ?? 0,
+        'price': ((x['amountMinor'] as num?)?.toDouble() ?? 0) / 100,
+        'currency': x['currency']?.toString() ?? 'USD',
+      }).toList());
+    } catch (_) {}
   }
 
   Future<void> _initializeStore() async {
@@ -174,12 +185,12 @@ class _RechargeScreenState extends State<RechargeScreen> {
             padding: EdgeInsets.only(bottom: 12),
             child: Text('نسخة الاختبار تحتاج متجرًا منشورًا للمنتجات قبل تشغيل الدفع الحقيقي.', style: TextStyle(color: NexoColors.textSecondary), textAlign: TextAlign.center),
           ),
-        ...RechargeScreen.packs.map((p) => Card(
+        ..._packs.map((p) => Card(
           color: NexoColors.card,
           child: ListTile(
             leading: const CircleAvatar(child: Icon(Icons.diamond_rounded)),
             title: Text('${p['gems']} Gems', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            subtitle: Text('${p['id']} · Store Product', style: const TextStyle(color: NexoColors.textSecondary)),
+            subtitle: Text('${p['id']} · ${(p['bonusGems'] ?? 0)} Bonus Gems', style: const TextStyle(color: NexoColors.textSecondary)),
             trailing: ElevatedButton(
               onPressed: () => _buy(p),
               child: Text('\$${p['price']}'),
