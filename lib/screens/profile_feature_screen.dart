@@ -223,11 +223,28 @@ class _ProfileFeatureScreenState extends State<ProfileFeatureScreen> {
     final rooms = catalog.byType(NexoItemType.roomBackground);
     final effects = catalog.byType(NexoItemType.entranceEffect);
     return ListView(padding: const EdgeInsets.all(16), children: [
-      Container(height: 170, decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), gradient: const LinearGradient(colors: [Color(0xFF11182D), Color(0xFF29154B)])), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.meeting_room, color: Colors.white70, size: 50),
-        const SizedBox(height: 8),
-        Text(currentBg ?? 'Default Room', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      ])),
+      Container(
+        height: 170,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF11182D), Color(0xFF29154B)],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.meeting_room, color: Colors.white70, size: 50),
+              const SizedBox(height: 8),
+              Text(
+                currentBg ?? 'Default Room',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+      ),
       const SizedBox(height: 12),
       _choices('Room Background', rooms, currentBg, 'room_background'),
       const SizedBox(height: 10),
