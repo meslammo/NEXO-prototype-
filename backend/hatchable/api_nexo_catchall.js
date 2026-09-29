@@ -284,7 +284,7 @@ export default async function handler(req,res) {
   if(r==="/catalog" && req.method==="GET") return catalog(req,res);
   const u=await needUser(req,res); if(!u) return;
   if(r==="/users" && req.method==="GET"){
-    const q=await db.query('SELECT u.id,u.username,u.display_name,u.avatar,u.level,u.name_color,u.glow,COALESCE(p.online,FALSE) AS online,u.last_active FROM users u LEFT JOIN presence p ON p.user_id=u.id WHERE u.id<>$1 AND u.banned=false ORDER BY (COALESCE(p.online,FALSE) DESC),u.last_active DESC LIMIT 100',[u.id]);
+    const q=await db.query('SELECT u.id,u.username,u.display_name,u.avatar,u.level,u.name_color,u.glow,COALESCE(p.online,FALSE) AS online,u.last_active FROM users u LEFT JOIN presence p ON p.user_id=u.id WHERE u.id<>$1 AND u.banned=false ORDER BY COALESCE(p.online,FALSE) DESC,u.last_active DESC LIMIT 100',[u.id]);
     return res.json(q.rows.map(x=>({...x,online:Boolean(x.online || (new Date(x.last_active).getTime()>Date.now()-300000))})));
   }
   if(r==="/me" && req.method==="GET") return res.json({user:publicUser(u)});
