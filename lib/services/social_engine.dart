@@ -9,7 +9,6 @@ class SocialEngine extends ChangeNotifier {
     'video_call': 30,
     'game_win': 50,
     'mining': 15,
-    'trade': 20,
     'emoji_use': 5,
     'gift_send': 15,
   };
@@ -36,7 +35,6 @@ class SocialEngine extends ChangeNotifier {
   void logVideoCall() => logActivity('video_call');
   void logGameWin(int reward) => logActivity('game_win', points: reward);
   void logMining(int reward) => logActivity('mining', points: reward);
-  void logTrade() => logActivity('trade');
   void logEmojiUse() => logActivity('emoji_use');
   void logGiftSend() => logActivity('gift_send');
 
