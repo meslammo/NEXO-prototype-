@@ -22,7 +22,7 @@ class NexoCatalogService extends ChangeNotifier {
       if(raw is List){
         final remote=raw.whereType<Map>().map((e)=>NexoCatalogItem.fromJson(Map<String,dynamic>.from(e)));
         final merged=<String,NexoCatalogItem>{for(final x in nexoCatalogSeed)x.id:x};
-        for(final x in remote){merged[x.id]=x;}
+        for(final x in remote){if(x.type!=NexoItemType.crafted){merged[x.id]=x;}}
         final ordered=merged.values.toList()..sort((a,b)=>a.sortOrder.compareTo(b.sortOrder));
         _items=List.unmodifiable(ordered);
       }
