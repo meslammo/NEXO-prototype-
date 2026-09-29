@@ -13,7 +13,6 @@ import '../services/realtime_service.dart';
 import '../config/api_config.dart';
 import '../theme/nexo_theme.dart';
 import '../widgets/nexo_asset_art.dart';
-import 'trade_screen.dart';
 
 class _ChatLine {
   final String from;
@@ -301,10 +300,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
             Text(widget.person.name, style: TextStyle(color: widget.person.color, fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             ListTile(leading: const Icon(Icons.person_outline, color: NexoColors.primary), title: const Text('معلومات المستخدم'), subtitle: Text(widget.person.online ? 'Online الآن' : 'Offline'), onTap: () => Navigator.pop(context)),
-            ListTile(leading: const Icon(Icons.swap_horiz_rounded, color: NexoColors.primary), title: const Text('Trade'), onTap: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => TradeScreen(peerId: widget.person.id, peerName: widget.person.name)));
-            }),
+
           ]),
         ),
       ),
@@ -597,7 +593,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                 IconButton(onPressed: _openEmojiPanel, icon: const Text('☺️', style: TextStyle(fontSize: 24))),
                 IconButton(onPressed: _openGiftSheet, icon: const Icon(Icons.card_giftcard_rounded, color: Colors.amber)),
                 IconButton(onPressed: _showUserInfo, icon: const Icon(Icons.info_outline_rounded, color: Colors.white70)),
-                IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TradeScreen(peerId: widget.person.id, peerName: widget.person.name))), icon: const Icon(Icons.swap_horiz_rounded, color: NexoColors.primary)),
+
                 Expanded(
                   child: TextField(controller: _controller, onSubmitted: (_) => _sendText(), style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: 'اكتب رسالة...', hintStyle: const TextStyle(color: NexoColors.textSecondary), filled: true, fillColor: NexoColors.card, border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none), contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10))),
                 ),
