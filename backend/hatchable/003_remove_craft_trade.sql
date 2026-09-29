@@ -1,0 +1,1 @@
+UPDATE gifts SET active=false, market_visible=false WHERE item_type='crafted';
