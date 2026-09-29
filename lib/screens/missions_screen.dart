@@ -73,7 +73,7 @@ class MissionsScreen extends StatelessWidget {
         const SizedBox(height:4),
         Text('اليومي + الأسبوعي + الـTribe',style:TextStyle(color:Colors.white.withOpacity(.65),fontSize:12)),
         const SizedBox(height:8),
-        Text('نشاطك اليوم: \${s.getDailyScore()} نقطة',style:const TextStyle(color:NexoColors.primary,fontWeight:FontWeight.w700,fontSize:12)),
+        Text('نشاطك اليوم: ' + s.getDailyScore().toString() + ' نقطة',style:const TextStyle(color:NexoColors.primary,fontWeight:FontWeight.w700,fontSize:12)),
       ])),
     ]),
   );
@@ -140,7 +140,7 @@ class MissionsScreen extends StatelessWidget {
         const SizedBox(height:8),
         LinearProgressIndicator(value:m.target==0?0:progress/m.target,minHeight:6,borderRadius:BorderRadius.circular(10)),
         const SizedBox(height:5),
-        Text('\$progress/\${m.target}  •  +\${m.reward} Gems',style:TextStyle(color:progress>=m.target?NexoColors.success:NexoColors.textSecondary,fontSize:10,fontWeight:FontWeight.w600)),
+        Text(progress.toString() + '/' + m.target.toString() + '  •  +' + m.reward.toString() + ' Gems',style:TextStyle(color:progress>=m.target?NexoColors.success:NexoColors.textSecondary,fontSize:10,fontWeight:FontWeight.w600)),
       ])),
       const SizedBox(width:8),
       TextButton(onPressed:()=>_go(context,m),child:Text(progress>=m.target?'مكتملة':'ابدأ')),
