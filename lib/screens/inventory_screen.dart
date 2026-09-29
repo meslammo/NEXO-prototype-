@@ -11,7 +11,7 @@ import '../widgets/nexo_asset_art.dart';
 
 class InventoryScreen extends StatefulWidget{const InventoryScreen({super.key});@override State<InventoryScreen> createState()=>_InventoryScreenState();}
 class _InventoryScreenState extends State<InventoryScreen>{
-  final _labels=['Gifts','Frames','Assets','Emoji','Crafted'];
+  final _labels=['Gifts','Frames','Assets','Emoji'];
   final Map<String,String?> equipped={};
   Future<void> _equip(BuildContext context,NexoCatalogItem item,String slot) async {
     final auth=context.read<AuthService>();
@@ -62,11 +62,11 @@ class _InventoryScreenState extends State<InventoryScreen>{
     );
   }
   @override Widget build(BuildContext context){
-    return DefaultTabController(length:5,child:Scaffold(
+    return DefaultTabController(length:4,child:Scaffold(
       backgroundColor:NexoColors.background,
       appBar:AppBar(backgroundColor:NexoColors.background,title:const Text('Collection / Inventory'),centerTitle:true,leading:const BackButton(color:Colors.white),bottom:TabBar(isScrollable:true,tabs:_labels.map((x)=>Tab(text:x)).toList())),
       body:Consumer2<NexoCatalogService,EconomyService>(builder:(_,catalog,economy,__){
-        final types=[NexoItemType.gift,NexoItemType.frame,NexoItemType.asset,NexoItemType.emoji,NexoItemType.crafted];
+        final types=[NexoItemType.gift,NexoItemType.frame,NexoItemType.asset,NexoItemType.emoji];
         return TabBarView(children:types.map((t)=>_tab(t,catalog,economy)).toList());
       }),
     ));
