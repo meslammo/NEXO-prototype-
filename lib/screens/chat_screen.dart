@@ -576,16 +576,19 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                   _Avatar(name: person.name, color: person.color, online: person.online, radius: 18),
                   const SizedBox(width: 8),
                   Expanded(child: RichText(text: TextSpan(children: [
-                    WidgetSpan(
+                    if (line.giftId != null) ...[
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.baseline,
+                        baseline: TextBaseline.alphabetic,
+                        child: NexoPowerText(text:line.from,powerId:person.powerId,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:14)),
+                      ),
+                      const TextSpan(text: '  🎁 '),
+                      TextSpan(text: giftById(line.giftId!)?.name ?? 'Gift', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+                    ] else WidgetSpan(
                       alignment: PlaceholderAlignment.baseline,
                       baseline: TextBaseline.alphabetic,
-                      child: NexoPowerText(text:line.from,powerId:person.powerId,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:14)),
+                      child: NexoPowerText(text:line.from + '  ' + line.text,powerId:person.powerId,style:const TextStyle(fontWeight:FontWeight.w600,fontSize:14,height:1.45)),
                     ),
-                    const TextSpan(text: '  '),
-                    if (line.giftId != null) ...[
-                      const TextSpan(text: '🎁 '),
-                      TextSpan(text: giftById(line.giftId!)?.name ?? 'Gift', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
-                    ] else TextSpan(text: line.text, style: const TextStyle(color: Colors.white, height: 1.45)),
                   ]))),
                 ]),
               );
