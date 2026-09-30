@@ -33,7 +33,7 @@ class AuthService extends ChangeNotifier {
   Future<void> login(String identifier,String password) async {
     _busy=true;notifyListeners();
     try{
-      final r=await api.postJson('/auth/login',{'identifier':identifier.trim(),'password':password});
+      final r=await api.postJson('/auth/login',{'identity':identifier.trim(),'password':password});
       final t=r['token']?.toString();if(t==null||t.isEmpty)throw StateError('No session token');
       api.token=t;await storage.write(key:_tokenKey,value:t);_setUser(r['user']);
     }finally{_busy=false;notifyListeners();}
