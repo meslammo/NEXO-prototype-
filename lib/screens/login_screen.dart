@@ -14,7 +14,30 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Future<void> registerNow() async{if(user.text.trim().length<3||email.text.trim().isEmpty){msg('راجع بيانات الحساب');return;}if(regPass.text.length<8||regPass.text!=confirm.text){msg('كلمة السر لازم تكون 8 أحرف ومتطابقة');return;}try{await context.read<AuthService>().register(username:user.text,email:email.text,displayName:name.text,password:regPass.text);}catch(e){msg(e.toString());}}
   Future<void> guestNow() async{try{await context.read<AuthService>().guest();}catch(e){msg(e.toString());}}
   InputDecoration dec(String h,IconData i)=>InputDecoration(hintText:h,hintStyle:const TextStyle(color:NexoColors.textSecondary),prefixIcon:Icon(i,color:NexoColors.primary),filled:true,fillColor:NexoColors.card,border:OutlineInputBorder(borderRadius:BorderRadius.all(Radius.circular(15)),borderSide:BorderSide.none));
-  Widget f(TextEditingController c,String h,IconData i,{bool obscure=false,TextInputType? type})=>Padding(padding:const EdgeInsets.only(bottom:9),child:TextField(controller:c,obscureText:obscure,keyboardType:type,style:const TextStyle(color:Colors.white),decoration:dec(h,i)));
+  Widget f(TextEditingController c,String h,IconData i,{bool obscure=false,TextInputType? type})=>Container(
+    margin:const EdgeInsets.only(bottom:10),
+    padding:const EdgeInsets.symmetric(horizontal:12,vertical:2),
+    decoration:BoxDecoration(
+      color:NexoColors.surface,
+      borderRadius:BorderRadius.circular(15),
+      border:Border.all(color:NexoColors.primary.withOpacity(.20)),
+    ),
+    child:TextField(
+      controller:c,
+      obscureText:obscure,
+      keyboardType:type,
+      style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w600),
+      decoration:InputDecoration(
+        hintText:h,
+        hintStyle:const TextStyle(color:NexoColors.textSecondary,fontWeight:FontWeight.w500),
+        prefixIcon:Icon(i,color:NexoColors.primary),
+        border:InputBorder.none,
+        enabledBorder:InputBorder.none,
+        focusedBorder:InputBorder.none,
+        contentPadding:const EdgeInsets.symmetric(vertical:14),
+      ),
+    ),
+  );
   @override
   Widget build(BuildContext context) {
     final busy = context.watch<AuthService>().busy;
