@@ -95,7 +95,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: NexoColors.background,
+      backgroundColor: const Color(0xFF8FDDF2),
       appBar: AppBar(
         title: const Text('Chat'),
         backgroundColor: NexoColors.background,
