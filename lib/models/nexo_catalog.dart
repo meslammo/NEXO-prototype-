@@ -39,7 +39,7 @@ NexoRarity nexoRarityFromString(String? raw) {
   }
 }
 
-enum NexoItemType { gift, frame, asset, emoji, crafted, nameColor, entranceEffect, roomBackground }
+enum NexoItemType { gift, frame, asset, emoji, crafted, nameColor, entranceEffect, roomBackground, power }
 extension NexoItemTypeX on NexoItemType {
   String get apiValue => name;
   String get label {
@@ -94,6 +94,7 @@ class NexoCatalogItem {
     tags:(json['tags'] as List?)?.map((e)=>e.toString()).toList() ?? const [],
   );
   bool get isGift => type==NexoItemType.gift;
+  bool get isPower => type==NexoItemType.power;
 }
 
 typedef NexoGift = NexoCatalogItem;
