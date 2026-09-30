@@ -7,7 +7,7 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../config/api_config.dart';
 import 'mining_screen.dart';
-import '../games/ludo/nexo_ludo_game.dart';
+import '../games/ludo/nexo_ludo_online_screen.dart';
 
 class GamesScreen extends StatelessWidget {
   const GamesScreen({super.key});
@@ -59,7 +59,7 @@ class GamesScreen extends StatelessWidget {
           _LudoEntryCard(
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const NexoLudoGame()),
+              MaterialPageRoute(builder: (_) => const NexoLudoOnlineScreen()),
             ),
           ),
           const SizedBox(height: 14),
@@ -153,7 +153,7 @@ class _LudoEntryCard extends StatelessWidget {
                 ),
                 SizedBox(height: 5),
                 Text(
-                  'محرك اللعب الأساسي مضاف داخل NEXO',
+                  'Quick Match • Create Room • Join Code • 2–4 Players',
                   style: TextStyle(
                     color: Color(0xFF66E0FF),
                     fontSize: 10,
