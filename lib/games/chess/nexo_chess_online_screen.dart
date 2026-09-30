@@ -1,6 +1,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:chess_on_dart/chess_on_dart.dart';
 import '../../services/api_client.dart';
@@ -491,7 +492,7 @@ class _NexoChessOnlineScreenState extends State<NexoChessOnlineScreen> {
             children: [
               Expanded(
                 child: Text(
-                  '\$turnText • \${turnColor == 'white' ? 'الأبيض' : 'الأسود'}',
+                  "\$turnText • \${turnColor == 'white' ? 'الأبيض' : 'الأسود'}",
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
                 ),
               ),
