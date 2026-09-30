@@ -5,6 +5,7 @@ import 'api_client.dart';
 
 class AuthService extends ChangeNotifier {
   static const _tokenKey='nexo.auth.token';
+  static const _guestDeviceKey='nexo.guest.device';
   final ApiClient api;
   final FlutterSecureStorage storage;
   Map<String,dynamic>? _user;
@@ -49,7 +50,11 @@ class AuthService extends ChangeNotifier {
   Future<void> guest() async {
     _busy=true;notifyListeners();
     try{
-      final device='android-'+DateTime.now().millisecondsSinceEpoch.toString();
+      var device=await storage.read(key:_guestDeviceKey);
+      if(device==null||device.trim().isEmpty){
+        device='android-'+DateTime.now().millisecondsSinceEpoch.toString()+'-'+DateTime.now().microsecondsSinceEpoch.toString();
+        await storage.write(key:_guestDeviceKey,value:device);
+      }
       final r=await api.postJson('/auth/guest',{'deviceId':device});
       final t=r['token']?.toString();if(t==null||t.isEmpty)throw StateError('No guest token');
       api.token=t;await storage.write(key:_tokenKey,value:t);_setUser(r['user']);
