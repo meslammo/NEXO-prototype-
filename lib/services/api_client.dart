@@ -20,11 +20,11 @@ class ApiClient {
     'content-type':'application/json',
     if (token != null && token!.isNotEmpty) 'authorization':'Bearer $token',
   };
-  Future<Map<String,dynamic>> getJson(String path,{Duration timeout=const Duration(seconds:5)}) async {
+  Future<Map<String,dynamic>> getJson(String path,{Duration timeout=const Duration(seconds:15)}) async {
     final r=await http.get(_uri(path),headers:_headers()).timeout(timeout);
     return _decode(r);
   }
-  Future<Map<String,dynamic>> postJson(String path,Map<String,dynamic> body,{Duration timeout=const Duration(seconds:7)}) async {
+  Future<Map<String,dynamic>> postJson(String path,Map<String,dynamic> body,{Duration timeout=const Duration(seconds:20)}) async {
     final r=await http.post(_uri(path),headers:_headers(),body:jsonEncode(body)).timeout(timeout);
     return _decode(r);
   }
