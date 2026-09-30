@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/power_models.dart';
 import '../services/power_service.dart';
+import '../services/api_client.dart';
 import '../theme/nexo_theme.dart';
 
 /// شاشة كولكشن الـ Powers — تفعيل / إيقاف
@@ -114,8 +115,10 @@ class _OwnedTile extends StatelessWidget {
           onPressed: () async {
             try {
               if (active) {
+                await context.read<ApiClient>().postJson('/profile/equipped', {'slot':'power','enabled':false});
                 await powers.deactivate(instance.instanceId);
               } else {
+                await context.read<ApiClient>().postJson('/profile/equipped', {'slot':'power','itemId':instance.definitionId});
                 await powers.activate(instance.instanceId);
               }
             } catch (e) {
