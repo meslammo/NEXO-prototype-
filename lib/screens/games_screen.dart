@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../config/api_config.dart';
 import 'mining_screen.dart';
 import '../games/ludo/nexo_ludo_online_screen.dart';
+import '../games/chess/nexo_chess_online_screen.dart';
 
 class GamesScreen extends StatelessWidget {
   const GamesScreen({super.key});
@@ -60,6 +61,13 @@ class GamesScreen extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const NexoLudoOnlineScreen()),
+            ),
+          ),
+          const SizedBox(height: 14),
+          _ChessEntryCard(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NexoChessOnlineScreen()),
             ),
           ),
           const SizedBox(height: 14),
@@ -251,6 +259,74 @@ class _GameCard extends StatelessWidget {
   }
 }
 
+
+
+class _ChessEntryCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _ChessEntryCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(18),
+    child: Ink(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF183C53), Color(0xFF2A2154)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFF66E0FF).withOpacity(0.45),
+        ),
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 28,
+            backgroundColor: Color(0x2266E0FF),
+            child: Text('♟', style: TextStyle(fontSize: 28)),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'NEXO Chess',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'شطرنج أونلاين • Room • Quick Match • 2 لاعبين',
+                  style: TextStyle(color: Color(0xFF90A4AE), fontSize: 12),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  'Legal Moves • Check • Checkmate • Promotion',
+                  style: TextStyle(
+                    color: Color(0xFF66E0FF),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.play_circle_fill_rounded,
+            color: Color(0xFF66E0FF),
+            size: 30,
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
 class _OnlineArenaCard extends StatelessWidget {
   final VoidCallback onTap;
