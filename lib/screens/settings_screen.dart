@@ -19,11 +19,67 @@ class _SettingsScreenState extends State<SettingsScreen>{
   InputDecoration dec(String h)=>InputDecoration(hintText:h,hintStyle:const TextStyle(color:NexoColors.textSecondary),filled:true,fillColor:NexoColors.card,border:OutlineInputBorder(borderRadius:BorderRadius.all(Radius.circular(14)),borderSide:BorderSide.none));
   Widget sw(String t,String sub,bool v,ValueChanged<bool> f)=>SwitchListTile.adaptive(value:v,onChanged:f,activeColor:NexoColors.primary,title:Text(t,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.bold)),subtitle:Text(sub,style:const TextStyle(color:NexoColors.textSecondary,fontSize:10)));
   Widget group(String t,List<Widget> c)=>Container(margin:const EdgeInsets.only(bottom:12),padding:const EdgeInsets.all(12),decoration:BoxDecoration(color:NexoColors.card,borderRadius:BorderRadius.circular(16),border:Border.all(color:NexoColors.cardBorder)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Padding(padding:const EdgeInsets.only(bottom:9),child:Text(t,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:15))),...c]));
-  @override Widget build(BuildContext context)=>Scaffold(backgroundColor:NexoColors.background,appBar:AppBar(backgroundColor:NexoColors.background,title:const Text('Settings'),centerTitle:true),body:loading?const Center(child:CircularProgressIndicator()):ListView(padding:const EdgeInsets.all(14),children:[
-    group('الحساب',[TextField(controller:display,style:const TextStyle(color:Colors.white),decoration:dec('Display Name')),const SizedBox(height:8),TextField(controller:bio,maxLines:3,style:const TextStyle(color:Colors.white),decoration:dec('Bio'))]),
-    group('المظهر والهوية',[sw('Glow','وهج الاسم',glow,(v)=>setState(()=>glow=v)),ListTile(leading:const Icon(Icons.palette_outlined,color:NexoColors.primary),title:const Text('Font Color',style:TextStyle(color:Colors.white)),subtitle:const Text('اختيار لون الاسم من المتجر',style:TextStyle(color:NexoColors.textSecondary,fontSize:10)),trailing:const Icon(Icons.chevron_left,color:Colors.white38),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const FontColorScreen())))]),
-    group('الإشعارات',[sw('Notifications','الإشعارات',notifications,(v)=>setState(()=>notifications=v)),sw('Sound','الأصوات',sound,(v)=>setState(()=>sound=v)),sw('Vibration','الاهتزاز',vibration,(v)=>setState(()=>vibration=v))]),
-    group('الخصوصية',[sw('Show Online','ظهور الحالة',showOnline,(v)=>setState(()=>showOnline=v)),sw('Allow Messages','السماح بالرسائل',allowMessages,(v)=>setState(()=>allowMessages=v)),ListTile(leading:const Icon(Icons.language,color:NexoColors.primary),title:const Text('Language',style:TextStyle(color:Colors.white)),trailing:DropdownButton<String>(value:language,dropdownColor:NexoColors.card,items:const[DropdownMenuItem(value:'ar',child:Text('العربية',style:TextStyle(color:Colors.white))),DropdownMenuItem(value:'en',child:Text('English',style:TextStyle(color:Colors.white)))],onChanged:(v){if(v!=null)setState(()=>language=v);})]),
-    group('الأمان',[TextField(controller:oldPass,obscureText:true,style:const TextStyle(color:Colors.white),decoration:dec('Current Password')),const SizedBox(height:7),TextField(controller:newPass,obscureText:true,style:const TextStyle(color:Colors.white),decoration:dec('New Password')),const SizedBox(height:7),TextField(controller:confirm,obscureText:true,style:const TextStyle(color:Colors.white),decoration:dec('Confirm New Password')),const SizedBox(height:7),SizedBox(width:double.infinity,child:OutlinedButton(onPressed:changePassword,child:const Text('تغيير كلمة السر'))),const SizedBox(height:5),SizedBox(width:double.infinity,child:ElevatedButton(onPressed:saving?null:save,child:Text(saving?'جاري الحفظ...':'حفظ الإعدادات'))),TextButton.icon(onPressed:()=>context.read<AuthService>().logout(),icon:const Icon(Icons.logout,color:Colors.redAccent),label:const Text('تسجيل الخروج',style:TextStyle(color:Colors.redAccent)))]),
-  ]);
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: NexoColors.background,
+      appBar: AppBar(backgroundColor: NexoColors.background, title: const Text('Settings'), centerTitle: true),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(14),
+              children: [
+                group('الحساب', [
+                  TextField(controller: display, style: const TextStyle(color: Colors.white), decoration: dec('Display Name')),
+                  const SizedBox(height: 8),
+                  TextField(controller: bio, maxLines: 3, style: const TextStyle(color: Colors.white), decoration: dec('Bio')),
+                ]),
+                group('المظهر والهوية', [
+                  sw('Glow', 'وهج الاسم', glow, (v) => setState(() => glow = v)),
+                  ListTile(
+                    leading: const Icon(Icons.palette_outlined, color: NexoColors.primary),
+                    title: const Text('Font Color', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('اختيار لون الاسم من المتجر', style: TextStyle(color: NexoColors.textSecondary, fontSize: 10)),
+                    trailing: const Icon(Icons.chevron_left, color: Colors.white38),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FontColorScreen())),
+                  ),
+                ]),
+                group('الإشعارات', [
+                  sw('Notifications', 'الإشعارات', notifications, (v) => setState(() => notifications = v)),
+                  sw('Sound', 'الأصوات', sound, (v) => setState(() => sound = v)),
+                  sw('Vibration', 'الاهتزاز', vibration, (v) => setState(() => vibration = v)),
+                ]),
+                group('الخصوصية', [
+                  sw('Show Online', 'ظهور الحالة', showOnline, (v) => setState(() => showOnline = v)),
+                  sw('Allow Messages', 'السماح بالرسائل', allowMessages, (v) => setState(() => allowMessages = v)),
+                  ListTile(
+                    leading: const Icon(Icons.language, color: NexoColors.primary),
+                    title: const Text('Language', style: TextStyle(color: Colors.white)),
+                    trailing: DropdownButton<String>(
+                      value: language,
+                      dropdownColor: NexoColors.card,
+                      items: const [
+                        DropdownMenuItem(value: 'ar', child: Text('العربية', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(color: Colors.white))),
+                      ],
+                      onChanged: (v) { if (v != null) setState(() => language = v); },
+                    ),
+                  ),
+                ]),
+                group('الأمان', [
+                  TextField(controller: oldPass, obscureText: true, style: const TextStyle(color: Colors.white), decoration: dec('Current Password')),
+                  const SizedBox(height: 7),
+                  TextField(controller: newPass, obscureText: true, style: const TextStyle(color: Colors.white), decoration: dec('New Password')),
+                  const SizedBox(height: 7),
+                  TextField(controller: confirm, obscureText: true, style: const TextStyle(color: Colors.white), decoration: dec('Confirm New Password')),
+                  const SizedBox(height: 7),
+                  SizedBox(width: double.infinity, child: OutlinedButton(onPressed: changePassword, child: const Text('تغيير كلمة السر'))),
+                  const SizedBox(height: 5),
+                  SizedBox(width: double.infinity, child: ElevatedButton(onPressed: saving ? null : save, child: Text(saving ? 'جاري الحفظ...' : 'حفظ الإعدادات'))),
+                  TextButton.icon(onPressed: () => context.read<AuthService>().logout(), icon: const Icon(Icons.logout, color: Colors.redAccent), label: const Text('تسجيل الخروج', style: TextStyle(color: Colors.redAccent))),
+                ]),
+              ],
+            ),
+    );
+  }
 }
