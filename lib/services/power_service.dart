@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/power_models.dart';
+import '../models/nexo_catalog.dart';
 
 /// Power Engine — client state + mock server rules.
 /// Activate starts timer; deactivate freezes remaining duration.
@@ -55,6 +56,28 @@ class PowerService extends ChangeNotifier {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Merge admin-created Power items from the live Store into the visual registry.
+  /// Prices, ownership, and entitlement remain server-authoritative.
+  void syncCatalog(Iterable<NexoCatalogItem> items) {
+    var changed = false;
+    for (final item in items.where((x) => x.isPower)) {
+      if (_definitions.any((d) => d.id == item.id)) continue;
+      _definitions.add(PowerDefinition(
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        iconUrl: item.image,
+        previewUrl: item.image,
+        categoryId: item.category.isEmpty ? PowerCategoryId.chat : item.category,
+        rarityId: item.rarity.label.toLowerCase().replaceAll(' ', '_'),
+        isTradeable: item.tradeable,
+        isPermanent: true,
+      ));
+      changed = true;
+    }
+    if (changed) notifyListeners();
   }
 
   void syncInventory(Set<String> itemIds) {
