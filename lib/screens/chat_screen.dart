@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/nexo_catalog.dart';
 import '../services/economy_service.dart';
+import '../services/power_service.dart';
 import '../services/catalog_service.dart';
 import '../services/social_engine.dart';
 import '../services/api_client.dart';
