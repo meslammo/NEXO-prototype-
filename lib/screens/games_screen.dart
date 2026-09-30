@@ -7,6 +7,7 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../config/api_config.dart';
 import 'mining_screen.dart';
+import '../games/ludo/nexo_ludo_game.dart';
 
 class GamesScreen extends StatelessWidget {
   const GamesScreen({super.key});
@@ -55,6 +56,13 @@ class GamesScreen extends StatelessWidget {
         children: [
           _MiningEntryCard(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MiningScreen()))),
           const SizedBox(height: 14),
+          _LudoEntryCard(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NexoLudoGame()),
+            ),
+          ),
+          const SizedBox(height: 14),
           _OnlineArenaCard(onTap: () => _openOnlineArena(context)),
           const SizedBox(height: 14),
           ...List.generate(_games.length, (index) => Padding(
@@ -93,6 +101,73 @@ class _MiningEntryCard extends StatelessWidget {
             Text('التعدين داخل Games — ليس زرًا مستقلًا في الـNavigation', style: TextStyle(color: Color(0xFF90A4AE), fontSize: 12)),
           ])),
           Icon(Icons.chevron_left_rounded, color: Color(0xFF00D4FF)),
+        ],
+      ),
+    ),
+  );
+}
+
+class _LudoEntryCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _LudoEntryCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(18),
+    child: Ink(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF163A56), Color(0xFF2B1E59)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFF00D4FF).withOpacity(0.55),
+        ),
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 28,
+            backgroundColor: Color(0x3300D4FF),
+            child: Text('🎲', style: TextStyle(fontSize: 26)),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'NEXO Ludo',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Ludo 4 لاعبين • Dice • Pawns • Safe Spots',
+                  style: TextStyle(color: Color(0xFF90A4AE), fontSize: 12),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  'محرك اللعب الأساسي مضاف داخل NEXO',
+                  style: TextStyle(
+                    color: Color(0xFF66E0FF),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.play_circle_fill_rounded,
+            color: Color(0xFF00D4FF),
+            size: 30,
+          ),
         ],
       ),
     ),
