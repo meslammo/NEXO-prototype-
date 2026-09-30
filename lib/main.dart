@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'theme/nexo_theme.dart';
+import 'models/nexo_catalog.dart';
 import 'widgets/adaptive_scaffold.dart';
 import 'screens/home_screen.dart';
 import 'screens/chat_screen.dart';
