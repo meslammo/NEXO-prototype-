@@ -52,6 +52,7 @@ extension NexoItemTypeX on NexoItemType {
       case NexoItemType.nameColor: return 'Font Color';
       case NexoItemType.entranceEffect: return 'Entrance Effects';
       case NexoItemType.roomBackground: return 'Room Backgrounds';
+      case NexoItemType.power: return 'Powers';
     }
   }
 }
