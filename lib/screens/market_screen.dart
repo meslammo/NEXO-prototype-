@@ -28,7 +28,112 @@ if(image.startsWith('effect:'))return Container(width:size,height:size,decoratio
   Future<void> equip(Map<String,dynamic> m) async{final t=m['itemType']?.toString();final slot=t=='frame'?'frame':t=='name_color'?'name_color':t=='entrance_effect'?'entrance_effect':t=='room_background'?'room_background':t=='power'?'power':null;if(slot==null)return;try{await context.read<ApiClient>().postJson('/profile/equipped',{'slot':slot,'itemId':m['id']});if(slot=='power')context.read<PowerService>().setActivePower(m['id'].toString());if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('✅ تم تفعيل العنصر')));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر التفعيل: '+e.toString()),backgroundColor:Colors.redAccent));}}
   void details(Map<String,dynamic> m,int owned){showDialog(context:context,builder:(_)=>AlertDialog(backgroundColor:NexoColors.card,title:Text(m['name'].toString(),style:TextStyle(color:rarity(m['rarity']?.toString()).color,fontWeight:FontWeight.bold)),content:Column(mainAxisSize:MainAxisSize.min,children:[preview(m,120),const SizedBox(height:8),Text(m['description']?.toString()??'',style:const TextStyle(color:Colors.white70),textAlign:TextAlign.center),const SizedBox(height:7),Text(m['gems'].toString()+' Gems • '+duration(m),style:const TextStyle(color:NexoColors.primary,fontWeight:FontWeight.bold)),Text(owned>0?'Owned x'+owned.toString():'Not owned',style:const TextStyle(color:NexoColors.textSecondary))]),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:const Text('إغلاق')),ElevatedButton(onPressed:(){Navigator.pop(context);buy(m);},child:const Text('شراء'))]));}
   Widget card(Map<String,dynamic> m){final e=context.watch<EconomyService>();final owned=e.inventory[m['id']?.toString()]??0;return Container(padding:const EdgeInsets.all(9),decoration:BoxDecoration(color:NexoColors.card,borderRadius:BorderRadius.circular(17),border:Border.all(color:rarity(m['rarity']?.toString()).color.withOpacity(.35))),child:Column(children:[Expanded(child:GestureDetector(onTap:()=>details(m,owned),child:preview(m,84))),Text(m['name'].toString(),maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800,fontSize:11)),Text(m['rarity'].toString(),style:TextStyle(color:rarity(m['rarity']?.toString()).color,fontSize:9)),Text(m['gems'].toString()+' 💎',style:const TextStyle(color:NexoColors.primary,fontWeight:FontWeight.bold,fontSize:10)),Text(owned>0?'Owned x'+owned.toString():duration(m),style:const TextStyle(color:NexoColors.textSecondary,fontSize:9)),const SizedBox(height:3),Row(children:[Expanded(child:OutlinedButton(onPressed:()=>details(m,owned),child:const Text('Preview',style:TextStyle(fontSize:9)))),const SizedBox(width:4),Expanded(child:ElevatedButton(onPressed:()=>buy(m),child:const Text('Buy',style:TextStyle(fontSize:9))))]),if(owned>0&&['frame','name_color','entrance_effect','room_background','power'].contains(m['itemType']))TextButton(onPressed:()=>equip(m),child:const Text('Equip',style:TextStyle(fontSize:9))) ]));}
-  Widget membershipList(String kind)=>ListView(padding:const EdgeInsets.all(12),children:[Text(kind.toUpperCase(),style:TextStyle(color:kind=='svip'?NexoColors.gold:NexoColors.primary,fontSize:20,fontWeight:FontWeight.w900)),const SizedBox(height:8),...memberships.where((p)=>p['kind']==kind).map((p)=>Card(color:NexoColors.card,child:ListTile(title:Text(p['name'].toString(),style:const TextStyle(color:Colors.white,fontWeight:FontWeight.bold)),subtitle:Text(p['durationDays'].toString()+' يوم • '+p['gemsPrice'].toString()+' Gems',style:const TextStyle(color:NexoColors.textSecondary)),trailing:ElevatedButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MembershipScreen(initialKind:kind))),child:const Text('فتح'))))]);
+  Widget membershipList(String kind) {
+    final visible = memberships.where((p) => p['kind'] == kind).toList();
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        Text(kind.toUpperCase(), style: TextStyle(color: kind == 'svip' ? NexoColors.gold : NexoColors.primary, fontSize: 20, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 8),
+        ...visible.map((p) => Card(
+          color: NexoColors.card,
+          child: ListTile(
+            title: Text(p['name'].toString(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            subtitle: Text(p['durationDays'].toString() + ' يوم • ' + p['gemsPrice'].toString() + ' Gems', style: const TextStyle(color: NexoColors.textSecondary)),
+            trailing: ElevatedButton(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MembershipScreen(initialKind: kind))),
+              child: const Text('فتح'),
+            ),
+          ),
+        )),
+      ],
+    );
+  }
   Widget aristocracyList(){final cur=(aristocracy['currentLevel'] as num?)?.toInt()??0;final raw=aristocracy['products'];final list=raw is List?raw.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList():<Map<String,dynamic>>[];return ListView(padding:const EdgeInsets.all(12),children:[Text('Aristocracy • Lv.'+cur.toString()+'/6',style:const TextStyle(color:NexoColors.gold,fontSize:20,fontWeight:FontWeight.w900)),const SizedBox(height:8),...list.map((p){final lv=(p['level'] as num?)?.toInt()??0;return Card(color:NexoColors.card,child:ListTile(leading:CircleAvatar(backgroundColor:NexoColors.gold.withOpacity(.12),child:Text(lv.toString(),style:const TextStyle(color:NexoColors.gold,fontWeight:FontWeight.bold))),title:Text(p['name'].toString(),style:const TextStyle(color:Colors.white,fontWeight:FontWeight.bold)),subtitle:Text(p['gemsPrice'].toString()+' Gems',style:const TextStyle(color:NexoColors.textSecondary)),trailing:ElevatedButton(onPressed:lv<=cur?null:()async{try{final r=await context.read<ApiClient>().postJson('/aristocracy/buy',{'productId':p['id'],'idempotencyKey':'aristocracy-'+p['id'].toString()+'-'+DateTime.now().microsecondsSinceEpoch.toString()});final e=context.read<EconomyService>();e.setGems((r['gems'] as num?)?.toInt()??e.gems);await load();if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('✅ تم رفع Aristocracy')));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر الترقية: '+e.toString()),backgroundColor:Colors.redAccent));}},child:Text(lv<=cur?'مفتوحة':'ترقية'))));})]);}
-  @override Widget build(BuildContext context){final cats=[['featured','Featured'],['gifts','Gifts'],['frames','Profile Frames'],['font','Font Color'],['entrance','Entrance Effects'],['rooms','Room Backgrounds'],['powers','Powers'],['name_cards','Name Cards / Chat Style'],['vip','VIP'],['svip','SVIP'],['aristocracy','Aristocracy'],['all','All']];final shown=category=='featured'?items.where((m)=>m['featured']==true).toList():category=='all'?items.where(matches).toList():category=='vip'?const <Map<String,dynamic>>[]:category=='svip'?const <Map<String,dynamic>>[]:category=='aristocracy'?const <Map<String,dynamic>>[]:filtered;return Scaffold(backgroundColor:NexoColors.background,appBar:AppBar(backgroundColor:NexoColors.background,title:const Text('NEXO Store'),centerTitle:true,actions:[Consumer<EconomyService>(builder:(_,e,__)=>Padding(padding:const EdgeInsets.symmetric(horizontal:6),child:Center(child:Text(e.gems.toString()+' 💎',style:const TextStyle(color:NexoColors.primary,fontWeight:FontWeight.w900)))),IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const RechargeScreen())),icon:const Icon(Icons.add_card,color:NexoColors.gold))]),body:loading?const Center(child:CircularProgressIndicator()):Column(children:[Padding(padding:const EdgeInsets.fromLTRB(12,10,12,4),child:TextField(controller:search,style:const TextStyle(color:Colors.white),decoration:const InputDecoration(prefixIcon:Icon(Icons.search,color:NexoColors.primary),hintText:'Search Store',hintStyle:TextStyle(color:NexoColors.textSecondary),filled:true,fillColor:NexoColors.card,border:OutlineInputBorder(borderRadius:BorderRadius.all(Radius.circular(14)),borderSide:BorderSide.none)))),SingleChildScrollView(scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:12),child:Row(children:['all','featured','new','limited'].map((x)=>Padding(padding:const EdgeInsetsDirectional.only(end:6),child:ChoiceChip(label:Text(x.toUpperCase()),selected:quick==x,onSelected:(_){setState(()=>quick=x);}))).toList())),SingleChildScrollView(scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:12,vertical:4),child:Row(children:cats.map((c)=>Padding(padding:const EdgeInsetsDirectional.only(end:6),child:ChoiceChip(label:Text(c[1]),selected:category==c[0],onSelected:(_){setState(()=>category=c[0]);}))).toList())),Expanded(child:category=='vip'?membershipList('vip'):category=='svip'?membershipList('svip'):category=='aristocracy'?aristocracyList():GridView.builder(padding:const EdgeInsets.all(12),itemCount:shown.length,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,mainAxisSpacing:10,crossAxisSpacing:10,childAspectRatio:.70),itemBuilder:(_,i)=>card(shown[i]))) ]));}
+  @override
+  Widget build(BuildContext context) {
+    final cats = const [
+      ['featured', 'Featured'], ['gifts', 'Gifts'], ['frames', 'Profile Frames'], ['font', 'Font Color'],
+      ['entrance', 'Entrance Effects'], ['rooms', 'Room Backgrounds'], ['powers', 'Powers'], ['name_cards', 'Name Cards / Chat Style'],
+      ['vip', 'VIP'], ['svip', 'SVIP'], ['aristocracy', 'Aristocracy'], ['all', 'All'],
+    ];
+    final shown = category == 'featured'
+        ? items.where((m) => m['featured'] == true).toList()
+        : category == 'all'
+            ? items.where(matches).toList()
+            : category == 'vip' || category == 'svip' || category == 'aristocracy'
+                ? const <Map<String, dynamic>>[]
+                : filtered;
+    return Scaffold(
+      backgroundColor: NexoColors.background,
+      appBar: AppBar(
+        backgroundColor: NexoColors.background,
+        title: const Text('NEXO Store'),
+        centerTitle: true,
+        actions: [
+          Consumer<EconomyService>(
+            builder: (_, e, __) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Center(child: Text(e.gems.toString() + ' 💎', style: const TextStyle(color: NexoColors.primary, fontWeight: FontWeight.w900))),
+            ),
+          ),
+          IconButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RechargeScreen())),
+            icon: const Icon(Icons.add_card, color: NexoColors.gold),
+          ),
+        ],
+      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+                  child: TextField(
+                    controller: search,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.search, color: NexoColors.primary),
+                      hintText: 'Search Store',
+                      hintStyle: TextStyle(color: NexoColors.textSecondary),
+                      filled: true,
+                      fillColor: NexoColors.card,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14)), borderSide: BorderSide.none),
+                    ),
+                  ),
+                ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(children: ['all', 'featured', 'new', 'limited'].map((x) => Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 6),
+                    child: ChoiceChip(label: Text(x.toUpperCase()), selected: quick == x, onSelected: (_) { setState(() => quick = x); }),
+                  )).toList()),
+                ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: Row(children: cats.map((c) => Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 6),
+                    child: ChoiceChip(label: Text(c[1]), selected: category == c[0], onSelected: (_) { setState(() => category = c[0]); }),
+                  )).toList()),
+                ),
+                Expanded(
+                  child: category == 'vip'
+                      ? membershipList('vip')
+                      : category == 'svip'
+                          ? membershipList('svip')
+                          : category == 'aristocracy'
+                              ? aristocracyList()
+                              : GridView.builder(
+                                  padding: const EdgeInsets.all(12),
+                                  itemCount: shown.length,
+                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: .70),
+                                  itemBuilder: (_, i) => card(shown[i]),
+                                ),
+                ),
+              ],
+            ),
+    );
+  }
 }
