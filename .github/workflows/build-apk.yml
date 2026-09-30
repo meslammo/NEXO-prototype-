@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
   push:
     branches: ["nexo/fullstack-phases-1-10"]
+  pull_request:
 
 jobs:
   build-apk:
