@@ -815,7 +815,7 @@ class OverlaySurface extends CustomPainter {
 class NexoLudoGame extends StatefulWidget {
   const NexoLudoGame({super.key});
   @override
-  _NexoLudoGameState createState() => _FludoGameState();
+  _NexoLudoGameState createState() => _NexoLudoGameState();
 }
 
 class _NexoLudoGameState extends State<NexoLudoGame> with TickerProviderStateMixin {
