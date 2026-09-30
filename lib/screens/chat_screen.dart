@@ -13,6 +13,7 @@ import '../services/realtime_service.dart';
 import '../config/api_config.dart';
 import '../theme/nexo_theme.dart';
 import '../widgets/nexo_asset_art.dart';
+import '../widgets/power_text.dart';
 
 class _ChatLine {
   final String from;
@@ -37,11 +38,11 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   static const _demoPeople = <_Person>[
-    _Person('Shadoww', 'shadoww', true, Color(0xFFB44CFF)),
-    _Person('GalaxyGirl', 'galaxygirl', true, Color(0xFFFF6B9D)),
-    _Person('Prince_X', 'prince', false, Color(0xFFF5C14A)),
-    _Person('Ahmed', 'ahmed', false, Color(0xFF3EE08A)),
-    _Person('M:Dark', 'mdark', true, Color(0xFF6EB6FF)),
+    _Person('Shadoww', 'shadoww', true, Color(0xFFB44CFF), 'power_chat_spark'),
+    _Person('GalaxyGirl', 'galaxygirl', true, Color(0xFFFF6B9D), 'power_vip_aura'),
+    _Person('Prince_X', 'prince', false, Color(0xFFF5C14A), 'power_mythic_crown'),
+    _Person('Ahmed', 'ahmed', false, Color(0xFF3EE08A), null),
+    _Person('M:Dark', 'mdark', true, Color(0xFF6EB6FF), 'power_glow_frame'),
   ];
   List<_Person> _people = _demoPeople;
   Timer? _peopleTimer;
@@ -71,7 +72,7 @@ class _ChatScreenState extends State<ChatScreen> {
             : (u['username']?.toString() ?? id);
         final online = u['online'] == true;
         final color = colors[id.hashCode.abs() % colors.length];
-        return _Person(name, id, online, color);
+        return _Person(name, id, online, color, u['power_id']?.toString());
       }).whereType<_Person>();
       final seen = <String>{};
       final merged = <_Person>[];
@@ -524,7 +525,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
           GestureDetector(onTap: _showUserInfo, child: _Avatar(name: widget.person.name, color: widget.person.color, online: widget.person.online)),
           const SizedBox(width: 9),
           GestureDetector(onTap: _showUserInfo, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(widget.person.name, style: TextStyle(color: widget.person.color, fontWeight: FontWeight.bold)),
+            NexoPowerText(text:widget.person.name,powerId:widget.person.powerId,style:const TextStyle(fontWeight:FontWeight.bold)),
             Text(widget.person.online ? 'Online' : 'Offline', style: const TextStyle(color: NexoColors.textSecondary, fontSize: 11)),
           ])),
         ]),
@@ -567,14 +568,19 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
               final line = lines[i];
               final currentName = context.read<AuthService>().user?['username']?.toString() ?? 'NEXO_KING';
               final mine = line.from == currentName;
-              final person = mine ? const _Person('NEXO_KING', 'me', true, NexoColors.primary) : widget.person;
+              final person = mine ? _Person('NEXO_KING', 'me', true, NexoColors.primary, context.read<PowerService>().activePowerId) : widget.person;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 13),
                 child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   _Avatar(name: person.name, color: person.color, online: person.online, radius: 18),
                   const SizedBox(width: 8),
                   Expanded(child: RichText(text: TextSpan(children: [
-                    TextSpan(text: line.from + '  ', style: TextStyle(color: person.color, fontWeight: FontWeight.bold, shadows: [Shadow(color: person.color.withOpacity(.55), blurRadius: 9)])),
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.baseline,
+                      baseline: TextBaseline.alphabetic,
+                      child: NexoPowerText(text:line.from,powerId:person.powerId,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:14)),
+                    ),
+                    const TextSpan(text: '  '),
                     if (line.giftId != null) ...[
                       const TextSpan(text: '🎁 '),
                       TextSpan(text: giftById(line.giftId!)?.name ?? 'Gift', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
@@ -614,7 +620,8 @@ class _Person {
   final String id;
   final bool online;
   final Color color;
-  const _Person(this.name, this.id, this.online, this.color);
+  final String? powerId;
+  const _Person(this.name, this.id, this.online, this.color, [this.powerId]);
 }
 
 class _Avatar extends StatelessWidget {
