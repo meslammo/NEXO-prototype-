@@ -517,7 +517,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   Widget build(BuildContext context) {
     final lines = _lines;
     return Scaffold(
-      backgroundColor: NexoColors.background,
+      backgroundColor: const Color(0xFF8FDDF2),
       appBar: AppBar(
         backgroundColor: NexoColors.background,
         leading: const BackButton(color: Colors.white),
