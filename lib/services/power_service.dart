@@ -15,6 +15,7 @@ class PowerService extends ChangeNotifier {
 
   bool _loading = false;
   String? _error;
+  String? _activePowerId;
 
   PowerService({this.playerId = '1'}) {
     _seed();
@@ -26,6 +27,7 @@ class PowerService extends ChangeNotifier {
   List<PowerInstance> get ownedPowers => _owned.values.toList(growable: false);
   List<RarityConfig> get rarityTable => List.unmodifiable(_rarities);
   List<PowerLoadout> get loadouts => _loadouts.values.toList();
+  String? get activePowerId => _activePowerId;
 
   int get collectionScore {
     var score = 0;
@@ -53,6 +55,52 @@ class PowerService extends ChangeNotifier {
     } catch (_) {
       return null;
     }
+  }
+
+  void syncInventory(Set<String> itemIds) {
+    final keep = <String, PowerInstance>{};
+    for (final def in _definitions) {
+      if (!itemIds.contains(def.id)) continue;
+      final existing = _owned.values.where((x) => x.definitionId == def.id).cast<PowerInstance?>().firstWhere(
+        (x) => x != null,
+        orElse: () => null,
+      );
+      final instanceId = existing?.instanceId ?? 'inst_${def.id}_$playerId';
+      keep[instanceId] = existing ?? PowerInstance(
+        instanceId: instanceId,
+        definitionId: def.id,
+        ownerId: playerId,
+        state: PowerStateId.owned,
+        isTradeable: def.isTradeable,
+        createdAt: DateTime.now().toUtc(),
+        remainingDurationMs: def.isPermanent ? null : defaultTimedDuration.inMilliseconds,
+      );
+    }
+    _owned
+      ..clear()
+      ..addAll(keep);
+    if (_activePowerId != null && !itemIds.contains(_activePowerId)) {
+      _activePowerId = null;
+    }
+    for (final entry in _owned.entries) {
+      final active = entry.value.definitionId == _activePowerId;
+      _owned[entry.key] = entry.value.copyWith(
+        state: active ? PowerStateId.active : PowerStateId.owned,
+      );
+    }
+    notifyListeners();
+  }
+
+  void setActivePower(String? powerId) {
+    _activePowerId = powerId;
+    for (final entry in _owned.entries) {
+      _owned[entry.key] = entry.value.copyWith(
+        state: powerId != null && entry.value.definitionId == powerId
+            ? PowerStateId.active
+            : PowerStateId.inactive,
+      );
+    }
+    notifyListeners();
   }
 
   void _seed() {
@@ -156,6 +204,12 @@ class PowerService extends ChangeNotifier {
       activatedAt: DateTime.now().toUtc(),
     );
     _owned[instanceId] = updated;
+    _activePowerId = def?.id;
+    for (final entry in _owned.entries) {
+      if (entry.key != instanceId) {
+        _owned[entry.key] = entry.value.copyWith(state: PowerStateId.inactive);
+      }
+    }
     notifyListeners();
     return updated;
   }
@@ -167,6 +221,7 @@ class PowerService extends ChangeNotifier {
 
     final updated = power.copyWith(state: PowerStateId.inactive);
     _owned[instanceId] = updated;
+    if (_activePowerId == power.definitionId) _activePowerId = null;
     notifyListeners();
     return updated;
   }
