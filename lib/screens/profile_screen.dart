@@ -9,7 +9,7 @@ import 'font_color_screen.dart';
 import 'inventory_screen.dart';
 import 'our_club_screen.dart';
 import 'settings_screen.dart';
-import 'membership_screen.dart;
+import 'membership_screen.dart';
 import 'missions_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
