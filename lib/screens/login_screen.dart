@@ -8,13 +8,21 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   late final TabController tabs;
   final id=TextEditingController(),pass=TextEditingController(),user=TextEditingController(),email=TextEditingController(),name=TextEditingController(),regPass=TextEditingController(),confirm=TextEditingController();
   @override void initState(){super.initState();tabs=TabController(length:2,vsync:this);}
+  bool showPass=false,showRegPass=false,showConfirm=false;
   @override void dispose(){tabs.dispose();for(final c in [id,pass,user,email,name,regPass,confirm]){c.dispose();}super.dispose();}
   void msg(String s)=>ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(s),backgroundColor:Colors.redAccent));
-  Future<void> loginNow() async{if(id.text.trim().isEmpty||pass.text.isEmpty){msg('اكتب بيانات الدخول');return;}try{await context.read<AuthService>().login(id.text,pass.text);}catch(e){msg(e.toString());}}
+  String authError(Object e){
+    final m=e.toString();
+    if(m.contains('API 401')||m.contains('INVALID_CREDENTIALS')) return 'اسم المستخدم أو كلمة السر غير صحيحة';
+    if(m.contains('API 403')||m.contains('ACCOUNT_BANNED')) return 'الحساب موقوف';
+    if(m.contains('No session token')) return 'تعذر إنشاء جلسة الدخول';
+    return m;
+  }
+  Future<void> loginNow() async{if(id.text.trim().isEmpty||pass.text.isEmpty){msg('اكتب بيانات الدخول');return;}FocusManager.instance.primaryFocus?.unfocus();try{await context.read<AuthService>().login(id.text.trim(),pass.text);}catch(e){msg(authError(e));}}
   Future<void> registerNow() async{if(user.text.trim().length<3||email.text.trim().isEmpty){msg('راجع بيانات الحساب');return;}if(regPass.text.length<8||regPass.text!=confirm.text){msg('كلمة السر لازم تكون 8 أحرف ومتطابقة');return;}try{await context.read<AuthService>().register(username:user.text,email:email.text,displayName:name.text,password:regPass.text);}catch(e){msg(e.toString());}}
   Future<void> guestNow() async{try{await context.read<AuthService>().guest();}catch(e){msg(e.toString());}}
   InputDecoration dec(String h,IconData i)=>InputDecoration(hintText:h,hintStyle:const TextStyle(color:NexoColors.textSecondary),prefixIcon:Icon(i,color:NexoColors.primary),filled:true,fillColor:NexoColors.card,border:OutlineInputBorder(borderRadius:BorderRadius.all(Radius.circular(15)),borderSide:BorderSide.none));
-  Widget f(TextEditingController c,String h,IconData i,{bool obscure=false,TextInputType? type})=>Container(
+  Widget f(TextEditingController c,String h,IconData i,{bool obscure=false,bool visible=false,VoidCallback? onToggle,TextInputType? type})=>Container(
     margin:const EdgeInsets.only(bottom:10),
     padding:const EdgeInsets.symmetric(horizontal:12,vertical:2),
     decoration:BoxDecoration(
@@ -24,13 +32,18 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     ),
     child:TextField(
       controller:c,
-      obscureText:obscure,
+      obscureText:obscure && !visible,
       keyboardType:type,
       style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w600),
       decoration:InputDecoration(
         hintText:h,
         hintStyle:const TextStyle(color:NexoColors.textSecondary,fontWeight:FontWeight.w500),
         prefixIcon:Icon(i,color:NexoColors.primary),
+        suffixIcon: obscure ? IconButton(
+          tooltip: visible ? 'إخفاء كلمة السر' : 'إظهار كلمة السر',
+          onPressed:onToggle,
+          icon:Icon(visible ? Icons.visibility_outlined : Icons.visibility_off_outlined,color:NexoColors.primary),
+        ) : null,
         border:InputBorder.none,
         enabledBorder:InputBorder.none,
         focusedBorder:InputBorder.none,
@@ -70,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 child: Column(
                                   children: [
                                     f(id, 'Username أو Email', Icons.person_outline),
-                                    f(pass, 'Password', Icons.lock_outline, obscure: true),
+                                    f(pass, 'Password', Icons.visibility_outlined, obscure: true, visible: showPass, onToggle:()=>setState(()=>showPass=!showPass)),
                                     SizedBox(
                                       width: double.infinity,
                                       child: ElevatedButton(onPressed: busy ? null : loginNow, child: Text(busy ? 'جارٍ الدخول...' : 'تسجيل الدخول')),
@@ -86,8 +99,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   f(user, 'Username', Icons.alternate_email),
                                   f(name, 'Display Name', Icons.person_outline),
                                   f(email, 'Email', Icons.email_outlined, type: TextInputType.emailAddress),
-                                  f(regPass, 'Password', Icons.lock_outline, obscure: true),
-                                  f(confirm, 'Confirm Password', Icons.lock_reset, obscure: true),
+                                  f(regPass, 'Password', Icons.visibility_outlined, obscure: true, visible: showRegPass, onToggle:()=>setState(()=>showRegPass=!showRegPass)),
+                                  f(confirm, 'Confirm Password', Icons.visibility_outlined, obscure: true, visible: showConfirm, onToggle:()=>setState(()=>showConfirm=!showConfirm)),
                                   SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton(onPressed: busy ? null : registerNow, child: Text(busy ? 'جارٍ الإنشاء...' : 'إنشاء حساب')),
