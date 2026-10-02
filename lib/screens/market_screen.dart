@@ -40,7 +40,7 @@ class _MarketScreenState extends State<MarketScreen>{
     try{
       if(NexoApiConfig.configured){
         final c=await context.read<ApiClient>().getJson('/catalog?market=1');
-        final raw=c['data'];
+        final raw=c is List ? c : c['data'];
         if(raw is List && raw.isNotEmpty){
           list=raw.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList();
         }
@@ -49,7 +49,7 @@ class _MarketScreenState extends State<MarketScreen>{
     try{
       if(NexoApiConfig.configured){
         final m=await context.read<ApiClient>().getJson('/memberships/catalog');
-        final raw=m['data'];
+        final raw=m is List ? m : m['data'];
         if(raw is List) ml=raw.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList();
       }
     }catch(_){}
