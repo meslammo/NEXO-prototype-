@@ -27,9 +27,9 @@ class _MembershipScreenState extends State<MembershipScreen>{
         final api=context.read<ApiClient>();
         final p=await api.getJson('/memberships/catalog');
         final c=await api.getJson('/memberships/current');
-        final raw=p['data'];
+        final raw=p is List ? p : p['data'];
         if(raw is List && raw.isNotEmpty) products=raw.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList();
-        current=c;
+        current=c is Map ? Map<String,dynamic>.from(c) : current;
       }catch(_){}
     }
     if(mounted)setState((){loading=false;});
