@@ -15,6 +15,7 @@ import '../config/api_config.dart';
 import '../theme/nexo_theme.dart';
 import '../widgets/nexo_asset_art.dart';
 import '../widgets/power_text.dart';
+import 'room_screen.dart';
 
 class _ChatLine {
   final String from;
