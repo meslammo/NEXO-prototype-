@@ -527,3 +527,23 @@ CREATE TABLE IF NOT EXISTS nexo.voice_room_seats (
   PRIMARY KEY (room_id,seat),
   UNIQUE(room_id,user_id)
 );
+
+
+-- NEXO FONT COLOR CATALOG — powers are presented as Font Color / Name Style in the product UI.
+INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata)
+VALUES
+('font-cyan','NEXO Cyan','Common',120,true,'color:#54D6FF','Cyan Font','true','name_color','font_color','لون اسم سماوي ثابت عبر Profile وChat.','pulse',true,201,'["font","name"]','{"hex":"#54D6FF"}'),
+('font-violet','NEXO Violet','Rare',450,true,'color:#B44CFF','Violet Font','true','name_color','font_color','لون اسم بنفسجي لامع ثابت عبر Profile وChat.','pulse',true,202,'["font","name"]','{"hex":"#B44CFF"}'),
+('font-rose','NEXO Rose','Epic',900,true,'color:#FF6B9D','Rose Font','true','name_color','font_color','لون وردي نابض للاسم.','shine',true,203,'["font","name"]','{"hex":"#FF6B9D"}'),
+('font-gold','NEXO Gold','Legendary',2500,true,'color:#FFD166','Gold Font','true','name_color','font_color','لون ذهبي ملكي للاسم.','shine',true,204,'["font","name"]','{"hex":"#FFD166"}'),
+('font-rainbow','NEXO Spectrum','NEXO Exclusive',12000,false,'gradient:rainbow','Spectrum Font','true','name_color','font_color','تدرج طيفي حصري للنص والاسم.','rainbow',true,205,'["font","name","exclusive"]','{"hex":"#7AE8FF"}'),
+('power-aurora','Aurora Name','Rare',700,true,'power:aurora','Aurora Font','true','power','font_color','تأثير اسم ديناميكي بطابع أورورا.','orbit',true,206,'["font","power"]','{}'),
+('power-electric','Electric Name','Epic',1400,true,'power:electric','Electric Font','true','power','font_color','توهج كهربائي حول حروف الاسم.','pulse',true,207,'["font","power"]','{}'),
+('power-nebula','Nebula Name','Legendary',3500,true,'power:nebula','Nebula Font','true','power','font_color','تأثير سديمي متحرك للنص.','orbit',true,208,'["font","power"]','{}'),
+('power-inferno','Inferno Name','Mythic',7000,true,'power:inferno','Inferno Font','true','power','font_color','هالة نارية أسطورية حول الاسم.','float',true,209,'["font","power"]','{}'),
+('power-nexo-exclusive','NEXO Prism Name','NEXO Exclusive',25000,false,'power:prism','NEXO Prism Font','true','power','font_color','تأثير NEXO حصري للاسم والشات.','rainbow',true,210,'["font","power","exclusive"]','{}')
+ON CONFLICT (id) DO UPDATE SET
+  name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,tradeable=EXCLUDED.tradeable,image=EXCLUDED.image,
+  tagline=EXCLUDED.tagline,active=EXCLUDED.active,item_type=EXCLUDED.item_type,category=EXCLUDED.category,
+  description=EXCLUDED.description,animation=EXCLUDED.animation,market_visible=EXCLUDED.market_visible,
+  sort_order=EXCLUDED.sort_order,tags=EXCLUDED.tags,metadata=EXCLUDED.metadata;
