@@ -110,64 +110,28 @@ function emit(toUserId, event) {
 }
 function pbkdf2Verify(password, stored) {
   return new Promise((resolve) => {
-    const parts=String(stored||'').split('  if (!u) return null;
+    const parts=String(stored||'').split('$');
+    if(parts.length!==4 || parts[0]!=='pbkdf2sha256') return resolve(false);
+    const iterations=Number(parts[1]);
+    if(!Number.isInteger(iterations)||iterations<1) return resolve(false);
+    const salt=Buffer.from(parts[2],'hex');
+    const expected=Buffer.from(parts[3],'hex');
+    if(!salt.length || expected.length!==32) return resolve(false);
+    pbkdf2(password,salt,iterations,32,'sha256',(err,key)=>{
+      if(err||!key||expected.length!==key.length)return resolve(false);
+      resolve(timingSafeEqual(expected,key));
+    });
+  });
+}
+function publicUser(u) {
+  if (!u) return null;
   return {
     id:u.id, username:u.username, displayName:u.display_name, avatar:u.avatar,
-    gems:Number(u.gems), energy:u.energy, level:u.level, experience:Number(u.experience),
+    gems:Number(u.gems), energy:Number(u.energy), level:u.level, experience:Number(u.experience),
     reputation:u.reputation, vipLevel:u.vip_level, nameColor:u.name_color, glow:u.glow,
     createdAt:u.created_at, lastActive:u.last_active, role:u.role, banned:Boolean(u.banned)
   };
 }
-
-app.get('/health', async (req, reply) => {
-  try {
-    await q('SELECT 1');
-    return {ok:true,service:'nexo-api',database:'ok',time:new Date().toISOString()};
-  } catch (_) {
-    return reply.code(503).send({ok:false,service:'nexo-api',database:'down'});
-  }
-});
-app.get('/rtc/config',{preHandler:auth},async(req)=>{
-  let servers;
-  try { servers=JSON.parse(process.env.RTC_ICE_SERVERS_JSON||'[{"urls":["stun:stun.l.google.com:19302"]}]'); }
-  catch(_){ servers=[{urls:['stun:stun.l.google.com:19302']}]; }
-  return {iceServers:servers};
-});
-
-
-
-app.post('/auth/guest', async (req, reply) => {
-  const deviceId=String((req.body||{}).deviceId||'').trim().slice(0,60);
-  const username='guest_'+(deviceId || randomUUID().slice(0,12));
-  let r=await q('SELECT * FROM nexo.users WHERE username=$1',[username]);
-  let u=r.rows[0];
-  if(!u){ r=await q('INSERT INTO nexo.users(id,username,display_name) VALUES($1,$2,$3) RETURNING *',[randomUUID(),username,'NEXO Guest']); u=r.rows[0];
-    const starter=[['neon-heart',2],['shadow-flame',1],['galaxy-aura',1],['crown-shine',1],['frame-cyan',1],['asset-cosmic',1],['emoji-heart',2],['crafted-shadow-mask',1],['power_chat_spark',1],['power_glow_frame',1]];
-    for(const [itemId,quantity] of starter){
-      await q("INSERT INTO nexo.inventory(user_id,item_id,quantity) SELECT $1,id,$2 FROM nexo.gifts WHERE id=$3 ON CONFLICT(user_id,item_id) DO NOTHING",[u.id,quantity,itemId]);
-    }
-  }
-  const token=app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'});
-  return { token, user:publicUser(u) };
-});
-
-app.post('/auth/register', async (req, reply) => {
-  const body=req.body||{}, email=String(body.email||'').trim().toLowerCase(), username=String(body.username||'').trim().toLowerCase(), password=String(body.password||'');
-  if(!email||!username||password.length<8) return reply.code(400).send({error:'INVALID_INPUT'});
-  const hash=await bcrypt.hash(password,12);
-  try{
-    const r=await q('INSERT INTO nexo.users(id,username,email,password_hash,display_name) VALUES($1,$2,$3,$4,$5) RETURNING *',[randomUUID(),username,email,hash,username]);
-    const u=r.rows[0]; return {token:app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'}),user:publicUser(u)};
-  }catch(_){ return reply.code(409).send({error:'ACCOUNT_EXISTS'}); }
-});
-
-app.post('/auth/login', async (req, reply) => {
-  const body=req.body||{}, identity=String(body.identity||body.identifier||body.email||body.username||'').trim().toLowerCase(), password=String(body.password||'');
-  if(!identity||!password) return reply.code(400).send({error:'LOGIN_REQUIRED'});
-  const r=await q('SELECT * FROM nexo.users WHERE lower(username)=lower($1) OR lower(email)=lower($1) LIMIT 1',[identity]), u=r.rows[0];
-  if(!u||u.banned||!u.password_hash) return reply.code(u?.banned?403:401).send({error:u?.banned?'ACCOUNT_BANNED':'INVALID_CREDENTIALS'});
-  let valid=false, legacy=false;
-  if(String(u.password_hash).startsWith('pbkdf2sha256
 
 app.get('/me',{preHandler:auth},async req=>{
   const r=await q('SELECT * FROM nexo.users WHERE id=$1',[uid(req)]); return {user:publicUser(r.rows[0])};
