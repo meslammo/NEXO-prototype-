@@ -23,7 +23,10 @@ async function registerLudo(app,auth,q){
  app.post("/games/ludo/match",{preHandler:guard},async(req,reply)=>{
   const max=Math.min(4,Math.max(2,Number(b(req).maxPlayers||4)));
   const w=await q("SELECT r.id FROM nexo.ludo_rooms r WHERE r.status='waiting' AND r.max_players=$1 AND r.host_id<>$2 AND (SELECT COUNT(*) FROM nexo.ludo_room_players p WHERE p.room_id=r.id)<r.max_players ORDER BY r.created_at LIMIT 1",[max,uid(req)]);
-  if(!w.rowCount){req.body={...b(req),maxPlayers:max};return app.inject({method:"POST",url:"/games/ludo/rooms",payload:req.body,headers:{authorization:req.headers.authorization}}).then(x=>reply.code(x.statusCode).send(x.json()));}
+  if(!w.rowCount){
+   for(let i=0;i<8;i++){try{const r=await q("INSERT INTO nexo.ludo_rooms(invite_code,host_id,max_players,state) VALUES($1,$2,$3,$4::jsonb) RETURNING id",[code(),uid(req),max,JSON.stringify(initState())]);await q("INSERT INTO nexo.ludo_room_players(room_id,user_id,seat,ready) VALUES($1,$2,0,true)",[r.rows[0].id,uid(req)]);return view(q,r.rows[0].id);}catch(e){}}
+   return send(reply,500,{error:"LUDO_ROOM_CREATE_FAILED"});
+  }
   const id=w.rows[0].id,c=await q("SELECT COUNT(*)::int AS n FROM nexo.ludo_room_players WHERE room_id=$1",[id]),seat=Number(c.rows[0].n);
   await q("INSERT INTO nexo.ludo_room_players(room_id,user_id,seat,ready) VALUES($1,$2,$3,false)",[id,uid(req),seat]);
   return view(q,id);
