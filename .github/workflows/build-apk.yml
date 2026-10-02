@@ -61,7 +61,11 @@ jobs:
       - name: Tests
         run: flutter test
       - name: Backend JavaScript syntax
-        run: node --check backend/src/server.js
+        run: |
+          node --check backend/src/server.js
+          node --check backend/src/domino.js
+          node --check backend/src/ludo.js
+          node --check backend/src/chess.js
       - name: Build APK
         run: flutter build apk --release --dart-define=NEXO_API_URL=https://nexo-api-production-05d3.up.railway.app
       - name: Upload APK
