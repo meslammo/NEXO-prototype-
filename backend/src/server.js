@@ -321,7 +321,7 @@ app.post('/admin/catalog/upsert',{preHandler:adminAuth},async(req,reply)=>{
   const rarity=String(b.rarity||'Common').trim(),image=String(b.image||'').trim(),category=String(b.category||itemType).trim();
   const tagline=String(b.tagline||'').trim(),description=String(b.description||tagline).trim(),animation=String(b.animation||'pulse').trim();
   const gems=Math.max(0,Number(b.gems||0)),tradeable=b.tradeable!==false,active=b.active!==false,marketVisible=b.marketVisible!==false;
-  if(!id||!name||!image||!['gift','frame','asset','emoji','crafted'].includes(itemType)||!Number.isInteger(gems))return reply.code(400).send({error:'INVALID_CATALOG_ITEM'});
+  if(!id||!name||!image||!['gift','frame','asset','emoji','crafted','name_color','entrance_effect','room_background','power'].includes(itemType)||!Number.isInteger(gems))return reply.code(400).send({error:'INVALID_CATALOG_ITEM'});
   try{
     const result=await q(`INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16::jsonb)
@@ -336,6 +336,13 @@ app.post('/admin/catalog/upsert',{preHandler:adminAuth},async(req,reply)=>{
 app.post('/admin/catalog/:id/toggle',{preHandler:adminAuth},async(req,reply)=>{
   const r=await q('UPDATE nexo.gifts SET active=NOT active WHERE id=$1 RETURNING id,active',[req.params.id]);
   if(!r.rowCount)return reply.code(404).send({error:'ITEM_NOT_FOUND'}); await adminAudit(req,'catalog_toggle',req.params.id,r.rows[0]); return r.rows[0];
+});
+
+app.post('/admin/catalog/:id/delete',{preHandler:adminAuth},async(req,reply)=>{
+  const r=await q("UPDATE nexo.gifts SET active=false,market_visible=false WHERE id=$1 RETURNING id",[req.params.id]);
+  if(!r.rowCount)return reply.code(404).send({error:'ITEM_NOT_FOUND'});
+  await adminAudit(req,'catalog_delete',req.params.id,{softDelete:true});
+  return {ok:true,id:r.rows[0].id,deleted:true};
 });
 
 app.post('/admin/catalog/price-filter',{preHandler:adminAuth},async(req,reply)=>{
@@ -525,7 +532,7 @@ app.post('/chat/:peerId/messages',{preHandler:auth},async(req,reply)=>{
     const body=String((req.body||{}).body||'').trim();
     if(!body||body.length>4000)return reply.code(400).send({error:'INVALID_MESSAGE'});
     const r=await q('INSERT INTO nexo.messages(id,sender_id,recipient_id,body) VALUES($1,$2,$3,$4) RETURNING *',[randomUUID(),uid(req),peerId,body]);
-    const msg=r.rows[0]; emit(peerId,{type:'chat_message',message:msg}); await notify(peerId,'chat','رسالة جديدة','لديك رسالة جديدة في NEXO',{senderId:uid(req)}); return msg;
+    const msg=r.rows[0]; await bumpActivity(q,uid(req),'chat',1); emit(peerId,{type:'chat_message',message:msg}); await notify(peerId,'chat','رسالة جديدة','لديك رسالة جديدة في NEXO',{senderId:uid(req)}); return msg;
   }catch(e){return reply.code(e.code||500).send({error:e.code||'CHAT_SEND_FAILED'});}
 });
 app.get('/chat/:peerId/messages',{preHandler:auth},async(req,reply)=>{
@@ -932,6 +939,159 @@ app.post('/payments/webhook/:provider',async(req,reply)=>{
       return {ok:true,gemsAdded:Number(o.gems)};
     });
   }catch(_){return reply.code(500).send({error:'PAYMENT_WEBHOOK_FAILED'});}
+});
+
+
+app.get('/memberships/catalog',{preHandler:auth},async req=>{
+  return {data:MEMBERSHIP_CATALOG};
+});
+app.get('/memberships/current',{preHandler:auth},async req=>{
+  const r=await q("SELECT vip_level,svip_active,svip_expires_at,aristocracy_level FROM nexo.users WHERE id=$1",[uid(req)]);
+  if(!r.rowCount)return {vipLevel:0,svipActive:false,svipExpiresAt:null,aristocracyLevel:0};
+  const u=r.rows[0], active=Boolean(u.svip_active)&&(!u.svip_expires_at||new Date(u.svip_expires_at)>new Date());
+  return {vipLevel:Number(u.vip_level||0),svipActive:active,svipExpiresAt:u.svip_expires_at,aristocracyLevel:Number(u.aristocracy_level||0)};
+});
+app.post('/memberships/buy',{preHandler:auth},async(req,reply)=>{
+  const b=req.body||{}, productId=String(b.productId||''), key=String(b.idempotencyKey||'');
+  const p=MEMBERSHIP_CATALOG.find(x=>x.id===productId);
+  if(!p||!key)return reply.code(400).send({error:'INVALID_MEMBERSHIP'});
+  try{
+    return await tx(async c=>{
+      const prior=await c.query("SELECT balance_after FROM nexo.wallet_ledger WHERE idempotency_key=$1",[key]);
+      if(prior.rowCount)return {ok:true,idempotent:true,gems:Number(prior.rows[0].balance_after)};
+      const u=await c.query("SELECT gems,vip_level,svip_active,svip_expires_at FROM nexo.users WHERE id=$1 FOR UPDATE",[uid(req)]);
+      if(!u.rowCount)throw Object.assign(new Error('USER_NOT_FOUND'),{code:404});
+      if(Number(u.rows[0].gems)<p.gemsPrice)throw Object.assign(new Error('INSUFFICIENT_GEMS'),{code:409});
+      const gems=Number(u.rows[0].gems)-p.gemsPrice;
+      if(p.kind==='vip'){
+        await c.query("UPDATE nexo.users SET gems=$1,vip_level=GREATEST(vip_level,$2),last_active=NOW() WHERE id=$3",[gems,p.tier,uid(req)]);
+      }else{
+        await c.query("UPDATE nexo.users SET gems=$1,svip_active=true,svip_expires_at=GREATEST(COALESCE(svip_expires_at,NOW()),NOW())+($2::int*INTERVAL '1 day'),last_active=NOW() WHERE id=$3",[gems,p.durationDays,uid(req)]);
+      }
+      await c.query("INSERT INTO nexo.membership_entitlements(user_id,kind,product_id,starts_at,expires_at) VALUES($1,$2,$3,NOW(),NOW()+($4::int*INTERVAL '1 day'))",[uid(req),p.kind,p.id,p.durationDays]);
+      await grantInventoryIfPresent(c,uid(req),p.welcomeGift,1);
+      await c.query("INSERT INTO nexo.wallet_ledger(id,user_id,kind,amount,balance_after,reference_id,idempotency_key) VALUES($1,$2,$3,$4,$5,$6,$7)",[randomUUID(),uid(req),'membership_purchase',-p.gemsPrice,gems,p.id,key]);
+      return {ok:true,kind:p.kind,productId:p.id,gems,benefits:p.benefits,welcomeGift:p.welcomeGift};
+    });
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'MEMBERSHIP_BUY_FAILED'});}
+});
+
+app.get('/aristocracy/catalog',{preHandler:auth},async req=>{
+  const r=await q("SELECT aristocracy_level FROM nexo.users WHERE id=$1",[uid(req)]);
+  return {currentLevel:Number(r.rows[0]?.aristocracy_level||0),products:ARISTOCRACY_CATALOG};
+});
+app.post('/aristocracy/buy',{preHandler:auth},async(req,reply)=>{
+  const b=req.body||{}, productId=String(b.productId||''), key=String(b.idempotencyKey||'');
+  const p=ARISTOCRACY_CATALOG.find(x=>x.id===productId);
+  if(!p||!key)return reply.code(400).send({error:'INVALID_ARISTOCRACY'});
+  try{
+    return await tx(async c=>{
+      const prior=await c.query("SELECT balance_after FROM nexo.wallet_ledger WHERE idempotency_key=$1",[key]);
+      if(prior.rowCount)return {ok:true,idempotent:true,gems:Number(prior.rows[0].balance_after)};
+      const u=await c.query("SELECT gems,aristocracy_level FROM nexo.users WHERE id=$1 FOR UPDATE",[uid(req)]);
+      const current=Number(u.rows[0]?.aristocracy_level||0);
+      if(p.level!==current+1)throw Object.assign(new Error('ARISTOCRACY_SEQUENCE'),{code:409});
+      if(Number(u.rows[0].gems)<p.gemsPrice)throw Object.assign(new Error('INSUFFICIENT_GEMS'),{code:409});
+      const gems=Number(u.rows[0].gems)-p.gemsPrice;
+      await c.query("UPDATE nexo.users SET gems=$1,aristocracy_level=$2,last_active=NOW() WHERE id=$3",[gems,p.level,uid(req)]);
+      await grantInventoryIfPresent(c,uid(req),p.rewardItem,1);
+      await c.query("INSERT INTO nexo.wallet_ledger(id,user_id,kind,amount,balance_after,reference_id,idempotency_key) VALUES($1,$2,$3,$4,$5,$6,$7)",[randomUUID(),uid(req),'aristocracy_upgrade',-p.gemsPrice,gems,p.id,key]);
+      return {ok:true,level:p.level,gems,rewardItem:p.rewardItem,benefits:p.benefits};
+    });
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'ARISTOCRACY_BUY_FAILED'});}
+});
+
+app.get('/missions/today',{preHandler:auth},async req=>{
+  const u=await q("SELECT vip_level,svip_active,svip_expires_at,aristocracy_level FROM nexo.users WHERE id=$1",[uid(req)]);
+  const user=u.rows[0]||{};
+  const svip=Boolean(user.svip_active)&&(!user.svip_expires_at||new Date(user.svip_expires_at)>new Date());
+  const vip=Number(user.vip_level||0)>0;
+  const visible=MISSION_DEFS.filter(m=>(!m.requiresVip||vip)&&(!m.requiresSvip||svip));
+  const counts=(await q("SELECT activity_type,count FROM nexo.activity_daily WHERE user_id=$1 AND activity_date=CURRENT_DATE",[uid(req)])).rows;
+  const countMap=Object.fromEntries(counts.map(x=>[x.activity_type,Number(x.count)]));
+  const claimed=(await q("SELECT mission_id,claimed FROM nexo.mission_progress WHERE user_id=$1 AND mission_date=CURRENT_DATE",[uid(req)])).rows;
+  const claimedMap=Object.fromEntries(claimed.map(x=>[x.mission_id,Boolean(x.claimed)]));
+  return {date:new Date().toISOString().slice(0,10),vip,svip,aristocracyLevel:Number(user.aristocracy_level||0),missions:visible.map(m=>({...m,progress:Math.min(m.target,Number(countMap[m.activityType]||0)),claimed:Boolean(claimedMap[m.id])}))};
+});
+
+app.post('/missions/claim/:id',{preHandler:auth},async(req,reply)=>{
+  const mission=MISSION_DEFS.find(m=>m.id===String(req.params.id||''));
+  if(!mission)return reply.code(404).send({error:'MISSION_NOT_FOUND'});
+  try{
+    return await tx(async c=>{
+      const u=(await c.query("SELECT vip_level,svip_active,svip_expires_at,gems FROM nexo.users WHERE id=$1 FOR UPDATE",[uid(req)])).rows[0];
+      const svip=Boolean(u.svip_active)&&(!u.svip_expires_at||new Date(u.svip_expires_at)>new Date());
+      const vip=Number(u.vip_level||0)>0;
+      if((mission.requiresVip&&!vip)||(mission.requiresSvip&&!svip))throw Object.assign(new Error('MISSION_LOCKED'),{code:403});
+      const p=await c.query("SELECT claimed FROM nexo.mission_progress WHERE user_id=$1 AND mission_date=CURRENT_DATE AND mission_id=$2 FOR UPDATE",[uid(req),mission.id]);
+      if(p.rowCount&&p.rows[0].claimed)throw Object.assign(new Error('MISSION_ALREADY_CLAIMED'),{code:409});
+      const a=await c.query("SELECT count FROM nexo.activity_daily WHERE user_id=$1 AND activity_date=CURRENT_DATE AND activity_type=$2",[uid(req),mission.activityType]);
+      if(Number(a.rows[0]?.count||0)<mission.target)throw Object.assign(new Error('MISSION_NOT_COMPLETE'),{code:409});
+      const bonus=svip&&mission.group!=='daily'?Math.round(mission.rewardGems*.1):0, reward=mission.rewardGems+bonus, gems=Number(u.gems)+reward;
+      await c.query("INSERT INTO nexo.mission_progress(user_id,mission_date,mission_id,claimed,claimed_at) VALUES($1,CURRENT_DATE,$2,true,NOW()) ON CONFLICT(user_id,mission_date,mission_id) DO UPDATE SET claimed=true,claimed_at=NOW()",[uid(req),mission.id]);
+      await c.query("UPDATE nexo.users SET gems=$1,last_active=NOW() WHERE id=$2",[gems,uid(req)]);
+      await c.query("INSERT INTO nexo.wallet_ledger(id,user_id,kind,amount,balance_after,reference_id,idempotency_key) VALUES($1,$2,$3,$4,$5,$6,$7)",[randomUUID(),uid(req),'mission_reward',reward,gems,mission.id,'mission:'+uid(req)+':'+mission.id+':'+new Date().toISOString().slice(0,10)]);
+      return {ok:true,missionId:mission.id,rewardGems:reward,gems};
+    });
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'MISSION_CLAIM_FAILED'});}
+});
+
+app.get('/rooms',{preHandler:auth},async req=>{
+  const r=await q("SELECT r.id,r.invite_code AS \"inviteCode\",r.title,r.room_theme AS \"roomTheme\",r.max_seats AS \"maxSeats\",r.active_game AS \"activeGame\",r.status,COUNT(s.user_id)::int AS occupants FROM nexo.voice_rooms r LEFT JOIN nexo.voice_room_seats s ON s.room_id=r.id WHERE r.status='live' GROUP BY r.id ORDER BY r.updated_at DESC LIMIT 100");
+  return {rooms:r.rows};
+});
+app.post('/rooms',{preHandler:auth},async(req,reply)=>{
+  const title=String((req.body||{}).title||'NEXO Party').trim().slice(0,80)||'NEXO Party';
+  const roomId=randomUUID(), code='NEXO-'+Math.random().toString(36).slice(2,8).toUpperCase();
+  try{
+    const room=await tx(async c=>{
+      await c.query("INSERT INTO nexo.voice_rooms(id,invite_code,host_id,title,max_seats,status) VALUES($1,$2,$3,$4,9,'live')",[roomId,code,uid(req),title]);
+      await c.query("INSERT INTO nexo.voice_room_seats(room_id,seat,user_id) VALUES($1,0,$2)",[roomId,uid(req)]);
+      return (await c.query("SELECT r.id,r.invite_code AS \"inviteCode\",r.title,r.room_theme AS \"roomTheme\",r.max_seats AS \"maxSeats\",r.active_game AS \"activeGame\",r.status FROM nexo.voice_rooms r WHERE r.id=$1",[roomId])).rows[0];
+    });
+    await bumpActivity(q,uid(req),'voice_activity',1);
+    return {room,seats:[{seat:0,userId:uid(req),muted:false,speaking:false}]};
+  }catch(e){return reply.code(e.code||500).send({error:'ROOM_CREATE_FAILED'});}
+});
+app.get('/rooms/:id',{preHandler:auth},async(req,reply)=>{
+  const r=await q("SELECT r.id,r.invite_code AS \"inviteCode\",r.host_id AS \"hostId\",r.title,r.room_theme AS \"roomTheme\",r.max_seats AS \"maxSeats\",r.active_game AS \"activeGame\",r.status FROM nexo.voice_rooms r WHERE r.id=$1",[req.params.id]);
+  if(!r.rowCount)return reply.code(404).send({error:'ROOM_NOT_FOUND'});
+  const seats=(await q("SELECT s.seat,s.user_id AS \"userId\",COALESCE(u.display_name,u.username,'Guest') AS \"displayName\",s.muted,s.speaking FROM nexo.voice_room_seats s LEFT JOIN nexo.users u ON u.id=s.user_id WHERE s.room_id=$1 ORDER BY s.seat",[req.params.id])).rows;
+  return {room:r.rows[0],seats};
+});
+app.post('/rooms/:id/join',{preHandler:auth},async(req,reply)=>{
+  try{
+    return await tx(async c=>{
+      const r=await c.query("SELECT * FROM nexo.voice_rooms WHERE id=$1 AND status='live' FOR UPDATE",[req.params.id]);
+      if(!r.rowCount)throw Object.assign(new Error('ROOM_NOT_FOUND'),{code:404});
+      const existing=await c.query("SELECT seat FROM nexo.voice_room_seats WHERE room_id=$1 AND user_id=$2",[req.params.id,uid(req)]);
+      if(existing.rowCount)return {ok:true,seat:Number(existing.rows[0].seat)};
+      const free=await c.query("SELECT x.seat FROM generate_series(0,(SELECT max_seats-1 FROM nexo.voice_rooms WHERE id=$1)) x(seat) WHERE NOT EXISTS(SELECT 1 FROM nexo.voice_room_seats s WHERE s.room_id=$1 AND s.seat=x.seat) ORDER BY x.seat LIMIT 1",[req.params.id]);
+      if(!free.rowCount)throw Object.assign(new Error('ROOM_FULL'),{code:409});
+      const seat=Number(free.rows[0].seat);
+      await c.query("INSERT INTO nexo.voice_room_seats(room_id,seat,user_id) VALUES($1,$2,$3)",[req.params.id,seat,uid(req)]);
+      await c.query("UPDATE nexo.voice_rooms SET updated_at=NOW() WHERE id=$1",[req.params.id]);
+      return {ok:true,seat};
+    }).then(async out=>{await bumpActivity(q,uid(req),'voice_activity',1);return out;});
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'ROOM_JOIN_FAILED'});}
+});
+app.post('/rooms/:id/leave',{preHandler:auth},async(req,reply)=>{
+  await q("DELETE FROM nexo.voice_room_seats WHERE room_id=$1 AND user_id=$2",[req.params.id,uid(req)]);
+  await q("UPDATE nexo.voice_rooms SET updated_at=NOW() WHERE id=$1",[req.params.id]);
+  return {ok:true};
+});
+app.post('/rooms/:id/mic',{preHandler:auth},async(req,reply)=>{
+  const muted=Boolean((req.body||{}).muted), speaking=Boolean((req.body||{}).speaking);
+  const r=await q("UPDATE nexo.voice_room_seats SET muted=$1,speaking=$2 WHERE room_id=$3 AND user_id=$4 RETURNING seat,muted,speaking",[muted,speaking,req.params.id,uid(req)]);
+  if(!r.rowCount)return reply.code(404).send({error:'SEAT_NOT_FOUND'});
+  return r.rows[0];
+});
+app.post('/rooms/:id/game',{preHandler:auth},async(req,reply)=>{
+  const game=String((req.body||{}).game||'').trim().toLowerCase();
+  if(!['ludo','domino','chess'].includes(game))return reply.code(400).send({error:'INVALID_ROOM_GAME'});
+  const r=await q("UPDATE nexo.voice_rooms SET active_game=$1,updated_at=NOW() WHERE id=$2 AND EXISTS(SELECT 1 FROM nexo.voice_room_seats s WHERE s.room_id=nexo.voice_rooms.id AND s.user_id=$3) RETURNING id,active_game AS \"activeGame\"",[game,req.params.id,uid(req)]);
+  if(!r.rowCount)return reply.code(404).send({error:'ROOM_NOT_FOUND_OR_NOT_JOINED'});
+  return {ok:true,activeGame:r.rows[0].activeGame};
 });
 
 app.post('/presence',{preHandler:auth},async(req)=>{const online=Boolean((req.body||{}).online);await q('INSERT INTO nexo.presence(user_id,online,last_seen) VALUES($1,$2,NOW()) ON CONFLICT(user_id) DO UPDATE SET online=$2,last_seen=NOW()',[uid(req),online]);return{online};});
