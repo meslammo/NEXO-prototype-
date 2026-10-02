@@ -52,7 +52,7 @@ extension NexoItemTypeX on NexoItemType {
       case NexoItemType.nameColor: return 'Font Color';
       case NexoItemType.entranceEffect: return 'Entrance Effects';
       case NexoItemType.roomBackground: return 'Room Backgrounds';
-      case NexoItemType.power: return 'Powers';
+      case NexoItemType.power: return 'Font Color';
     }
   }
 }
@@ -70,6 +70,7 @@ NexoItemType nexoItemTypeFromString(String? raw) {
     case 'entrance_effect': return NexoItemType.entranceEffect;
     case 'roombackground':
     case 'room_background': return NexoItemType.roomBackground;
+    case 'power': return NexoItemType.power;
     default: return NexoItemType.gift;
   }
 }
