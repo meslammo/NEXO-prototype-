@@ -11,6 +11,7 @@ class RoomVoiceService {
   final String userId;
   final Map<String,RTCPeerConnection> _peers={};
   final Set<String> _remoteReady={};
+  List<Map<String,dynamic>> _iceServers=[];
   StreamSubscription<Map<String,dynamic>>? _signals;
   MediaStream? localStream;
   String? roomId;
@@ -28,6 +29,7 @@ class RoomVoiceService {
       final raw=r['iceServers'];
       if(raw is List) iceServers=raw.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
     }catch(_){}
+    _iceServers=iceServers;
     if(iceServers.isEmpty){
       try{
         final raw=jsonDecode(NexoApiConfig.iceServersJson);
@@ -78,7 +80,7 @@ class RoomVoiceService {
     final payload=Map<String,dynamic>.from((event['payload'] as Map?)??const {});
     if(from.isEmpty||payload['roomId']?.toString()!=roomId)return;
     try{
-      final pc=await _ensurePeer(from,const [],offer:false);
+      final pc=await _ensurePeer(from,_iceServers,offer:false);
       final kind=payload['kind']?.toString();
       if(kind=='offer'){
         await pc.setRemoteDescription(RTCSessionDescription(payload['sdp']?.toString()??'','offer'));
