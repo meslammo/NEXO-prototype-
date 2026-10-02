@@ -463,3 +463,67 @@ ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXC
 INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
 VALUES ('power-vip-aura','VIP Aura Power','epic',2200,false,'power:vip-aura','VIP Aura',true,'power','powers','NEXO premium chat power','orbit',true,801,'["power"]'::jsonb,'{"powerId":"vip-aura"}'::jsonb,false,false)
 ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,item_type=EXCLUDED.item_type,category=EXCLUDED.category,metadata=EXCLUDED.metadata,active=true,market_visible=true;
+
+
+-- NEXO CHANGE 56 — Social/Party core: memberships, missions and 9-seat voice rooms.
+ALTER TABLE nexo.users
+  ADD COLUMN IF NOT EXISTS svip_active BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS svip_expires_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS aristocracy_level INTEGER NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS nexo.membership_entitlements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL CHECK (kind IN ('vip','svip')),
+  product_id TEXT NOT NULL,
+  starts_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS nexo_membership_entitlements_user_idx
+  ON nexo.membership_entitlements(user_id,kind,expires_at DESC);
+
+CREATE TABLE IF NOT EXISTS nexo.activity_daily (
+  user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  activity_date DATE NOT NULL,
+  activity_type TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0 CHECK (count >= 0),
+  PRIMARY KEY (user_id,activity_date,activity_type)
+);
+
+CREATE TABLE IF NOT EXISTS nexo.mission_progress (
+  user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  mission_date DATE NOT NULL,
+  mission_id TEXT NOT NULL,
+  claimed BOOLEAN NOT NULL DEFAULT FALSE,
+  claimed_at TIMESTAMPTZ,
+  PRIMARY KEY (user_id,mission_date,mission_id)
+);
+CREATE INDEX IF NOT EXISTS nexo_mission_progress_user_idx
+  ON nexo.mission_progress(user_id,mission_date);
+
+CREATE TABLE IF NOT EXISTS nexo.voice_rooms (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  invite_code TEXT NOT NULL UNIQUE,
+  host_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL DEFAULT 'NEXO Party',
+  room_theme TEXT NOT NULL DEFAULT 'nexo',
+  max_seats INTEGER NOT NULL DEFAULT 9 CHECK (max_seats BETWEEN 2 AND 12),
+  active_game TEXT,
+  status TEXT NOT NULL DEFAULT 'live',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS nexo_voice_rooms_status_idx
+  ON nexo.voice_rooms(status,updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS nexo.voice_room_seats (
+  room_id UUID NOT NULL REFERENCES nexo.voice_rooms(id) ON DELETE CASCADE,
+  seat INTEGER NOT NULL CHECK (seat >= 0 AND seat < 12),
+  user_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL,
+  muted BOOLEAN NOT NULL DEFAULT FALSE,
+  speaking BOOLEAN NOT NULL DEFAULT FALSE,
+  joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (room_id,seat),
+  UNIQUE(room_id,user_id)
+);
