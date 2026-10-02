@@ -7,7 +7,7 @@ class NexoApiConfig {
     'NEXO_ICE_SERVERS',
     defaultValue: '[{"urls":["stun:stun.l.google.com:19302"]}]',
   );
-  static bool get configured => baseUrl.trim().isNotEmpty;
+  static bool get configured => baseUrl.trim().isNotEmpty && Uri.tryParse(baseUrl)?.host.isNotEmpty == true;
   static String get websocketUrl {
     if (!configured) return '';
     final uri = Uri.parse(baseUrl);
