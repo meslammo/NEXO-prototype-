@@ -1152,7 +1152,19 @@ registerChess(app,auth,q);
 
 async function start(){
   const schema=fs.readFileSync(path.join(__dirname,'..','schema.sql'),'utf8');
-  await q(schema);
+  if(inMemoryDb){
+    // Render no-card demo mode: apply the same canonical schema statement-by-statement.
+    // Unsupported Postgres-only DDL is skipped, while tables/data required by the API remain usable.
+    const statements=schema.split(/;\\s*(?=(?:CREATE|ALTER|INSERT|UPDATE|DELETE|GRANT|COMMENT|DROP)\\s)/i);
+    for(const raw of statements){
+      const sql=raw.trim();
+      if(!sql)continue;
+      try{await q(sql);}catch(err){app.log.warn({err:err.message,sql:sql.slice(0,160)},'memory schema statement skipped');}
+    }
+    app.log.warn('NEXO is running with an in-memory Postgres-compatible database for no-card test hosting; data resets when the service restarts.');
+  }else{
+    await q(schema);
+  }
   await app.listen({host:'0.0.0.0',port:PORT});
 }
 start().catch(err=>{app.log.error(err);process.exit(1);});
