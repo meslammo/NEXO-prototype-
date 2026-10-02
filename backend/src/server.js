@@ -989,7 +989,7 @@ app.post('/memberships/buy',{preHandler:auth},async(req,reply)=>{
       if(Number(u.rows[0].gems)<p.gemsPrice)throw Object.assign(new Error('INSUFFICIENT_GEMS'),{code:409});
       const gems=Number(u.rows[0].gems)-p.gemsPrice;
       if(p.kind==='vip'){
-        await c.query("UPDATE nexo.users SET gems=$1,vip_level=GREATEST(vip_level,$2),last_active=NOW() WHERE id=$3",[gems,p.tier,uid(req)]);
+        await c.query("UPDATE nexo.users SET gems=$1,vip_level=GREATEST(CASE WHEN vip_level='Base' THEN 0 ELSE NULLIF(vip_level,'')::int END,$2)::text,last_active=NOW() WHERE id=$3",[gems,p.tier,uid(req)]);
       }else{
         await c.query("UPDATE nexo.users SET gems=$1,svip_active=true,svip_expires_at=GREATEST(COALESCE(svip_expires_at,NOW()),NOW())+($2::int*INTERVAL '1 day'),last_active=NOW() WHERE id=$3",[gems,p.durationDays,uid(req)]);
       }
