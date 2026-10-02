@@ -133,6 +133,52 @@ function publicUser(u) {
   };
 }
 
+app.post('/auth/guest', async (req, reply) => {
+  const deviceId=String((req.body||{}).deviceId||'').trim().slice(0,60);
+  const username='guest_'+(deviceId || randomUUID().slice(0,12));
+  let r=await q('SELECT * FROM nexo.users WHERE username=$1',[username]);
+  let u=r.rows[0];
+  if(!u){ r=await q('INSERT INTO nexo.users(id,username,display_name) VALUES($1,$2,$3) RETURNING *',[randomUUID(),username,'NEXO Guest']); u=r.rows[0];
+    const starter=[['neon-heart',2],['shadow-flame',1],['galaxy-aura',1],['crown-shine',1],['frame-cyan',1],['asset-cosmic',1],['emoji-heart',2],['crafted-shadow-mask',1],['power_chat_spark',1],['power_glow_frame',1]];
+    for(const [itemId,quantity] of starter){
+      await q("INSERT INTO nexo.inventory(user_id,item_id,quantity) SELECT $1,id,$2 FROM nexo.gifts WHERE id=$3 ON CONFLICT(user_id,item_id) DO NOTHING",[u.id,quantity,itemId]);
+    }
+  }
+  const token=app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'});
+  return { token, user:publicUser(u) };
+});
+
+app.post('/auth/register', async (req, reply) => {
+  const body=req.body||{}, email=String(body.email||'').trim().toLowerCase(), username=String(body.username||'').trim().toLowerCase(), password=String(body.password||'');
+  if(!email||!username||password.length<8) return reply.code(400).send({error:'INVALID_INPUT'});
+  const hash=await bcrypt.hash(password,12);
+  try{
+    const r=await q('INSERT INTO nexo.users(id,username,email,password_hash,display_name) VALUES($1,$2,$3,$4,$5) RETURNING *',[randomUUID(),username,email,hash,username]);
+    const u=r.rows[0]; return {token:app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'}),user:publicUser(u)};
+  }catch(_){ return reply.code(409).send({error:'ACCOUNT_EXISTS'}); }
+});
+
+app.post('/auth/login', async (req, reply) => {
+  const body=req.body||{}, identity=String(body.identity||body.identifier||body.email||body.username||'').trim().toLowerCase(), password=String(body.password||'');
+  if(!identity||!password) return reply.code(400).send({error:'LOGIN_REQUIRED'});
+  const r=await q('SELECT * FROM nexo.users WHERE lower(username)=lower($1) OR lower(email)=lower($1) LIMIT 1',[identity]), u=r.rows[0];
+  if(!u||u.banned||!u.password_hash) return reply.code(u?.banned?403:401).send({error:u?.banned?'ACCOUNT_BANNED':'INVALID_CREDENTIALS'});
+  let valid=false, legacy=false;
+  if(String(u.password_hash).startsWith('pbkdf2sha256$')) { legacy=true; valid=await pbkdf2Verify(password,u.password_hash); }
+  else valid=await bcrypt.compare(password,u.password_hash);
+  if(!valid) return reply.code(401).send({error:'INVALID_CREDENTIALS'});
+  if(legacy){
+    const upgraded=await bcrypt.hash(password,12);
+    await q('UPDATE nexo.users SET password_hash=$1,last_active=NOW() WHERE id=$2',[upgraded,u.id]);
+  } else {
+    await q('UPDATE nexo.users SET last_active=NOW() WHERE id=$1',[u.id]);
+  }
+  return {token:app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'}),user:publicUser(u)};
+});
+  await q('UPDATE nexo.users SET last_active=NOW() WHERE id=$1',[u.id]);
+  return {token:app.jwt.sign({sub:u.id,username:u.username}),user:publicUser(u)};
+});
+
 app.get('/me',{preHandler:auth},async req=>{
   const r=await q('SELECT * FROM nexo.users WHERE id=$1',[uid(req)]); return {user:publicUser(r.rows[0])};
 });
