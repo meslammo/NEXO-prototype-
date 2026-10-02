@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../config/api_config.dart';
 import 'mining_screen.dart';
 import '../games/ludo/nexo_ludo_online_screen.dart';
+import '../games/domino/nexo_domino_online_screen.dart';
 import '../games/chess/nexo_chess_online_screen.dart';
 
 class GamesScreen extends StatelessWidget {
@@ -61,6 +62,13 @@ class GamesScreen extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const NexoLudoOnlineScreen()),
+            ),
+          ),
+          const SizedBox(height: 14),
+          _DominoEntryCard(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NexoDominoOnlineScreen()),
             ),
           ),
           const SizedBox(height: 14),
@@ -260,6 +268,49 @@ class _GameCard extends StatelessWidget {
 }
 
 
+
+
+class _DominoEntryCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _DominoEntryCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(18),
+    child: Ink(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Color(0xFF163A56), Color(0xFF1E315E)]),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF2FE0C0).withOpacity(.55)),
+      ),
+      child: const Row(
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: Color(0x222FE0C0),
+            child: Text('🀄', style: TextStyle(fontSize: 27)),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('NEXO Domino', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                SizedBox(height: 4),
+                Text('Domino Online • 2 لاعبين • Room + Join Code', style: TextStyle(color: Color(0xFF90A4AE), fontSize: 12)),
+                SizedBox(height: 5),
+                Text('Server moves • Private hand • Match points', style: TextStyle(color: Color(0xFF67F1D5), fontSize: 10, fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+          Icon(Icons.play_circle_fill_rounded, color: Color(0xFF2FE0C0), size: 30),
+        ],
+      ),
+    ),
+  );
+}
 
 class _ChessEntryCard extends StatelessWidget {
   final VoidCallback onTap;
