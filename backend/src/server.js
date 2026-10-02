@@ -8,6 +8,7 @@ const jwt = require('@fastify/jwt');
 const websocket = require('@fastify/websocket');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
+const { newDb } = require('pg-mem');
 const { randomUUID, pbkdf2, timingSafeEqual } = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -16,13 +17,26 @@ const { registerLudo } = require('./ludo');
 const { registerChess } = require('./chess');
 
 const app = Fastify({ logger: true });
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.PGSSL === 'false' ? false : { rejectUnauthorized: false }
-});
+let pool;
+let inMemoryDb = null;
+if (process.env.DATABASE_URL) {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.PGSSL === 'false' ? false : { rejectUnauthorized: false }
+  });
+} else {
+  inMemoryDb = newDb({ autoCreateForeignKeyIndices: true });
+  inMemoryDb.public.registerFunction({
+    name: 'gen_random_uuid',
+    args: [],
+    returns: 'uuid',
+    implementation: () => randomUUID(),
+  });
+  pool = new (inMemoryDb.adapters.createPg().Pool)();
+}
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET || '';
-if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
+if (JWT_SECRET.length < 32) throw new Error('JWT_SECRET must be 32+ chars');
 if (JWT_SECRET.length < 32) throw new Error('JWT_SECRET must be 32+ chars');
 
 app.register(cors, { origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true });
