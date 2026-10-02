@@ -5,7 +5,7 @@ import '../services/power_service.dart';
 import '../services/api_client.dart';
 import '../theme/nexo_theme.dart';
 
-/// شاشة كولكشن الـ Powers — تفعيل / إيقاف
+/// شاشة كولكشن Font Color — تفعيل / إيقاف
 class PowersCollectionScreen extends StatelessWidget {
   const PowersCollectionScreen({super.key});
 
@@ -15,7 +15,7 @@ class PowersCollectionScreen extends StatelessWidget {
       backgroundColor: NexoColors.surface,
       appBar: AppBar(
         backgroundColor: NexoColors.surface,
-        title: const Text('كولكشن الـ Powers', style: TextStyle(color: Colors.white)),
+        title: const Text('كولكشن Font Color', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           Consumer<PowerService>(
@@ -52,7 +52,7 @@ class PowersCollectionScreen extends StatelessWidget {
               if (owned.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(24),
-                  child: Text('لا توجد Powers بعد', style: TextStyle(color: Colors.white54)),
+                  child: Text('لا توجد Font Colors بعد', style: TextStyle(color: Colors.white54)),
                 ),
               ...owned.map((p) => _OwnedTile(instance: p)),
               const SizedBox(height: 24),
