@@ -547,3 +547,14 @@ ON CONFLICT (id) DO UPDATE SET
   tagline=EXCLUDED.tagline,active=EXCLUDED.active,item_type=EXCLUDED.item_type,category=EXCLUDED.category,
   description=EXCLUDED.description,animation=EXCLUDED.animation,market_visible=EXCLUDED.market_visible,
   sort_order=EXCLUDED.sort_order,tags=EXCLUDED.tags,metadata=EXCLUDED.metadata;
+
+
+-- NEXO SIGNAL QUEUE — WebRTC signaling for private calls and Party rooms.
+CREATE TABLE IF NOT EXISTS nexo.signal_queue (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  from_user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  to_user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS nexo_signal_queue_to_created_idx ON nexo.signal_queue(to_user_id,created_at);
