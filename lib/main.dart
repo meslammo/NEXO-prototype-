@@ -8,6 +8,7 @@ import 'widgets/adaptive_scaffold.dart';
 import 'screens/home_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/games_screen.dart';
+import 'screens/our_club_screen.dart';
 import 'screens/market_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/login_screen.dart';
@@ -166,7 +167,7 @@ class _OnlineShellState extends State<OnlineShell> {
 
   @override
   Widget build(BuildContext context) =>
-      const StartupMissionsGate(child: MainShell());
+      const MainShell();
 }
 
 class StartupMissionsGate extends StatefulWidget {
@@ -204,17 +205,19 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int index = 0;
+  // Social-first NEXO order: Home → Chat → Tribe → Store → Profile.
+  // Games are opened inside live rooms and from Home.
   static const screens = <Widget>[
     HomeScreen(),
     ChatScreen(),
-    GamesScreen(),
+    OurClubScreen(),
     MarketScreen(),
     ProfileScreen(),
   ];
   static const destinations = <NavigationDestination>[
     NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'الرئيسية'),
     NavigationDestination(icon: Icon(Icons.chat_bubble_outline), selectedIcon: Icon(Icons.chat_bubble_rounded), label: 'الشات'),
-    NavigationDestination(icon: Icon(Icons.sports_esports_outlined), selectedIcon: Icon(Icons.sports_esports_rounded), label: 'الألعاب'),
+    NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups_rounded), label: 'Tribe'),
     NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront_rounded), label: 'السوق'),
     NavigationDestination(icon: Icon(Icons.person_outline_rounded), selectedIcon: Icon(Icons.person_rounded), label: 'الملف'),
   ];
