@@ -942,6 +942,30 @@ app.post('/payments/webhook/:provider',async(req,reply)=>{
 });
 
 
+app.post('/signal/send',{preHandler:auth},async(req,reply)=>{
+  const b=req.body||{}, target=String(b.toUserId||'');
+  const payload=b.payload&&typeof b.payload==='object'?b.payload:{};
+  if(!target)return reply.code(400).send({error:'SIGNAL_TARGET_REQUIRED'});
+  try{
+    const to=await resolveUserId({query:q},target);
+    await q("INSERT INTO nexo.signal_queue(from_user_id,to_user_id,payload) VALUES($1,$2,$3::jsonb)",[uid(req),to,JSON.stringify(payload)]);
+    return {ok:true};
+  }catch(e){return reply.code(e.code||500).send({error:e.code||'SIGNAL_SEND_FAILED'});}
+});
+app.get('/signal/poll',{preHandler:auth},async req=>{
+  try{
+    const rows=await tx(async c=>{
+      return (await c.query("DELETE FROM nexo.signal_queue WHERE to_user_id=$1 AND created_at < NOW()-INTERVAL '5 minutes' RETURNING id",[uid(req)])).rows;
+    });
+    await q("DELETE FROM nexo.signal_queue WHERE to_user_id=$1 AND created_at < NOW()-INTERVAL '5 minutes'",[uid(req)]);
+    const picked=await tx(async c=>{
+      return (await c.query("WITH picked AS (SELECT id FROM nexo.signal_queue WHERE to_user_id=$1 ORDER BY created_at LIMIT 100) DELETE FROM nexo.signal_queue s USING picked p WHERE s.id=p.id RETURNING s.from_user_id,s.payload",[uid(req)])).rows;
+    });
+    return {data:picked.map(x=>({type:'signal',fromUserId:x.from_user_id,payload:x.payload}))};
+  }catch(e){return reply.code(500).send({error:'SIGNAL_POLL_FAILED'});}
+});
+app.get('/rtc/config',async(req)=>({iceServers:[{urls:['stun:stun.l.google.com:19302']}]}) );
+
 app.get('/memberships/catalog',{preHandler:auth},async req=>{
   return {data:MEMBERSHIP_CATALOG};
 });
