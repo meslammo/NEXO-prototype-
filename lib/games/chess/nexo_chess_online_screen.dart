@@ -45,7 +45,7 @@ class _NexoChessOnlineScreenState extends State<NexoChessOnlineScreen> {
     final id = room?['id']?.toString();
     if (id == null || id.isEmpty) return;
     try {
-      final r = await context.read<ApiClient>().getJson('/games/chess/rooms/\$id');
+      final r = await context.read<ApiClient>().getJson('/games/chess/rooms/$id');
       if (!mounted) return;
       setState(() {
         room = Map<String, dynamic>.from(r);
@@ -103,7 +103,7 @@ class _NexoChessOnlineScreenState extends State<NexoChessOnlineScreen> {
     try {
       final r = await context
           .read<ApiClient>()
-          .postJson('/games/chess/rooms/\$code/join', {'code': code});
+          .postJson('/games/chess/rooms/$code/join', {'code': code});
       if (!mounted) return;
       setState(() {
         room = Map<String, dynamic>.from(r);
@@ -132,7 +132,7 @@ class _NexoChessOnlineScreenState extends State<NexoChessOnlineScreen> {
     try {
       final r = await context
           .read<ApiClient>()
-          .postJson('/games/chess/rooms/\$id/\$name', body);
+          .postJson('/games/chess/rooms/$id/$name', body);
       if (!mounted) return;
       setState(() {
         room = Map<String, dynamic>.from(r);
@@ -198,7 +198,7 @@ class _NexoChessOnlineScreenState extends State<NexoChessOnlineScreen> {
     final actualCol = isWhite ? col : 7 - col;
     final file = String.fromCharCode(97 + actualCol);
     final rank = (8 - actualRow).toString();
-    return '\$file\$rank';
+    return '$file$rank';
   }
 
   String _pieceAt(String square) {
@@ -424,7 +424,7 @@ class _NexoChessOnlineScreenState extends State<NexoChessOnlineScreen> {
                   ),
                 ],
               ),
-              Text('\${ps.length}/2 لاعبين', style: const TextStyle(color: Colors.white38, fontSize: 11)),
+              Text('${ps.length}/2 لاعبين', style: const TextStyle(color: Colors.white38, fontSize: 11)),
             ],
           ),
         ),
@@ -492,7 +492,7 @@ class _NexoChessOnlineScreenState extends State<NexoChessOnlineScreen> {
             children: [
               Expanded(
                 child: Text(
-                  "\$turnText • \${turnColor == 'white' ? 'الأبيض' : 'الأسود'}",
+                  "$turnText • ${turnColor == 'white' ? 'الأبيض' : 'الأسود'}",
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
                 ),
               ),
