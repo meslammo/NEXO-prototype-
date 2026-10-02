@@ -7,7 +7,7 @@ concurrency:
 on:
   workflow_dispatch:
   push:
-    branches: ["nexo/fullstack-phases-1-10", "nexo/chess-apk-build"]
+    branches: ["nexo/fullstack-phases-1-10", "nexo/chess-apk-build", "nexo/qa-apk-20261001"]
   pull_request:
 
 jobs:
