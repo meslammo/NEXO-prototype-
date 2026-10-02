@@ -13,6 +13,8 @@ import 'our_club_screen.dart';
 import 'membership_screen.dart';
 import 'profile_screen.dart';
 import 'recharge_screen.dart';
+import 'room_screen.dart';
+import '../config/api_config.dart';
 
 /// NEXO Home: original social/party hub using a similar feature vocabulary
 /// to modern voice-social apps, but with NEXO branding and implementation.
@@ -36,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _load() async {
     try {
       final api = context.read<ApiClient>();
+      if(!NexoApiConfig.configured){if(mounted)setState(()=>_loading=false);return;}
       final results = await Future.wait<dynamic>([
         api.getJson('/users'),
         api.getJson('/memberships/current'),
@@ -190,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
       Row(children: [
         Expanded(child: _heroAction('مكالمة صوتية', Icons.call_rounded, NexoColors.primary, () => _go(const ChatScreen()))),
         const SizedBox(width: 8),
-        Expanded(child: _heroAction('غرفة صوتية', Icons.mic_external_on_rounded, Colors.deepPurpleAccent, () => _go(const ChatScreen()))),
+        Expanded(child: _heroAction('غرفة صوتية', Icons.mic_external_on_rounded, Colors.deepPurpleAccent, () => _go(const VoiceRoomsScreen()))),
         const SizedBox(width: 8),
         Expanded(child: _heroAction('غرفة فيديو', Icons.videocam_rounded, Colors.pinkAccent, () => _go(const ChatScreen()))),
       ]),
