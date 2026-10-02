@@ -440,7 +440,7 @@ INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_t
 VALUES ('entrance-neon','Neon Arrival','rare',650,false,'effect:neon','Neon Arrival',true,'entrance_effect','entrance_effects','Neon entrance animation','shine',true,500,'[]'::jsonb,'{"style":"neon"}'::jsonb,true,false)
 ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,item_type=EXCLUDED.item_type,category=EXCLUDED.category,metadata=EXCLUDED.metadata,active=true,market_visible=true;
 INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
-VALUES ('entrance-galaxy','Galaxy Arrival','epic',1400,false,'effect:galaxy','Galaxy Arrival',true,'entrance_effect','entrance_effects','Cosmic entrance animation','orbit',true,501,'[]'::jsonb,'{"style":"galaxy"}'::jsonb,false,false);
+VALUES ('entrance-galaxy','Galaxy Arrival','epic',1400,false,'effect:galaxy','Galaxy Arrival',true,'entrance_effect','entrance_effects','Cosmic entrance animation','orbit',true,501,'[]'::jsonb,'{"style":"galaxy"}'::jsonb,false,false)
 ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,item_type=EXCLUDED.item_type,category=EXCLUDED.category,metadata=EXCLUDED.metadata,active=true,market_visible=true;
 
 INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
