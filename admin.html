@@ -1,6 +1,6 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NEXO Control Center</title><link rel="stylesheet" href="/admin/styles.css"></head><body><main>
-<section class="hero"><span class="tag">NEXO ADMIN</span><h1>🛠 NEXO Control Center</h1><p class="muted">إدارة الكتالوج والمستخدمين والاقتصاد والـTrades والـSecurity من سيرفر NEXO.</p>
-<div class="toolbar"><div class="field"><label>API URL</label><input id="api" value="https://nexo-api-production-05d3.up.railway.app"></div><div class="field"><label>Admin Key</label><input id="key" type="password" placeholder="NEXO_ADMIN_KEY"></div><button class="btn" onclick="connect()">اتصال</button></div><div id="msg" class="msg">أدخل Admin Key الموجود في إعدادات السيرفر.</div></section>
+<section class="hero"><span class="tag">NEXO ADMIN</span><h1>🛠 NEXO Control Center</h1><p class="muted">إدارة الكتالوج والمستخدمين والاقتصاد والـSecurity من سيرفر NEXO.</p>
+<div class="toolbar"><div class="field"><label>API URL</label><input id="api" value="https://nexo-online-control.hatchable.site/api/nexo"></div><div class="field"><label>Admin Key</label><input id="key" type="password" placeholder="NEXO_ADMIN_KEY"></div><button class="btn" onclick="connect()">اتصال</button></div><div id="msg" class="msg">أدخل Admin Key الموجود في إعدادات السيرفر.</div></section>
 <div class="stats" id="stats"></div>
 <div class="tabs"><button class="btn active" onclick="tab('catalog',this)">Market / Catalog</button><button class="btn alt" onclick="tab('users',this)">Users</button><button class="btn alt" onclick="tab('trades',this)">Trades</button><button class="btn alt" onclick="tab('security',this)">Security</button><button class="btn alt" onclick="tab('announce',this)">Announcement</button><button class="btn alt" onclick="tab('settings',this)">Settings</button></div>
 
@@ -14,7 +14,7 @@
 </div>
 <div class="field" style="margin-top:10px"><label>Tagline</label><input id="c-tagline"></div><div class="field" style="margin-top:10px"><label>Description</label><textarea id="c-desc"></textarea></div>
 <div class="toolbar" style="margin-top:10px"><div class="field"><label>Sort Order</label><input id="c-sort" type="number" value="500"></div>
-<label><input id="c-trade" type="checkbox" checked> Tradeable</label><label><input id="c-market" type="checkbox" checked> Market visible</label><label><input id="c-active" type="checkbox" checked> Active</label><button class="btn good" onclick="saveItem()">حفظ / تحديث العنصر</button></div>
+<label><input id="c-trade" type="checkbox" checked> قابل للتداول</label><label><input id="c-market" type="checkbox" checked> Market visible</label><label><input id="c-active" type="checkbox" checked> Active</label><button class="btn good" onclick="saveItem()">حفظ / تحديث العنصر</button></div>
 <div id="catalogTable" class="tableWrap"></div></section>
 
 <section id="users" class="card section tab"><h2>Users / Economy</h2><div id="usersTable" class="tableWrap"></div></section>
