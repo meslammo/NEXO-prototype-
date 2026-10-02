@@ -34,8 +34,6 @@ jobs:
           fi
           test -f android/app/build.gradle || test -f android/app/build.gradle.kts
           rm -f test/widget_test.dart
-      - name: Analyze (non-blocking)
-        run: flutter analyze || true
       - name: Configure stable release signing when secrets are available
         env:
           NEXO_KEYSTORE_BASE64: ${{ secrets.NEXO_KEYSTORE_BASE64 }}
