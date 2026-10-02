@@ -84,8 +84,9 @@ async function registerLudo(app,auth,q){
   await q("UPDATE nexo.ludo_rooms SET state=$1::jsonb,dice=0,status=$2,turn_seat=$3,winner_user_id=$4 WHERE id=$5",[JSON.stringify({...state,pawns}),status,turn,winner,id]);return view(q,id);
  });
  app.get("/games/ludo/rooms/:id",{preHandler:guard},async(req,reply)=>{
-  const r=await q("SELECT host_id,guest_id FROM nexo.ludo_rooms WHERE id=$1",[req.params.id]);if(!r.rowCount)return send(reply,404,{error:"LUDO_ROOM_NOT_FOUND"});
-  if(String(r.rows[0].host_id)!==String(uid(req))&&String(r.rows[0].guest_id||"")!==String(uid(req)))return send(reply,403,{error:"LUDO_NOT_IN_ROOM"});return view(q,req.params.id);
+  const r=await q("SELECT host_id FROM nexo.ludo_rooms WHERE id=$1",[req.params.id]);if(!r.rowCount)return send(reply,404,{error:"LUDO_ROOM_NOT_FOUND"});
+  const member=await q("SELECT 1 FROM nexo.ludo_room_players WHERE room_id=$1 AND user_id=$2",[req.params.id,uid(req)]);
+  if(!member.rowCount)return send(reply,403,{error:"LUDO_NOT_IN_ROOM"});return view(q,req.params.id);
  });
 }
 module.exports={registerLudo};
