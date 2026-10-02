@@ -175,9 +175,6 @@ app.post('/auth/login', async (req, reply) => {
   }
   return {token:app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'}),user:publicUser(u)};
 });
-  await q('UPDATE nexo.users SET last_active=NOW() WHERE id=$1',[u.id]);
-  return {token:app.jwt.sign({sub:u.id,username:u.username}),user:publicUser(u)};
-});
 
 app.get('/me',{preHandler:auth},async req=>{
   const r=await q('SELECT * FROM nexo.users WHERE id=$1',[uid(req)]); return {user:publicUser(r.rows[0])};
