@@ -8,11 +8,38 @@ import '../services/auth_service.dart';
 import '../config/api_config.dart';
 import 'mining_screen.dart';
 import '../games/ludo/nexo_ludo_online_screen.dart';
+import '../games/ludo/nexo_ludo_game.dart';
+import '../games/chess/nexo_chess_local_screen.dart';
+import '../games/domino/nexo_domino_local_screen.dart';
 import '../games/domino/nexo_domino_online_screen.dart';
 import '../games/chess/nexo_chess_online_screen.dart';
 
 class GamesScreen extends StatelessWidget {
   const GamesScreen({super.key});
+
+  void _openLudo(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => NexoApiConfig.configured
+          ? const NexoLudoOnlineScreen()
+          : const NexoLudoGame(),
+    ));
+  }
+
+  void _openDomino(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => NexoApiConfig.configured
+          ? const NexoDominoOnlineScreen()
+          : const NexoDominoLocalScreen(),
+    ));
+  }
+
+  void _openChess(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => NexoApiConfig.configured
+          ? const NexoChessOnlineScreen()
+          : const NexoChessLocalScreen(),
+    ));
+  }
 
   static const _games = [
     ('🎯', 'Quick Challenge', 'لعبة سريعة مرتبطة بالمكافآت', 3, 20),
@@ -59,24 +86,15 @@ class GamesScreen extends StatelessWidget {
           _MiningEntryCard(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MiningScreen()))),
           const SizedBox(height: 14),
           _LudoEntryCard(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NexoLudoOnlineScreen()),
-            ),
+            onTap: () => _openLudo(context),
           ),
           const SizedBox(height: 14),
           _DominoEntryCard(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NexoDominoOnlineScreen()),
-            ),
+            onTap: () => _openDomino(context),
           ),
           const SizedBox(height: 14),
           _ChessEntryCard(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NexoChessOnlineScreen()),
-            ),
+            onTap: () => _openChess(context),
           ),
           const SizedBox(height: 14),
           _OnlineArenaCard(onTap: () => _openOnlineArena(context)),
