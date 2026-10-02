@@ -50,6 +50,42 @@ const DEFAULT_SETTINGS={
   'games.mini_puzzle.cost':5,'games.mini_puzzle.reward':35,
   'games.daily_arena.cost':8,'games.daily_arena.reward':55
 };
+
+const MEMBERSHIP_CATALOG = [
+  {id:'vip_1_30',kind:'vip',tier:1,name:'VIP I',durationDays:30,gemsPrice:1500,benefits:{dailyGems:30,extraDailyMissions:1,storeDiscountPercent:3,entranceEffects:true},welcomeGift:'vip-emblem'},
+  {id:'vip_2_30',kind:'vip',tier:2,name:'VIP II',durationDays:30,gemsPrice:3000,benefits:{dailyGems:60,extraDailyMissions:2,storeDiscountPercent:5,entranceEffects:true},welcomeGift:'vip-emblem'},
+  {id:'vip_3_30',kind:'vip',tier:3,name:'VIP III',durationDays:30,gemsPrice:6500,benefits:{dailyGems:100,extraDailyMissions:3,storeDiscountPercent:8,entranceEffects:true,profileBadge:true},welcomeGift:'crown-shine'},
+  {id:'vip_4_30',kind:'vip',tier:4,name:'VIP IV',durationDays:30,gemsPrice:12000,benefits:{dailyGems:160,extraDailyMissions:4,storeDiscountPercent:10,entranceEffects:true,profileBadge:true},welcomeGift:'fire-wings'},
+  {id:'vip_5_30',kind:'vip',tier:5,name:'VIP V',durationDays:30,gemsPrice:22000,benefits:{dailyGems:250,extraDailyMissions:5,storeDiscountPercent:12,entranceEffects:true,profileBadge:true,exclusiveStore:true},welcomeGift:'royal-chest'},
+  {id:'svip_1_30',kind:'svip',tier:1,name:'SVIP I',durationDays:30,gemsPrice:10000,benefits:{dailyGems:250,extraDailyMissions:5,missionBonusPercent:10,storeDiscountPercent:10,exclusiveStore:true,entranceEffects:true},welcomeGift:'dragon'},
+  {id:'svip_2_30',kind:'svip',tier:2,name:'SVIP II',durationDays:30,gemsPrice:18000,benefits:{dailyGems:400,extraDailyMissions:6,missionBonusPercent:15,storeDiscountPercent:12,exclusiveStore:true,entranceEffects:true},welcomeGift:'phoenix'},
+  {id:'svip_3_30',kind:'svip',tier:3,name:'SVIP III',durationDays:30,gemsPrice:30000,benefits:{dailyGems:650,extraDailyMissions:7,missionBonusPercent:20,storeDiscountPercent:15,exclusiveStore:true,entranceEffects:true,profileBadge:true},welcomeGift:'unicorn'},
+  {id:'svip_4_30',kind:'svip',tier:4,name:'SVIP IV',durationDays:30,gemsPrice:50000,benefits:{dailyGems:900,extraDailyMissions:8,missionBonusPercent:25,storeDiscountPercent:18,exclusiveStore:true,entranceEffects:true,profileBadge:true},welcomeGift:'al-hurra'},
+  {id:'svip_5_30',kind:'svip',tier:5,name:'SVIP V',durationDays:30,gemsPrice:80000,benefits:{dailyGems:1400,extraDailyMissions:10,missionBonusPercent:35,storeDiscountPercent:20,exclusiveStore:true,entranceEffects:true,profileBadge:true},welcomeGift:'royal-chest'}
+];
+
+const ARISTOCRACY_CATALOG = [
+  {id:'noble_1',level:1,name:'Noble I',gemsPrice:5000,rewardItem:'frame-21-noble',benefits:['Noble badge','Exclusive frame','Room entrance glow']},
+  {id:'noble_2',level:2,name:'Noble II',gemsPrice:9000,rewardItem:'frame-22-scribe',benefits:['Higher room aura','VIP gift bonus']},
+  {id:'noble_3',level:3,name:'Noble III',gemsPrice:15000,rewardItem:'frame-23-vizier',benefits:['Rare entrance effect','Priority room styling']},
+  {id:'noble_4',level:4,name:'Noble IV',gemsPrice:25000,rewardItem:'frame-24-platinum-lv100',benefits:['Platinum frame','Premium name styling']},
+  {id:'noble_5',level:5,name:'Noble V',gemsPrice:40000,rewardItem:'frame-25-anniversary',benefits:['Anniversary frame','Exclusive profile aura']},
+  {id:'noble_6',level:6,name:'Noble VI',gemsPrice:65000,rewardItem:'frame-30-new-year',benefits:['Mythic prestige','Limited room effect']}
+];
+
+const MISSION_DEFS = [
+  {id:'daily_login',group:'daily',title:'دخول NEXO',description:'افتح NEXO اليوم',activityType:'login',target:1,rewardGems:20,requiresVip:false,requiresSvip:false},
+  {id:'daily_chat',group:'daily',title:'3 رسائل شات',description:'ابعت 3 رسائل',activityType:'chat',target:3,rewardGems:15,requiresVip:false,requiresSvip:false},
+  {id:'daily_gift',group:'daily',title:'إرسال هدية',description:'ابعت هدية واحدة',activityType:'gift_send',target:1,rewardGems:30,requiresVip:false,requiresSvip:false},
+  {id:'daily_game',group:'daily',title:'فوز لعبة',description:'حقق فوزًا في لعبة',activityType:'game_win',target:1,rewardGems:35,requiresVip:false,requiresSvip:false},
+  {id:'vip_chat',group:'vip',title:'VIP Social',description:'ابعت 10 رسائل وأكمل مهمة VIP',activityType:'chat',target:10,rewardGems:80,requiresVip:true,requiresSvip:false},
+  {id:'vip_gift',group:'vip',title:'VIP Gifter',description:'أرسل 3 هدايا',activityType:'gift_send',target:3,rewardGems:120,requiresVip:true,requiresSvip:false},
+  {id:'svip_voice',group:'svip',title:'SVIP Party',description:'شارك في 5 أنشطة غرفة',activityType:'voice_activity',target:5,rewardGems:180,requiresVip:false,requiresSvip:true},
+  {id:'svip_game',group:'svip',title:'SVIP Gamer',description:'حقق 3 انتصارات',activityType:'game_win',target:3,rewardGems:220,requiresVip:false,requiresSvip:true},
+  {id:'tribe_chat',group:'tribe',title:'Tribe Together',description:'3 رسائل داخل المجتمع',activityType:'tribe_chat',target:3,rewardGems:50,requiresVip:false,requiresSvip:false},
+  {id:'tribe_gift',group:'tribe',title:'Tribe Gift',description:'أرسل هدية للمجتمع',activityType:'tribe_gift',target:1,rewardGems:70,requiresVip:false,requiresSvip:false}
+];
+
 async function settingNumber(db,key,fallback){
   try{const r=await db.query('SELECT value FROM nexo.app_settings WHERE key=$1',[key]);const v=r.rowCount?Number(r.rows[0].value):Number(fallback);return Number.isFinite(v)?v:Number(fallback);}
   catch(_){return Number(fallback);}
@@ -100,6 +136,19 @@ async function notify(userId, kind, title, body, data={}) {
     await q('INSERT INTO nexo.notifications(id,user_id,kind,title,body,data) VALUES($1,$2,$3,$4,$5,$6::jsonb)',[id,userId,kind,title,body,JSON.stringify(data)]);
     emit(userId,{type:'notification',notification:{id,userId,kind,title,body,data,read:false}});
   } catch (_) {}
+}
+
+
+async function bumpActivity(db,userId,activityType,amount=1){
+  try{
+    await db.query('INSERT INTO nexo.activity_daily(user_id,activity_date,activity_type,count) VALUES($1,CURRENT_DATE,$2,$3) ON CONFLICT(user_id,activity_date,activity_type) DO UPDATE SET count=nexo.activity_daily.count+EXCLUDED.count',[userId,activityType,amount]);
+  }catch(_){}
+}
+async function grantInventoryIfPresent(db,userId,itemId,quantity=1){
+  if(!itemId)return;
+  const r=await db.query('SELECT id FROM nexo.gifts WHERE id=$1 AND active=true',[itemId]);
+  if(!r.rowCount)return;
+  await db.query('INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES($1,$2,$3) ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=nexo.inventory.quantity+EXCLUDED.quantity',[userId,itemId,quantity]);
 }
 
 function emit(toUserId, event) {
