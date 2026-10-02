@@ -5,6 +5,8 @@ import '../services/economy_service.dart';
 import '../theme/nexo_theme.dart';
 import 'missions_screen.dart';
 import 'chat_screen.dart';
+import 'room_screen.dart';
+import 'membership_screen.dart';
 
 class OurClubScreen extends StatelessWidget {
   const OurClubScreen({super.key});
@@ -63,6 +65,20 @@ class OurClubScreen extends StatelessWidget {
             subtitle:'ادخل الشات وتكلم مع أعضاء المجتمع',
             icon:Icons.chat_bubble_outline,
             onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const ChatScreen())),
+          ),
+          _action(
+            context,
+            title:'Open NEXO Rooms',
+            subtitle:'غرف صوتية 9 كراسي + مايك + ألعاب داخل الشات',
+            icon:Icons.record_voice_over_rounded,
+            onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const VoiceRoomsScreen())),
+          ),
+          _action(
+            context,
+            title:'VIP / SVIP',
+            subtitle:'العضويات، المميزات، الهدايا والمهام الخاصة',
+            icon:Icons.workspace_premium_rounded,
+            onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MembershipScreen())),
           ),
           _action(
             context,
