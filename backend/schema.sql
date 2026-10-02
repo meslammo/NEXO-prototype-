@@ -334,3 +334,42 @@ INSERT INTO nexo.gifts (id,name,rarity,gems,tradeable,image,tagline,active,item_
 ('frame-30-new-year','New Year Frame','Mythic',250000,TRUE,'assets/nexo/frames/original_30/frame-30-new-year.png','New Year Frame',TRUE,'frame','frames','New Year Frame','orbit',TRUE,134,'[]'::jsonb,'{"source":"legacy_six","group":"frames36"}'::jsonb),
 ('frame-exclusive','NEXO Exclusive Frame','Mythic',150000,FALSE,'assets/nexo/frames/nexo-exclusive.svg','Legacy NEXO Exclusive Frame',TRUE,'frame','frames','NEXO Exclusive Frame','shine',TRUE,135,'[]'::jsonb,'{"source":"legacy_six","group":"frames36"}'::jsonb)
 ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,tradeable=EXCLUDED.tradeable,image=EXCLUDED.image,tagline=EXCLUDED.tagline,active=EXCLUDED.active,item_type=EXCLUDED.item_type,category=EXCLUDED.category,description=EXCLUDED.description,animation=EXCLUDED.animation,market_visible=EXCLUDED.market_visible,sort_order=EXCLUDED.sort_order,tags=EXCLUDED.tags,metadata=EXCLUDED.metadata;
+
+
+-- NEXO CHANGE 42 — deterministic QA login + Domino Online persistence.
+UPDATE nexo.users
+SET password_hash='pbkdf2sha256$120000$a242af89cb0e8ce30ce545db8b9c743c$1a096bb74fae69c5ae3308b5989e2157ef19209fd5cc2cbac3b4a7675c8a4070',
+    display_name='NEXO Demo', avatar=COALESCE(avatar,'001.jpg'), banned=false,
+    gems=GREATEST(gems,10000), energy=100, last_active=NOW()
+WHERE lower(username)='nexo_demo';
+INSERT INTO nexo.users(id,username,email,password_hash,display_name,avatar,gems,energy)
+SELECT '00000000-0000-0000-0000-000000000110','nexo_demo',NULL,
+       'pbkdf2sha256$120000$a242af89cb0e8ce30ce545db8b9c743c$1a096bb74fae69c5ae3308b5989e2157ef19209fd5cc2cbac3b4a7675c8a4070',
+       'NEXO Demo','001.jpg',10000,100
+WHERE NOT EXISTS (SELECT 1 FROM nexo.users WHERE lower(username)='nexo_demo');
+
+CREATE TABLE IF NOT EXISTS nexo.domino_rooms (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  invite_code TEXT NOT NULL UNIQUE,
+  host_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  guest_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL,
+  host_ready BOOLEAN NOT NULL DEFAULT FALSE,
+  guest_ready BOOLEAN NOT NULL DEFAULT FALSE,
+  status TEXT NOT NULL DEFAULT 'waiting',
+  turn_user_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL,
+  winner_user_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL,
+  ended_reason TEXT,
+  state JSONB NOT NULL DEFAULT '{}'::jsonb,
+  moves JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS nexo_domino_rooms_waiting_idx ON nexo.domino_rooms(status,created_at);
+CREATE TABLE IF NOT EXISTS nexo.domino_move_keys (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_id UUID NOT NULL REFERENCES nexo.domino_rooms(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  move_key TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(room_id,move_key)
+);
