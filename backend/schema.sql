@@ -373,3 +373,93 @@ CREATE TABLE IF NOT EXISTS nexo.domino_move_keys (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(room_id,move_key)
 );
+
+
+-- NEXO CHANGE 54 — executable Ludo/Chess persistence and live Store catalog.
+CREATE TABLE IF NOT EXISTS nexo.ludo_rooms (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  invite_code TEXT NOT NULL UNIQUE,
+  host_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  max_players INTEGER NOT NULL DEFAULT 4 CHECK (max_players BETWEEN 2 AND 4),
+  status TEXT NOT NULL DEFAULT 'waiting',
+  turn_seat INTEGER NOT NULL DEFAULT 0,
+  dice INTEGER NOT NULL DEFAULT 0 CHECK (dice BETWEEN 0 AND 6),
+  state JSONB NOT NULL DEFAULT '{}'::jsonb,
+  winner_user_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS nexo.ludo_room_players (
+  room_id UUID NOT NULL REFERENCES nexo.ludo_rooms(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  seat INTEGER NOT NULL CHECK (seat BETWEEN 0 AND 3),
+  ready BOOLEAN NOT NULL DEFAULT FALSE,
+  joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (room_id,user_id),
+  UNIQUE (room_id,seat)
+);
+CREATE INDEX IF NOT EXISTS nexo_ludo_waiting_idx ON nexo.ludo_rooms(status,max_players,created_at);
+
+CREATE TABLE IF NOT EXISTS nexo.chess_rooms (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  invite_code TEXT NOT NULL UNIQUE,
+  host_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'waiting',
+  turn_color TEXT NOT NULL DEFAULT 'white',
+  fen TEXT NOT NULL DEFAULT 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+  white_user_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL,
+  black_user_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL,
+  winner_user_id UUID REFERENCES nexo.users(id) ON DELETE SET NULL,
+  draw_reason TEXT,
+  moves JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS nexo.chess_room_players (
+  room_id UUID NOT NULL REFERENCES nexo.chess_rooms(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES nexo.users(id) ON DELETE CASCADE,
+  color TEXT NOT NULL,
+  ready BOOLEAN NOT NULL DEFAULT FALSE,
+  joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (room_id,user_id),
+  UNIQUE (room_id,color)
+);
+CREATE INDEX IF NOT EXISTS nexo_chess_waiting_idx ON nexo.chess_rooms(status,created_at);
+
+INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
+VALUES ('font-cyan','Cyan Pulse','common',120,false,'color:#54D6FF','Cyan Pulse',true,'name_color','font_color','NEXO Font Color','#54D6FF pulse',true,400,'[]'::jsonb,'{"hex":"#54D6FF","isNew":true}'::jsonb,true,false)
+ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,item_type=EXCLUDED.item_type,category=EXCLUDED.category,metadata=EXCLUDED.metadata,active=true,market_visible=true;
+INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
+VALUES ('font-purple','Violet Pulse','rare',220,false,'color:#B44CFF','Violet Pulse',true,'name_color','font_color','NEXO Font Color','#B44CFF glow',true,401,'[]'::jsonb,'{"hex":"#B44CFF","isNew":true}'::jsonb,false,false)
+ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,item_type=EXCLUDED.item_type,category=EXCLUDED.category,metadata=EXCLUDED.metadata,active=true,market_visible=true;
+INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
+VALUES ('font-gold','Royal Gold','epic',480,false,'color:#FFD166','Royal Gold',true,'name_color','font_color','NEXO Font Color','#FFD166 premium',true,402,'[]'::jsonb,'{"hex":"#FFD166","isNew":false}'::jsonb,true,false)
+ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,item_type=EXCLUDED.item_type,category=EXCLUDED.category,metadata=EXCLUDED.metadata,active=true,market_visible=true;
+
+INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
+VALUES ('entrance-neon','Neon Arrival','rare',650,false,'effect:neon','Neon Arrival',true,'entrance_effect','entrance_effects','Neon entrance animation','shine',true,500,'[]'::jsonb,'{"style":"neon"}'::jsonb,true,false)
+ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,item_type=EXCLUDED.item_type,category=EXCLUDED.category,metadata=EXCLUDED.metadata,active=true,market_visible=true;
+INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
+VALUES ('entrance-galaxy','Galaxy Arrival','epic',1400,false,'effect:galaxy','Galaxy Arrival',true,'entrance_effect','entrance_effects','Cosmic entrance animation','orbit',true,501,'[]'::jsonb,'{"style":"galaxy"}'::jsonb,false,false);
+ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,item_type=EXCLUDED.item_type,category=EXCLUDED.category,metadata=EXCLUDED.metadata,active=true,market_visible=true;
+
+INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
+VALUES ('room-sky','Sky Lounge','common',300,false,'room:sky','Sky Lounge',true,'room_background','room_backgrounds','NEXO room background','float',true,600,'[]'::jsonb,'{"theme":"sky"}'::jsonb,false,false)
+ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,item_type=EXCLUDED.item_type,category=EXCLUDED.category,metadata=EXCLUDED.metadata,active=true,market_visible=true;
+INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
+VALUES ('room-galaxy','Galaxy Room','epic',1800,false,'room:galaxy','Galaxy Room',true,'room_background','room_backgrounds','NEXO room background','orbit',true,601,'[]'::jsonb,'{"theme":"galaxy"}'::jsonb,true,false)
+ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,item_type=EXCLUDED.item_type,category=EXCLUDED.category,metadata=EXCLUDED.metadata,active=true,market_visible=true;
+
+INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
+VALUES ('namecard-neon','Neon Name Card','rare',350,false,'effect:namecard_neon','Neon Name Card',true,'gift','name_cards','NEXO chat/name card style','shine',true,700,'["namecard"]'::jsonb,'{"style":"neon_namecard"}'::jsonb,false,false)
+ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,category=EXCLUDED.category,description=EXCLUDED.description,metadata=EXCLUDED.metadata,active=true,market_visible=true;
+INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
+VALUES ('namecard-royal','Royal Name Card','epic',900,false,'effect:namecard_royal','Royal Name Card',true,'gift','name_cards','NEXO chat/name card style','shine',true,701,'["namecard"]'::jsonb,'{"style":"royal_namecard"}'::jsonb,true,false)
+ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,category=EXCLUDED.category,description=EXCLUDED.description,metadata=EXCLUDED.metadata,active=true,market_visible=true;
+
+INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
+VALUES ('power-chat-spark','Chat Spark Power','rare',750,false,'power:chat-spark','Chat Spark',true,'power','powers','NEXO chat visual power','pulse',true,800,'["power"]'::jsonb,'{"powerId":"chat-spark"}'::jsonb,true,false)
+ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,item_type=EXCLUDED.item_type,category=EXCLUDED.category,metadata=EXCLUDED.metadata,active=true,market_visible=true;
+INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
+VALUES ('power-vip-aura','VIP Aura Power','epic',2200,false,'power:vip-aura','VIP Aura',true,'power','powers','NEXO premium chat power','orbit',true,801,'["power"]'::jsonb,'{"powerId":"vip-aura"}'::jsonb,false,false)
+ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,image=EXCLUDED.image,item_type=EXCLUDED.item_type,category=EXCLUDED.category,metadata=EXCLUDED.metadata,active=true,market_visible=true;
