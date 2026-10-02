@@ -11,6 +11,7 @@ on:
       - "nexo/fullstack-phases-1-10"
       - "nexo/prod-fix-20261002"
       - "nexo/release-qa-20261002"
+      - "nexo/qa-online-games-20261002"
   pull_request:
 
 jobs:
