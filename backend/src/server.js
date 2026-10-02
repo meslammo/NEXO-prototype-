@@ -321,6 +321,7 @@ app.post('/admin/catalog/upsert',{preHandler:adminAuth},async(req,reply)=>{
   const rarity=String(b.rarity||'Common').trim(),image=String(b.image||'').trim(),category=String(b.category||itemType).trim();
   const tagline=String(b.tagline||'').trim(),description=String(b.description||tagline).trim(),animation=String(b.animation||'pulse').trim();
   const gems=Math.max(0,Number(b.gems||0)),tradeable=b.tradeable!==false,active=b.active!==false,marketVisible=b.marketVisible!==false;
+  const meta=b.metadata&&typeof b.metadata==='object'?b.metadata:(itemType==='name_color'&&image.startsWith('color:')?{hex:image.substring(6)}:{});
   if(!id||!name||!image||!['gift','frame','asset','emoji','crafted','name_color','entrance_effect','room_background','power'].includes(itemType)||!Number.isInteger(gems))return reply.code(400).send({error:'INVALID_CATALOG_ITEM'});
   try{
     const result=await q(`INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata)
@@ -329,7 +330,7 @@ app.post('/admin/catalog/upsert',{preHandler:adminAuth},async(req,reply)=>{
       tagline=EXCLUDED.tagline,active=EXCLUDED.active,item_type=EXCLUDED.item_type,category=EXCLUDED.category,description=EXCLUDED.description,
       animation=EXCLUDED.animation,market_visible=EXCLUDED.market_visible,sort_order=EXCLUDED.sort_order,tags=EXCLUDED.tags,metadata=EXCLUDED.metadata RETURNING id`,
       [id,name,rarity,gems,tradeable,image,tagline,active,itemType,category,description,animation,marketVisible,Number(b.sortOrder||0),
-       JSON.stringify(Array.isArray(b.tags)?b.tags:[]),JSON.stringify(b.metadata&&typeof b.metadata==='object'?b.metadata:{})]);
+       JSON.stringify(Array.isArray(b.tags)?b.tags:[]),JSON.stringify(meta)]);
     await adminAudit(req,'catalog_upsert',id,{name,itemType,rarity,gems}); return {ok:true,id:result.rows[0].id};
   }catch(e){return reply.code(e.code||500).send({error:e.code||'CATALOG_UPSERT_FAILED'});}
 });
@@ -413,7 +414,7 @@ app.get('/users/lookup/:reference', async (req, reply) => {
     return r.rows[0] || reply.code(404).send({error:'USER_NOT_FOUND'});
   } catch(e){ return reply.code(e.code||500).send({error:e.code||'USER_LOOKUP_FAILED'}); }
 });
-app.get('/wallet',{preHandler:auth},async req=> (await q('SELECT gems,energy,level,experience,reputation,vip_level,name_color,glow FROM nexo.users WHERE id=$1',[uid(req)])).rows[0]);
+app.get('/wallet',{preHandler:auth},async req=> (await q('SELECT gems,energy,level,experience,reputation,vip_level,name_color,glow,svip_active,svip_expires_at,aristocracy_level FROM nexo.users WHERE id=$1',[uid(req)])).rows[0]);
 app.get('/inventory',{preHandler:auth},async req=> (await q(`SELECT i.item_id AS id,g.name,g.rarity,g.gems,g.tradeable,g.image,g.tagline,g.description,
   g.item_type AS "itemType",g.category,g.animation,g.market_visible AS "marketVisible",i.quantity
   FROM nexo.inventory i JOIN nexo.gifts g ON g.id=i.item_id WHERE i.user_id=$1 AND i.quantity>0 ORDER BY g.item_type,g.sort_order,g.gems`,[uid(req)])).rows);
