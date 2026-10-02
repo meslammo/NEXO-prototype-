@@ -12,6 +12,8 @@ const { randomUUID, pbkdf2, timingSafeEqual } = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { registerDomino } = require('./domino');
+const { registerLudo } = require('./ludo');
+const { registerChess } = require('./chess');
 
 const app = Fastify({ logger: true });
 const pool = new Pool({
@@ -282,7 +284,7 @@ app.post('/admin/catalog/:id/toggle',{preHandler:adminAuth},async(req,reply)=>{
 
 app.post('/admin/catalog/price-filter',{preHandler:adminAuth},async(req,reply)=>{
   const b=req.body||{},type=String(b.itemType||'').trim().toLowerCase(),rarity=String(b.rarity||'').trim(),gems=Number(b.gems);
-  const validTypes=['gift','frame','asset','emoji','crafted'];
+  const validTypes=['gift','frame','asset','emoji','crafted','name_color','entrance_effect','room_background','power'];
   if(!validTypes.includes(type)||!rarity||!Number.isInteger(gems)||gems<0)return reply.code(400).send({error:'INVALID_PRICE_FILTER'});
   const r=await q('UPDATE nexo.gifts SET gems=$1 WHERE item_type=$2 AND rarity=$3 RETURNING id',[gems,type,rarity]);
   await adminAudit(req,'catalog_price_filter',null,{itemType:type,rarity,gems,count:r.rowCount});
@@ -890,6 +892,8 @@ app.get('/ws',{websocket:true},(socket,req)=>{
 app.setErrorHandler((err,req,reply)=>{req.log.error(err);if(!reply.sent)reply.code(500).send({error:'INTERNAL_ERROR'});});
 
 registerDomino(app,auth,uid,tx,q);
+registerLudo(app,auth,q);
+registerChess(app,auth,q);
 
 async function start(){
   const schema=fs.readFileSync(path.join(__dirname,'..','schema.sql'),'utf8');
