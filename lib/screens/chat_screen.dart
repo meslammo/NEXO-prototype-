@@ -158,7 +158,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: OutlinedButton.icon(
-              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الرومات الحية موجودة داخل تدفق Chat Room.'))),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VoiceRoomsScreen())),
               icon: const Icon(Icons.record_voice_over_rounded),
               label: const Text('Live Rooms'),
             ),
