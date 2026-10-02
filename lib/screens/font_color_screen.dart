@@ -4,6 +4,8 @@ import '../models/nexo_catalog.dart';
 import '../services/catalog_service.dart';
 import '../services/economy_service.dart';
 import '../services/api_client.dart';
+import '../services/power_service.dart';
+import '../config/api_config.dart';
 import '../theme/nexo_theme.dart';
 
 class FontColorScreen extends StatefulWidget{
@@ -16,20 +18,29 @@ class _FontColorScreenState extends State<FontColorScreen>{
     if(s.length==6)s='FF'+s;
     return Color(int.tryParse(s,radix:16)??0xFF54D6FF);
   }
-  Future<void> _equip(String id) async{
+  Future<void> _equip(NexoCatalogItem x) async{
     try{
-      await context.read<ApiClient>().postJson('/profile/equipped',{'slot':'name_color','itemId':id});
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('✅ تم تغيير Font Color')));
+      if(x.type==NexoItemType.power){
+        context.read<PowerService>().setActivePower(x.id);
+        if(NexoApiConfig.configured){
+          await context.read<ApiClient>().postJson('/profile/equipped',{'slot':'power','itemId':x.id});
+        }
+      }else{
+        if(NexoApiConfig.configured){
+          await context.read<ApiClient>().postJson('/profile/equipped',{'slot':'name_color','itemId':x.id});
+        }
+      }
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('✅ تم تفعيل Font Color')));
     }catch(e){
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر التغيير: '+e.toString()),backgroundColor:Colors.redAccent));
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر التفعيل: '+e.toString()),backgroundColor:Colors.redAccent));
     }
   }
   @override Widget build(BuildContext context){
-    final colors=context.watch<NexoCatalogService>().byType(NexoItemType.nameColor);
+    final colors=context.watch<NexoCatalogService>().marketItems.where((x)=>x.type==NexoItemType.nameColor||x.type==NexoItemType.power).toList();
     final inv=context.watch<EconomyService>().inventory;
     return Scaffold(
       backgroundColor:NexoColors.background,
-      appBar:AppBar(backgroundColor:NexoColors.background,title:const Text('Font Color'),centerTitle:true,leading:const BackButton(color:Colors.white)),
+      appBar:AppBar(backgroundColor:NexoColors.background,title:const Text('Font Color • Name Style'),centerTitle:true,leading:const BackButton(color:Colors.white)),
       body:GridView.builder(
         padding:const EdgeInsets.all(14),
         itemCount:colors.length,
@@ -38,7 +49,7 @@ class _FontColorScreenState extends State<FontColorScreen>{
           final x=colors[i]; final owned=inv[x.id]??0;
           final c=x.image.startsWith('color:')?_parse(x.image.substring(6)):NexoColors.primary;
           return InkWell(
-            onTap:owned>0?()=>_equip(x.id):null,
+            onTap:owned>0?()=>_equip(x):null,
             borderRadius:BorderRadius.circular(16),
             child:Container(
               padding:const EdgeInsets.all(12),
