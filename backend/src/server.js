@@ -8,9 +8,12 @@ const jwt = require('@fastify/jwt');
 const websocket = require('@fastify/websocket');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
-const { randomUUID } = require('crypto');
+const { randomUUID, pbkdf2, timingSafeEqual } = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { registerDomino } = require('./domino');
+const { registerLudo } = require('./ludo');
+const { registerChess } = require('./chess');
 
 const app = Fastify({ logger: true });
 const pool = new Pool({
@@ -105,32 +108,30 @@ function emit(toUserId, event) {
   const raw = JSON.stringify(event);
   for (const ws of list) { try { ws.send(raw); } catch (_) {} }
 }
+function pbkdf2Verify(password, stored) {
+  return new Promise((resolve) => {
+    const parts=String(stored||'').split('$');
+    if(parts.length!==4 || parts[0]!=='pbkdf2sha256') return resolve(false);
+    const iterations=Number(parts[1]);
+    if(!Number.isInteger(iterations)||iterations<1) return resolve(false);
+    const salt=Buffer.from(parts[2],'hex');
+    const expected=Buffer.from(parts[3],'hex');
+    if(!salt.length || expected.length!==32) return resolve(false);
+    pbkdf2(password,salt,iterations,32,'sha256',(err,key)=>{
+      if(err||!key||expected.length!==key.length)return resolve(false);
+      resolve(timingSafeEqual(expected,key));
+    });
+  });
+}
 function publicUser(u) {
   if (!u) return null;
   return {
     id:u.id, username:u.username, displayName:u.display_name, avatar:u.avatar,
-    gems:Number(u.gems), energy:u.energy, level:u.level, experience:Number(u.experience),
+    gems:Number(u.gems), energy:Number(u.energy), level:u.level, experience:Number(u.experience),
     reputation:u.reputation, vipLevel:u.vip_level, nameColor:u.name_color, glow:u.glow,
     createdAt:u.created_at, lastActive:u.last_active, role:u.role, banned:Boolean(u.banned)
   };
 }
-
-app.get('/health', async (req, reply) => {
-  try {
-    await q('SELECT 1');
-    return {ok:true,service:'nexo-api',database:'ok',time:new Date().toISOString()};
-  } catch (_) {
-    return reply.code(503).send({ok:false,service:'nexo-api',database:'down'});
-  }
-});
-app.get('/rtc/config',{preHandler:auth},async(req)=>{
-  let servers;
-  try { servers=JSON.parse(process.env.RTC_ICE_SERVERS_JSON||'[{"urls":["stun:stun.l.google.com:19302"]}]'); }
-  catch(_){ servers=[{urls:['stun:stun.l.google.com:19302']}]; }
-  return {iceServers:servers};
-});
-
-
 
 app.post('/auth/guest', async (req, reply) => {
   const deviceId=String((req.body||{}).deviceId||'').trim().slice(0,60);
@@ -159,10 +160,20 @@ app.post('/auth/register', async (req, reply) => {
 
 app.post('/auth/login', async (req, reply) => {
   const body=req.body||{}, identity=String(body.identity||body.identifier||body.email||body.username||'').trim().toLowerCase(), password=String(body.password||'');
-  const r=await q('SELECT * FROM nexo.users WHERE username=$1 OR email=$1 LIMIT 1',[identity]), u=r.rows[0];
-  if(!u||!u.password_hash||!(await bcrypt.compare(password,u.password_hash))) return reply.code(401).send({error:'INVALID_CREDENTIALS'});
-  await q('UPDATE nexo.users SET last_active=NOW() WHERE id=$1',[u.id]);
-  return {token:app.jwt.sign({sub:u.id,username:u.username}),user:publicUser(u)};
+  if(!identity||!password) return reply.code(400).send({error:'LOGIN_REQUIRED'});
+  const r=await q('SELECT * FROM nexo.users WHERE lower(username)=lower($1) OR lower(email)=lower($1) LIMIT 1',[identity]), u=r.rows[0];
+  if(!u||u.banned||!u.password_hash) return reply.code(u?.banned?403:401).send({error:u?.banned?'ACCOUNT_BANNED':'INVALID_CREDENTIALS'});
+  let valid=false, legacy=false;
+  if(String(u.password_hash).startsWith('pbkdf2sha256$')) { legacy=true; valid=await pbkdf2Verify(password,u.password_hash); }
+  else valid=await bcrypt.compare(password,u.password_hash);
+  if(!valid) return reply.code(401).send({error:'INVALID_CREDENTIALS'});
+  if(legacy){
+    const upgraded=await bcrypt.hash(password,12);
+    await q('UPDATE nexo.users SET password_hash=$1,last_active=NOW() WHERE id=$2',[upgraded,u.id]);
+  } else {
+    await q('UPDATE nexo.users SET last_active=NOW() WHERE id=$1',[u.id]);
+  }
+  return {token:app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'}),user:publicUser(u)};
 });
 
 app.get('/me',{preHandler:auth},async req=>{
@@ -197,16 +208,22 @@ app.get('/profile/equipped',{preHandler:auth},async(req)=> (await q(`SELECT e.sl
   FROM nexo.user_equipped e LEFT JOIN nexo.gifts g ON g.id=e.item_id WHERE e.user_id=$1 ORDER BY e.slot`,[uid(req)])).rows);
 app.post('/profile/equipped',{preHandler:auth},async(req,reply)=>{
   const slot=String((req.body||{}).slot||'').trim(),itemId=String((req.body||{}).itemId||'').trim();
-  const slots=new Set(['frame','profile_asset','emoji','name_effect']);
+  const slots=new Set(['frame','profile_asset','emoji','name_effect','name_color','entrance_effect','room_background','power']);
   if(!slots.has(slot))return reply.code(400).send({error:'INVALID_SLOT'});
   try{return await tx(async c=>{
     if(!itemId){await c.query('DELETE FROM nexo.user_equipped WHERE user_id=$1 AND slot=$2',[uid(req),slot]);return {ok:true,slot,itemId:null};}
     const item=await c.query('SELECT id,item_type,active FROM nexo.gifts WHERE id=$1',[itemId]);
     if(!item.rowCount||!item.rows[0].active)throw Object.assign(new Error('ITEM_NOT_FOUND'),{code:404});
-    const expected=slot==='frame'?'frame':slot==='profile_asset'?'asset':slot==='emoji'?'emoji':'gift';
+    const expectedMap={frame:'frame',profile_asset:'asset',emoji:'emoji',name_effect:'gift',name_color:'name_color',entrance_effect:'entrance_effect',room_background:'room_background',power:'power'};
+    const expected=expectedMap[slot];
     if(item.rows[0].item_type!==expected)throw Object.assign(new Error('ITEM_SLOT_MISMATCH'),{code:400});
     const own=await c.query('SELECT quantity FROM nexo.inventory WHERE user_id=$1 AND item_id=$2',[uid(req),itemId]);
     if(!own.rowCount||Number(own.rows[0].quantity)<1)throw Object.assign(new Error('ITEM_NOT_OWNED'),{code:409});
+    if(slot==='name_color'){
+      const hex=item.rows[0].metadata?.hex;
+      if(!hex)throw Object.assign(new Error('NO_COLOR_VALUE'),{code:400});
+      await c.query('UPDATE nexo.users SET name_color=$1,last_active=NOW() WHERE id=$2',[String(hex),uid(req)]);
+    }
     await c.query(`INSERT INTO nexo.user_equipped(user_id,slot,item_id,updated_at) VALUES($1,$2,$3,NOW())
       ON CONFLICT(user_id,slot) DO UPDATE SET item_id=EXCLUDED.item_id,updated_at=NOW()`,[uid(req),slot,itemId]);
     return {ok:true,slot,itemId};
@@ -274,7 +291,7 @@ app.post('/admin/catalog/:id/toggle',{preHandler:adminAuth},async(req,reply)=>{
 
 app.post('/admin/catalog/price-filter',{preHandler:adminAuth},async(req,reply)=>{
   const b=req.body||{},type=String(b.itemType||'').trim().toLowerCase(),rarity=String(b.rarity||'').trim(),gems=Number(b.gems);
-  const validTypes=['gift','frame','asset','emoji','crafted'];
+  const validTypes=['gift','frame','asset','emoji','crafted','name_color','entrance_effect','room_background','power'];
   if(!validTypes.includes(type)||!rarity||!Number.isInteger(gems)||gems<0)return reply.code(400).send({error:'INVALID_PRICE_FILTER'});
   const r=await q('UPDATE nexo.gifts SET gems=$1 WHERE item_type=$2 AND rarity=$3 RETURNING id',[gems,type,rarity]);
   await adminAudit(req,'catalog_price_filter',null,{itemType:type,rarity,gems,count:r.rowCount});
@@ -880,6 +897,10 @@ app.get('/ws',{websocket:true},(socket,req)=>{
 });
 
 app.setErrorHandler((err,req,reply)=>{req.log.error(err);if(!reply.sent)reply.code(500).send({error:'INTERNAL_ERROR'});});
+
+registerDomino(app,auth,uid,tx,q);
+registerLudo(app,auth,q);
+registerChess(app,auth,q);
 
 async function start(){
   const schema=fs.readFileSync(path.join(__dirname,'..','schema.sql'),'utf8');
