@@ -18,6 +18,7 @@
     "@fastify/helmet": "^13.1.1",
     "@fastify/rate-limit": "^11.2.0",
     "@googleapis/androidpublisher": "^42.0.0",
-    "google-auth-library": "^11.1.0"
+    "google-auth-library": "^11.1.0",
+    "pg-mem": "^3.0.14"
   }
 }
