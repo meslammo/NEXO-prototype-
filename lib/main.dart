@@ -139,11 +139,12 @@ class _OnlineShellState extends State<OnlineShell> {
 
       final pRaw = await api.getJson('/profile/equipped');
       final equipped = pRaw['data'] ?? pRaw;
-      String? activePower;
+      String? activeStyle;
       if (equipped is List) {
         for (final e in equipped.whereType<Map>()) {
-          if (e['slot']?.toString() == 'power') {
-            activePower = e['itemId']?.toString();
+          final slot = e['slot']?.toString();
+          if (slot == 'name_color' || slot == 'power') {
+            activeStyle = e['itemId']?.toString();
             break;
           }
         }
@@ -152,8 +153,9 @@ class _OnlineShellState extends State<OnlineShell> {
       final power = context.read<PowerService>();
       power.syncCatalog(context.read<NexoCatalogService>().byType(NexoItemType.power));
       power.syncInventory(map.keys.where((id) => id.startsWith('power_')).toSet());
-      if (activePower != null && activePower.isNotEmpty) {
-        power.setActivePower(activePower);
+      if (activeStyle != null && activeStyle.isNotEmpty) {
+        final styleItem = context.read<NexoCatalogService>().getById(activeStyle);
+        if (styleItem?.type == NexoItemType.power) power.setActivePower(activeStyle);
       }
     } catch (_) {}
     if (mounted) setState(() {});
