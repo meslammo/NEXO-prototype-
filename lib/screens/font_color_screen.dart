@@ -23,7 +23,7 @@ class _FontColorScreenState extends State<FontColorScreen>{
       if(x.type==NexoItemType.power){
         context.read<PowerService>().setActivePower(x.id);
         if(NexoApiConfig.configured){
-          await context.read<ApiClient>().postJson('/profile/equipped',{'slot':'power','itemId':x.id});
+          await context.read<ApiClient>().postJson('/profile/equipped',{'slot':'name_color','itemId':x.id});
         }
       }else{
         if(NexoApiConfig.configured){
