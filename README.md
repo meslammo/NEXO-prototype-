@@ -7,3 +7,6 @@ The Android release workflow no longer hardcodes a Railway API URL. When no onli
 QA login:
 - Username: nexo_demo
 - Password: 12345678
+
+
+Current verification build: CHANGE 65 / cloudflare-adapter-20261004.
