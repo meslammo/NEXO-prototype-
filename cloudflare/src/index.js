@@ -175,7 +175,7 @@ export default {
     if (assetResponse) return withCors(assetResponse, request, env);
 
     if (path === "/ws" || path === "/realtime") {
-      return withCors(await handleRealtime(request, env), request, env);
+      return handleRealtime(request, env);
     }
 
     // Contract-preserving migration: the Flutter API paths remain unchanged.
