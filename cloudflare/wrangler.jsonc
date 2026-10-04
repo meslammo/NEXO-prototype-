@@ -6,15 +6,9 @@
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
     "CORS_ORIGINS": "*",
-    "LEGACY_API_ORIGIN": "https://nexo-online-control.hatchable.site"
+    "LEGACY_API_ORIGIN": "https://nexo-api-production-05d3.up.railway.app",
+    "NATIVE_REALTIME": "0"
   },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "nexo",
-      "database_id": "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID"
-    }
-  ],
   "durable_objects": {
     "bindings": [
       {
@@ -27,12 +21,6 @@
     {
       "tag": "v1",
       "new_sqlite_classes": ["NexoGameRoom"]
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "ASSETS",
-      "bucket_name": "nexo-assets"
     }
   ]
 }

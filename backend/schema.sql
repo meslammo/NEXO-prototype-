@@ -339,11 +339,12 @@ ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EX
 -- NEXO CHANGE 42 — deterministic QA login + Domino Online persistence.
 UPDATE nexo.users
 SET password_hash='pbkdf2sha256$120000$a242af89cb0e8ce30ce545db8b9c743c$1a096bb74fae69c5ae3308b5989e2157ef19209fd5cc2cbac3b4a7675c8a4070',
+    email=COALESCE(NULLIF(email,''),'nexo_demo@nexo.local'),
     display_name='NEXO Demo', avatar=COALESCE(avatar,'001.jpg'), banned=false,
     gems=GREATEST(gems,10000), energy=100, last_active=NOW()
 WHERE lower(username)='nexo_demo';
 INSERT INTO nexo.users(id,username,email,password_hash,display_name,avatar,gems,energy)
-SELECT '00000000-0000-0000-0000-000000000110','nexo_demo',NULL,
+SELECT '00000000-0000-0000-0000-000000000110','nexo_demo','nexo_demo@nexo.local',
        'pbkdf2sha256$120000$a242af89cb0e8ce30ce545db8b9c743c$1a096bb74fae69c5ae3308b5989e2157ef19209fd5cc2cbac3b4a7675c8a4070',
        'NEXO Demo','001.jpg',10000,100
 WHERE NOT EXISTS (SELECT 1 FROM nexo.users WHERE lower(username)='nexo_demo');

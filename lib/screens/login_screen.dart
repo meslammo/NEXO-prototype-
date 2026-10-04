@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../theme/nexo_theme.dart';
@@ -282,20 +283,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   children: [
                     Container(
-                      width: 82,
-                      height: 82,
+                      width: 92,
+                      height: 92,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [NexoColors.primary, NexoColors.secondary],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        borderRadius: BorderRadius.circular(24),
                         boxShadow: [
-                          BoxShadow(color: NexoColors.primary.withOpacity(.25), blurRadius: 24, spreadRadius: 2),
+                          BoxShadow(
+                            color: NexoColors.primary.withOpacity(.28),
+                            blurRadius: 28,
+                            spreadRadius: 2,
+                          ),
                         ],
                       ),
-                      child: const Icon(Icons.hub_rounded, color: Colors.white, size: 46),
+                      clipBehavior: Clip.antiAlias,
+                      child: SvgPicture.asset(
+                        'assets/nexo/logo_icon.svg',
+                        fit: BoxFit.cover,
+                        semanticsLabel: 'NEXO',
+                      ),
                     ),
                     const SizedBox(height: 10),
                     const Text(

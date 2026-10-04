@@ -1,7 +1,7 @@
 class NexoApiConfig {
   static const String baseUrl = String.fromEnvironment(
     'NEXO_API_URL',
-    defaultValue: 'https://nexo-online-control.hatchable.site/api/nexo',
+    defaultValue: 'https://nexo-api-production-05d3.up.railway.app/api/nexo',
   );
   static const String iceServersJson = String.fromEnvironment(
     'NEXO_ICE_SERVERS',

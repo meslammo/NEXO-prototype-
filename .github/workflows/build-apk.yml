@@ -17,7 +17,37 @@ on:
   pull_request:
 
 jobs:
+  cloudflare:
+    runs-on: ubuntu-latest
+    outputs:
+      worker_url: ${{ steps.deploy.outputs.worker_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Deploy Cloudflare adapter when credentials are configured
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "Cloudflare credentials are not configured in GitHub Secrets; keeping the Railway compatibility backend."
+            echo "worker_url=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          npx --yes wrangler@latest deploy --config cloudflare/wrangler.jsonc 2>&1 | tee /tmp/nexo-cloudflare-deploy.log
+          WORKER_URL="$(grep -Eo 'https://[A-Za-z0-9.-]+\.workers\.dev' /tmp/nexo-cloudflare-deploy.log | tail -1 || true)"
+          if [ -z "$WORKER_URL" ]; then
+            echo "Cloudflare deploy completed but no workers.dev URL was detected."
+            exit 1
+          fi
+          echo "worker_url=$WORKER_URL" >> "$GITHUB_OUTPUT"
+          echo "Cloudflare Worker: $WORKER_URL"
+
   build-apk:
+    needs: cloudflare
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -37,6 +67,36 @@ jobs:
           fi
           test -f android/app/build.gradle || test -f android/app/build.gradle.kts
           rm -f test/widget_test.dart
+
+      - name: Install image tooling
+        run: python3 -m pip install --disable-pip-version-check --quiet pillow cairosvg
+
+      - name: Install NEXO launcher icon
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import cairosvg
+
+          source = Path("assets/nexo/logo_icon.svg")
+          sizes = {
+              "mipmap-mdpi": 48,
+              "mipmap-hdpi": 72,
+              "mipmap-xhdpi": 96,
+              "mipmap-xxhdpi": 144,
+              "mipmap-xxxhdpi": 192,
+          }
+
+          for folder, px in sizes.items():
+              out = Path("android/app/src/main/res") / folder
+              out.mkdir(parents=True, exist_ok=True)
+              for filename in ("ic_launcher.png", "ic_launcher_round.png"):
+                  cairosvg.svg2png(
+                      url=str(source),
+                      write_to=str(out / filename),
+                      output_width=px,
+                      output_height=px,
+                  )
+          PY
       - name: Configure stable release signing when secrets are available
         env:
           NEXO_KEYSTORE_BASE64: ${{ secrets.NEXO_KEYSTORE_BASE64 }}
@@ -70,7 +130,19 @@ jobs:
           node --check backend/src/ludo.js
           node --check backend/src/chess.js
       - name: Build APK
-        run: flutter build apk --release
+        env:
+          NEXO_CLOUDFLARE_API_URL: ${{ secrets.NEXO_CLOUDFLARE_API_URL }}
+          WORKER_URL: ${{ needs.cloudflare.outputs.worker_url }}
+        run: |
+          API_URL="$NEXO_CLOUDFLARE_API_URL"
+          if [ -z "$API_URL" ] && [ -n "$WORKER_URL" ]; then
+            API_URL="$WORKER_URL/api/nexo"
+          fi
+          if [ -z "$API_URL" ]; then
+            API_URL="https://nexo-api-production-05d3.up.railway.app/api/nexo"
+          fi
+          echo "Building NEXO against: $API_URL"
+          flutter build apk --release --dart-define=NEXO_API_URL="$API_URL"
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:

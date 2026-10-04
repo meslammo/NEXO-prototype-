@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1530"/><stop offset="1" stop-color="#030711"/></linearGradient>
+  <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="#cbd5e1"/><stop offset=".7" stop-color="#f8fafc"/><stop offset="1" stop-color="#94a3b8"/></linearGradient>
+  <radialGradient id="core"><stop offset="0" stop-color="#ffffff"/><stop offset=".25" stop-color="#bff8ff"/><stop offset=".58" stop-color="#22d3ee"/><stop offset="1" stop-color="#0ea5e9" stop-opacity=".12"/></radialGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
+</defs>
+<rect x="8" y="8" width="496" height="496" rx="86" fill="url(#bg)" stroke="#28426f" stroke-width="7"/>
+<ellipse cx="256" cy="271" rx="178" ry="98" fill="none" stroke="#35d7ff" stroke-width="5" opacity=".8" transform="rotate(-22 256 271)" filter="url(#glow)"/>
+<path d="M135 147 L172 119 L290 237 L257 270 Z" fill="url(#metal)"/>
+<path d="M104 179 L138 208 L138 342 L104 379 Z" fill="url(#metal)"/>
+<path d="M377 139 L409 105 L409 333 L376 367 Z" fill="url(#metal)"/>
+<path d="M376 181 L345 210 L227 328 L193 295 Z" fill="url(#metal)"/>
+<path d="M164 345 L194 314 L260 249 L291 280 L204 368 Z" fill="url(#metal)"/>
+<circle cx="139" cy="116" r="18" fill="#92a5ff" filter="url(#glow)"/>
+<circle cx="139" cy="116" r="11" fill="#c7d2fe"/>
+<circle cx="123" cy="353" r="16" fill="#5eeaff" filter="url(#glow)"/>
+<circle cx="123" cy="353" r="9" fill="#bffaff"/>
+<circle cx="390" cy="266" r="14" fill="#5eeaff" filter="url(#glow)"/>
+<circle cx="390" cy="266" r="8" fill="#c7ffff"/>
+<circle cx="256" cy="261" r="49" fill="#00d9ff" opacity=".25" filter="url(#soft)"/>
+<circle cx="256" cy="261" r="36" fill="url(#core)" stroke="#5eeaff" stroke-width="4" filter="url(#glow)"/>
+<path d="M256 231 V291 M226 261 H286" stroke="#d9ffff" stroke-width="3" opacity=".9"/>
+</svg>

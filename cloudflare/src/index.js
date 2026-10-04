@@ -175,7 +175,13 @@ export default {
     if (assetResponse) return withCors(assetResponse, request, env);
 
     if (path === "/ws" || path === "/realtime") {
-      return handleRealtime(request, env);
+      // Keep the current Fastify WebSocket contract during migration.
+      // Native Durable Object realtime can be enabled later with NATIVE_REALTIME=1
+      // after JWT/Durable Object QA is complete.
+      if (String(env.NATIVE_REALTIME || "0") === "1") {
+        return handleRealtime(request, env);
+      }
+      return withCors(await proxyLegacy(request, env, path), request, env);
     }
 
     // Contract-preserving migration: the Flutter API paths remain unchanged.
