@@ -12,6 +12,7 @@ on:
       - "nexo/prod-fix-20261002"
       - "nexo/release-qa-20261002"
       - "nexo/qa-online-games-20261002"
+      - "nexo/cloudflare-adapter-20261004"
       - "nexo/complete-20261002"
   pull_request:
 
