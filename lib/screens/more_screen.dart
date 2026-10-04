@@ -3,7 +3,8 @@ import '../theme/nexo_theme.dart';
 import 'inventory_screen.dart';
 import 'recharge_screen.dart';
 import 'rewards_screen.dart';
-import 'powers_collection_screen.dart';
+import 'market_screen.dart';
+import 'font_color_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -11,11 +12,11 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      {'title': 'الـ Powers', 'subtitle': 'الكولكشن · تفعيل وإيقاف القوى', 'icon': Icons.auto_awesome, 'color': Color(0xFFE040FB), 'screen': const PowersCollectionScreen()},
+      {'title': 'Font Color', 'subtitle': 'ألوان وتأثيرات الاسم والشات', 'icon': Icons.palette_rounded, 'color': Color(0xFFB44CFF), 'screen': const FontColorScreen()},
       {'title': 'المخزون', 'subtitle': 'عرض كل العناصر والتذاكر', 'icon': Icons.inventory_2_rounded, 'color': Color(0xFF7B5CFF), 'screen': const InventoryScreen()},
       {'title': 'الشحن والعروض', 'subtitle': 'شراء تذاكر وعضوية VIP', 'icon': Icons.account_balance_wallet_rounded, 'color': Color(0xFFFFB300), 'screen': const RechargeScreen()},
       {'title': 'نظام المكافآت', 'subtitle': 'المكافآت اليومية ومكافآت النشاط', 'icon': Icons.card_giftcard_rounded, 'color': Color(0xFF00E676), 'screen': const RewardsScreen()},
-      {'title': 'السوق', 'subtitle': 'قريبًا', 'icon': Icons.storefront_rounded, 'color': Color(0xFF00BCD4), 'screen': null},
+      {'title': 'السوق', 'subtitle': 'NEXO Store', 'icon': Icons.storefront_rounded, 'color': Color(0xFF00BCD4), 'screen': const MarketScreen()},
       {'title': 'الصوت', 'subtitle': 'قريبًا', 'icon': Icons.mic_rounded, 'color': Color(0xFF536DFE), 'screen': null},
       {'title': 'الفيديو', 'subtitle': 'قريبًا', 'icon': Icons.videocam_rounded, 'color': Color(0xFF651FFF), 'screen': null},
       {'title': 'غرف VIP', 'subtitle': 'قريبًا', 'icon': Icons.workspace_premium_rounded, 'color': Color(0xFFFFD700), 'screen': null},
