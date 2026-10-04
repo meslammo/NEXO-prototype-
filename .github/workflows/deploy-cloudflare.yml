@@ -1,0 +1,50 @@
+name: Deploy NEXO Cloudflare
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "nexo/complete-20261002"
+    paths:
+      - "cloudflare/**"
+      - ".github/workflows/deploy-cloudflare.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      NEXO_D1_DATABASE_ID: ${{ secrets.NEXO_D1_DATABASE_ID }}
+    defaults:
+      run:
+        working-directory: cloudflare
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Wrangler
+        run: npm install
+      - name: Check required credentials
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test -n "$NEXO_D1_DATABASE_ID"
+      - name: Inject D1 database id
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          p = Path("wrangler.jsonc")
+          s = p.read_text()
+          s = s.replace(
+              "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID",
+              os.environ["NEXO_D1_DATABASE_ID"],
+          )
+          p.write_text(s)
+          PY
+      - name: Apply D1 schema
+        run: npx wrangler d1 execute nexo --remote --file=schema.sql
+      - name: Deploy Worker
+        run: npx wrangler deploy
