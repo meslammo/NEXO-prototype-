@@ -1,7 +1,7 @@
 class NexoApiConfig {
   static const String baseUrl = String.fromEnvironment(
     'NEXO_API_URL',
-    defaultValue: 'https://nexo-online-control.hatchable.site/api/nexo',
+    defaultValue: '', // Set NEXO_API_URL at build time after the Cloudflare Worker is live.
   );
   static const String iceServersJson = String.fromEnvironment(
     'NEXO_ICE_SERVERS',
