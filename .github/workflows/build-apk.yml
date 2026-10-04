@@ -69,7 +69,15 @@ jobs:
           node --check backend/src/ludo.js
           node --check backend/src/chess.js
       - name: Build APK
-        run: flutter build apk --release
+        env:
+          NEXO_API_URL: ${{ vars.NEXO_API_URL }}
+        run: |
+          if [ -n "$NEXO_API_URL" ]; then
+            flutter build apk --release --dart-define=NEXO_API_URL="$NEXO_API_URL"
+          else
+            echo "NEXO_API_URL is not configured; building Local QA mode."
+            flutter build apk --release
+          fi
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
