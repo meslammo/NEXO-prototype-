@@ -13,6 +13,8 @@ import 'our_club_screen.dart';
 import 'membership_screen.dart';
 import 'profile_screen.dart';
 import 'recharge_screen.dart';
+import 'pk_battle_screen.dart';
+import 'leaderboards_screen.dart';
 import 'room_screen.dart';
 import '../config/api_config.dart';
 
@@ -216,14 +218,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _quickGrid() => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16),
-    child: Row(children: [
-      Expanded(child: _miniCard('Moments', 'شارك لحظتك', Icons.photo_camera_back_outlined, Colors.orangeAccent, () => _go(const ProfileScreen()))),
-      const SizedBox(width: 8),
-      Expanded(child: _miniCard('Store', 'Gifts & Powers', Icons.storefront_outlined, NexoColors.primary, () => _go(const MarketScreen()))),
-      const SizedBox(width: 8),
-      Expanded(child: _miniCard('Tribe', 'Our community', Icons.groups_rounded, Colors.purpleAccent, () => _go(const OurClubScreen()))),
-      const SizedBox(width: 8),
-      Expanded(child: _miniCard('Missions', 'Daily rewards', Icons.task_alt_rounded, NexoColors.gold, () => _go(const MissionsScreen()))),
+    child: Column(children: [
+      Row(children: [
+        Expanded(child: _miniCard('Moments', 'شارك لحظتك', Icons.photo_camera_back_outlined, Colors.orangeAccent, () => _go(const ProfileScreen()))),
+        const SizedBox(width: 8),
+        Expanded(child: _miniCard('Store', 'Gifts & Identity', Icons.storefront_outlined, NexoColors.primary, () => _go(const MarketScreen()))),
+        const SizedBox(width: 8),
+        Expanded(child: _miniCard('Tribe', 'Our community', Icons.groups_rounded, Colors.purpleAccent, () => _go(const OurClubScreen()))),
+      ]),
+      const SizedBox(height: 8),
+      Row(children: [
+        Expanded(child: _miniCard('Missions', 'Daily + Events', Icons.task_alt_rounded, NexoColors.gold, () => _go(const MissionsScreen()))),
+        const SizedBox(width: 8),
+        Expanded(child: _miniCard('Battle', 'PK rooms', Icons.sports_kabaddi_rounded, Colors.pinkAccent, () => _go(const PkBattleScreen()))),
+        const SizedBox(width: 8),
+        Expanded(child: _miniCard('Ranks', 'Top NEXO', Icons.emoji_events_rounded, NexoColors.primary, () => _go(const LeaderboardsScreen()))),
+      ]),
     ]),
   );
 
@@ -301,6 +311,10 @@ class _HomeScreenState extends State<HomeScreen> {
         _gameTile('Mini Puzzle', '5⚡', Icons.extension_rounded, () => _go(const GamesScreen())),
         const SizedBox(width: 9),
         _gameTile('Daily Arena', '8⚡', Icons.emoji_events_rounded, () => _go(const GamesScreen())),
+        const SizedBox(width: 9),
+        _gameTile('Ludo', '2–4 Online', Icons.casino_rounded, () => _go(const GamesScreen())),
+        const SizedBox(width: 9),
+        _gameTile('Chess', '2 Online', Icons.extension_rounded, () => _go(const GamesScreen())),
         const SizedBox(width: 9),
         _gameTile('Live Duel', 'Online', Icons.sports_kabaddi_rounded, () => _go(const GamesScreen())),
       ],
