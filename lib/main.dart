@@ -168,8 +168,7 @@ class _OnlineShellState extends State<OnlineShell> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      const StartupMissionsGate(child: MainShell());
+  Widget build(BuildContext context) => const MainShell();
 }
 
 class StartupMissionsGate extends StatefulWidget {
