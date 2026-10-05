@@ -90,14 +90,21 @@ const ARISTOCRACY_CATALOG = [
 const MISSION_DEFS = [
   {id:'daily_login',group:'daily',title:'دخول NEXO',description:'افتح NEXO اليوم',activityType:'login',target:1,rewardGems:20,requiresVip:false,requiresSvip:false},
   {id:'daily_chat',group:'daily',title:'3 رسائل شات',description:'ابعت 3 رسائل',activityType:'chat',target:3,rewardGems:15,requiresVip:false,requiresSvip:false},
-  {id:'daily_gift',group:'daily',title:'إرسال هدية',description:'ابعت هدية واحدة',activityType:'gift_send',target:1,rewardGems:30,requiresVip:false,requiresSvip:false},
-  {id:'daily_game',group:'daily',title:'فوز لعبة',description:'حقق فوزًا في لعبة',activityType:'game_win',target:1,rewardGems:35,requiresVip:false,requiresSvip:false},
+  {id:'daily_gift',group:'daily',title:'أول هدية',description:'ابعت هدية واحدة',activityType:'gift_send',target:1,rewardGems:30,requiresVip:false,requiresSvip:false},
+  {id:'daily_gift_rush',group:'daily',title:'Gift Rush',description:'ابعت 3 هدايا',activityType:'gift_send',target:3,rewardGems:60,requiresVip:false,requiresSvip:false},
+  {id:'daily_game',group:'daily',title:'أول فوز',description:'حقق فوزًا في لعبة NEXO',activityType:'game_win',target:1,rewardGems:35,requiresVip:false,requiresSvip:false},
+  {id:'daily_ludo',group:'daily',title:'Ludo Champion',description:'اكسب مباراة Ludo',activityType:'ludo_win',target:1,rewardGems:70,requiresVip:false,requiresSvip:false},
+  {id:'daily_chess',group:'daily',title:'Chess Master',description:'اكسب مباراة Chess',activityType:'chess_win',target:1,rewardGems:70,requiresVip:false,requiresSvip:false},
+  {id:'daily_party',group:'daily',title:'Party Time',description:'شارك في 3 أنشطة داخل غرف NEXO',activityType:'voice_activity',target:3,rewardGems:50,requiresVip:false,requiresSvip:false},
+  {id:'tribe_chat',group:'tribe',title:'Tribe Together',description:'3 رسائل داخل المجتمع',activityType:'tribe_chat',target:3,rewardGems:50,requiresVip:false,requiresSvip:false},
+  {id:'tribe_gift',group:'tribe',title:'Tribe Gift',description:'أرسل هدية للمجتمع',activityType:'tribe_gift',target:1,rewardGems:70,requiresVip:false,requiresSvip:false},
+  {id:'event_battle_rush',group:'event',title:'Battle Rush',description:'اجمع 1000 نقطة دعم في PK',activityType:'pk_score',target:1000,rewardGems:150,requiresVip:false,requiresSvip:false},
+  {id:'event_gift_rush',group:'event',title:'Gift Festival',description:'أرسل 5 هدايا أثناء الفعالية',activityType:'gift_send',target:5,rewardGems:120,requiresVip:false,requiresSvip:false},
+  {id:'event_room_milestone',group:'event',title:'Room Milestone',description:'شارك في 5 أنشطة غرف',activityType:'voice_activity',target:5,rewardGems:100,requiresVip:false,requiresSvip:false},
   {id:'vip_chat',group:'vip',title:'VIP Social',description:'ابعت 10 رسائل وأكمل مهمة VIP',activityType:'chat',target:10,rewardGems:80,requiresVip:true,requiresSvip:false},
   {id:'vip_gift',group:'vip',title:'VIP Gifter',description:'أرسل 3 هدايا',activityType:'gift_send',target:3,rewardGems:120,requiresVip:true,requiresSvip:false},
   {id:'svip_voice',group:'svip',title:'SVIP Party',description:'شارك في 5 أنشطة غرفة',activityType:'voice_activity',target:5,rewardGems:180,requiresVip:false,requiresSvip:true},
-  {id:'svip_game',group:'svip',title:'SVIP Gamer',description:'حقق 3 انتصارات',activityType:'game_win',target:3,rewardGems:220,requiresVip:false,requiresSvip:true},
-  {id:'tribe_chat',group:'tribe',title:'Tribe Together',description:'3 رسائل داخل المجتمع',activityType:'tribe_chat',target:3,rewardGems:50,requiresVip:false,requiresSvip:false},
-  {id:'tribe_gift',group:'tribe',title:'Tribe Gift',description:'أرسل هدية للمجتمع',activityType:'tribe_gift',target:1,rewardGems:70,requiresVip:false,requiresSvip:false}
+  {id:'svip_game',group:'svip',title:'SVIP Gamer',description:'حقق 3 انتصارات',activityType:'game_win',target:3,rewardGems:220,requiresVip:false,requiresSvip:true}
 ];
 
 async function settingNumber(db,key,fallback){
@@ -582,6 +589,7 @@ app.post('/gifts/send',{preHandler:auth},async(req,reply)=>{
       }
       await c.query('INSERT INTO nexo.inventory(user_id,item_id,quantity) VALUES($1,$2,1) ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=nexo.inventory.quantity+1',[to,giftId]);
       await c.query('INSERT INTO nexo.messages(id,sender_id,recipient_id,kind,gift_id) VALUES($1,$2,$3,\'gift\',$4)',[randomUUID(),uid(req),to,giftId]);
+      await bumpActivity(c,uid(req),'gift_send',1);
       emit(to,{type:'gift',from:uid(req),giftId});
       return {ok:true,giftId};
     });
@@ -792,6 +800,7 @@ app.post('/games/play',{preHandler:auth},async(req,reply)=>{
       await c.query('UPDATE nexo.users SET energy=$1,gems=$2,last_active=NOW() WHERE id=$3',[energy,gems,uid(req)]);
       await c.query('INSERT INTO nexo.game_events(id,user_id,game_id,cost_energy,reward_gems,idempotency_key) VALUES($1,$2,$3,$4,$5,$6)',
         [randomUUID(),uid(req),gameId,game.cost,game.reward,key]);
+      await bumpActivity(c,uid(req),'game_win',1);
       await c.query('INSERT INTO nexo.energy_ledger(id,user_id,kind,amount,balance_after,reference_id,idempotency_key) VALUES($1,$2,$3,$4,$5,$6,$7)',
         [randomUUID(),uid(req),'game',-game.cost,energy,gameId,'game:'+key]);
       await c.query('INSERT INTO nexo.wallet_ledger(id,user_id,kind,amount,balance_after,reference_id,idempotency_key) VALUES($1,$2,$3,$4,$5,$6,$7)',
@@ -1076,7 +1085,7 @@ app.post('/missions/claim/:id',{preHandler:auth},async(req,reply)=>{
 });
 
 app.get('/rooms',{preHandler:auth},async req=>{
-  const r=await q("SELECT r.id,r.invite_code AS \"inviteCode\",r.title,r.room_theme AS \"roomTheme\",r.max_seats AS \"maxSeats\",r.active_game AS \"activeGame\",r.status,COUNT(s.user_id)::int AS occupants FROM nexo.voice_rooms r LEFT JOIN nexo.voice_room_seats s ON s.room_id=r.id WHERE r.status='live' GROUP BY r.id ORDER BY r.updated_at DESC LIMIT 100");
+  const r=await q("SELECT r.id,r.invite_code AS \"inviteCode\",r.host_id AS \"hostId\",r.title,r.room_theme AS \"roomTheme\",r.max_seats AS \"maxSeats\",r.active_game AS \"activeGame\",r.status,COUNT(s.user_id)::int AS occupants FROM nexo.voice_rooms r LEFT JOIN nexo.voice_room_seats s ON s.room_id=r.id WHERE r.status='live' GROUP BY r.id ORDER BY r.updated_at DESC LIMIT 100");
   return {rooms:r.rows};
 });
 app.post('/rooms',{preHandler:auth},async(req,reply)=>{
@@ -1133,6 +1142,132 @@ app.post('/rooms/:id/game',{preHandler:auth},async(req,reply)=>{
   return {ok:true,activeGame:r.rows[0].activeGame};
 });
 
+
+const PK_ALPHABET="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function pkCode(){let s="";for(let i=0;i<6;i++)s+=PK_ALPHABET[Math.floor(Math.random()*PK_ALPHABET.length)];return s;}
+async function pkView(id,reply){
+  const r=await q("SELECT * FROM nexo.pk_battles WHERE id=$1",[id]);
+  if(!r.rowCount)return reply.code(404).send({error:'PK_NOT_FOUND'});
+  const b=r.rows[0];
+  if(b.ends_at && new Date(b.ends_at).getTime()<=Date.now() && b.status==='live'){
+    const winner=Number(b.team_a_score)===Number(b.team_b_score)?null:(Number(b.team_a_score)>Number(b.team_b_score)?'a':'b');
+    await q("UPDATE nexo.pk_battles SET status='finished',winner_team=$1,updated_at=NOW() WHERE id=$2 AND status='live'",[winner,id]);
+    b.status='finished';b.winner_team=winner;
+  }
+  return {id:b.id,inviteCode:b.invite_code,roomAId:b.room_a_id,roomBId:b.room_b_id,teamAScore:Number(b.team_a_score),teamBScore:Number(b.team_b_score),status:b.status,winnerTeam:b.winner_team,startsAt:b.starts_at,endsAt:b.ends_at};
+}
+app.post('/pk/battles',{preHandler:auth},async(req,reply)=>{
+  const roomId=String((req.body||{}).roomId||'');
+  const r=await q("SELECT id,host_id,status FROM nexo.voice_rooms WHERE id=$1",[roomId]);
+  if(!r.rowCount)return reply.code(404).send({error:'ROOM_NOT_FOUND'});
+  if(String(r.rows[0].host_id)!==String(uid(req)))return reply.code(403).send({error:'PK_HOST_ONLY'});
+  const exists=await q("SELECT id FROM nexo.pk_battles WHERE room_a_id=$1 AND status IN ('waiting','live')",[roomId]);
+  if(exists.rowCount)return reply.code(409).send({error:'PK_ALREADY_ACTIVE'});
+  for(let i=0;i<8;i++){try{
+    const x=await q("INSERT INTO nexo.pk_battles(invite_code,room_a_id,status) VALUES($1,$2,'waiting') RETURNING id",[pkCode(),roomId]);
+    return pkView(x.rows[0].id,reply);
+  }catch(_){}}
+  return reply.code(500).send({error:'PK_CREATE_FAILED'});
+});
+app.post('/pk/battles/:id/join',{preHandler:auth},async(req,reply)=>{
+  const r=await q("SELECT * FROM nexo.pk_battles WHERE id=$1 OR upper(invite_code)=upper($1) LIMIT 1",[req.params.id]);
+  if(!r.rowCount)return reply.code(404).send({error:'PK_NOT_FOUND'});
+  const battle=r.rows[0],roomId=String((req.body||{}).roomId||'');
+  const rr=await q("SELECT id,host_id,status FROM nexo.voice_rooms WHERE id=$1",[roomId]);
+  if(!rr.rowCount)return reply.code(404).send({error:'ROOM_NOT_FOUND'});
+  if(String(rr.rows[0].host_id)!==String(uid(req)))return reply.code(403).send({error:'PK_HOST_ONLY'});
+  if(battle.status!=='waiting'||battle.room_b_id)return reply.code(409).send({error:'PK_NOT_JOINABLE'});
+  await q("UPDATE nexo.pk_battles SET room_b_id=$1,status='live',starts_at=NOW(),ends_at=NOW()+INTERVAL '5 minutes',updated_at=NOW() WHERE id=$2",[roomId,battle.id]);
+  await notify(battle.room_a_id,'pk','PK started','منافسة NEXO بدأت — ادخل وادعم فريقك',{battleId:battle.id});
+  return pkView(battle.id,reply);
+});
+app.get('/pk/battles/:id',{preHandler:auth},async(req,reply)=>pkView(req.params.id,reply));
+app.post('/pk/battles/:id/gift',{preHandler:auth},async(req,reply)=>{
+  try{return await tx(async c=>{
+    const r=await c.query("SELECT * FROM nexo.pk_battles WHERE id=$1 FOR UPDATE",[req.params.id]);
+    if(!r.rowCount)throw Object.assign(new Error('PK_NOT_FOUND'),{code:404});
+    const battle=r.rows[0];
+    if(battle.status!=='live')throw Object.assign(new Error('PK_NOT_LIVE'),{code:409});
+    if(battle.ends_at && new Date(battle.ends_at).getTime()<=Date.now())throw Object.assign(new Error('PK_FINISHED'),{code:409});
+    const giftId=String((req.body||{}).giftId||''),key=String((req.body||{}).idempotencyKey||'');
+    if(!giftId||!key)throw Object.assign(new Error('INVALID_INPUT'),{code:400});
+    const g=await c.query("SELECT id,gems,item_type FROM nexo.gifts WHERE id=$1 AND active=true AND item_type='gift'",[giftId]);
+    if(!g.rowCount)throw Object.assign(new Error('GIFT_NOT_FOUND'),{code:404});
+    const member=await c.query("SELECT 1 FROM nexo.voice_room_seats WHERE room_id=$1 AND user_id=$2 UNION SELECT 1 FROM nexo.voice_room_seats WHERE room_id=$3 AND user_id=$2",[battle.room_a_id,uid(req),battle.room_b_id]);
+    if(!member.rowCount)throw Object.assign(new Error('PK_NOT_IN_ROOM'),{code:403});
+    const team=(await c.query("SELECT 1 FROM nexo.voice_room_seats WHERE room_id=$1 AND user_id=$2",[battle.room_a_id,uid(req)])).rowCount?'a':'b';
+    const prior=await c.query("SELECT 1 FROM nexo.wallet_ledger WHERE idempotency_key=$1",[key]);
+    if(prior.rowCount)return pkView(battle.id,reply);
+    const own=await c.query("SELECT quantity FROM nexo.inventory WHERE user_id=$1 AND item_id=$2 FOR UPDATE",[uid(req),giftId]);
+    if(own.rowCount&&Number(own.rows[0].quantity)>0){
+      await c.query("UPDATE nexo.inventory SET quantity=quantity-1 WHERE user_id=$1 AND item_id=$2",[uid(req),giftId]);
+    }else{
+      const u=await c.query("SELECT gems FROM nexo.users WHERE id=$1 FOR UPDATE",[uid(req)]);
+      const price=Number(g.rows[0].gems);
+      if(Number(u.rows[0].gems)<price)throw Object.assign(new Error('INSUFFICIENT_GEMS'),{code:409});
+      await c.query("UPDATE nexo.users SET gems=gems-$1 WHERE id=$2",[price,uid(req)]);
+      await c.query("INSERT INTO nexo.wallet_ledger(id,user_id,kind,amount,balance_after,reference_id,idempotency_key) VALUES($1,$2,'pk_gift',-$3,(SELECT gems FROM nexo.users WHERE id=$2),$4,$5)",[randomUUID(),uid(req),price,giftId,key]);
+    }
+    const score=Number(g.rows[0].gems);
+    if(team==='a')await c.query("UPDATE nexo.pk_battles SET team_a_score=team_a_score+$1,updated_at=NOW() WHERE id=$2",[score,battle.id]);
+    else await c.query("UPDATE nexo.pk_battles SET team_b_score=team_b_score+$1,updated_at=NOW() WHERE id=$2",[score,battle.id]);
+    await bumpActivity(c,uid(req),'pk_score',score);
+    await bumpActivity(c,uid(req),'gift_send',1);
+    return pkView(battle.id,reply);
+  });}catch(e){return reply.code(e.code||500).send({error:e.code||'PK_GIFT_FAILED'});}
+});
+
+app.get('/leaderboards',{preHandler:auth},async(req)=>{
+  const type=String((req.query||{}).type||'wealth').trim().toLowerCase();
+  const limit=Math.min(50,Math.max(5,Number((req.query||{}).limit||20)));
+  let rows=[];
+  if(type==='gifts'){
+    rows=(await q(`SELECT u.id,u.username,u.display_name AS "displayName",u.avatar,
+      COALESCE(SUM(CASE WHEN m.kind='gift' THEN 1 ELSE 0 END),0)::int AS score
+      FROM nexo.users u LEFT JOIN nexo.messages m ON m.recipient_id=u.id GROUP BY u.id
+      ORDER BY score DESC,u.username ASC LIMIT $1`,[limit])).rows;
+  }else if(type==='hosts'){
+    rows=(await q(`SELECT u.id,u.username,u.display_name AS "displayName",u.avatar,
+      COUNT(r.id)::int AS score FROM nexo.users u JOIN nexo.voice_rooms r ON r.host_id=u.id
+      GROUP BY u.id ORDER BY score DESC,u.username ASC LIMIT $1`,[limit])).rows;
+  }else if(type==='games'){
+    rows=(await q(`SELECT id,username,display_name AS "displayName",avatar,experience AS score
+      FROM nexo.users ORDER BY experience DESC,level DESC LIMIT $1`,[limit])).rows;
+  }else if(type==='charm'){
+    rows=(await q(`SELECT id,username,display_name AS "displayName",avatar,reputation AS score
+      FROM nexo.users ORDER BY reputation DESC,level DESC LIMIT $1`,[limit])).rows;
+  }else{
+    rows=(await q(`SELECT id,username,display_name AS "displayName",avatar,gems AS score
+      FROM nexo.users ORDER BY gems DESC,level DESC LIMIT $1`,[limit])).rows;
+  }
+  return {type,items:rows.map((x,i)=>({...x,rank:i+1}))};
+});
+
+app.get('/leaderboards',{preHandler:auth},async(req)=>{
+  const type=String((req.query||{}).type||'wealth').trim().toLowerCase();
+  const limit=Math.min(50,Math.max(5,Number((req.query||{}).limit||20)));
+  let rows=[];
+  if(type==='gifts'){
+    rows=(await q(`SELECT u.id,u.username,u.display_name AS "displayName",u.avatar,
+      COALESCE(SUM(CASE WHEN m.kind='gift' THEN 1 ELSE 0 END),0)::int AS score
+      FROM nexo.users u LEFT JOIN nexo.messages m ON m.recipient_id=u.id GROUP BY u.id
+      ORDER BY score DESC,u.username ASC LIMIT $1`,[limit])).rows;
+  }else if(type==='hosts'){
+    rows=(await q(`SELECT u.id,u.username,u.display_name AS "displayName",u.avatar,
+      COUNT(r.id)::int AS score FROM nexo.users u JOIN nexo.voice_rooms r ON r.host_id=u.id
+      GROUP BY u.id ORDER BY score DESC,u.username ASC LIMIT $1`,[limit])).rows;
+  }else if(type==='games'){
+    rows=(await q(`SELECT id,username,display_name AS "displayName",avatar,experience AS score
+      FROM nexo.users ORDER BY experience DESC,level DESC LIMIT $1`,[limit])).rows;
+  }else if(type==='charm'){
+    rows=(await q(`SELECT id,username,display_name AS "displayName",avatar,reputation AS score
+      FROM nexo.users ORDER BY reputation DESC,level DESC LIMIT $1`,[limit])).rows;
+  }else{
+    rows=(await q(`SELECT id,username,display_name AS "displayName",avatar,gems AS score
+      FROM nexo.users ORDER BY gems DESC,level DESC LIMIT $1`,[limit])).rows;
+  }
+  return {type,items:rows.map((x,i)=>({...x,rank:i+1}))};
+});
 app.post('/presence',{preHandler:auth},async(req)=>{const online=Boolean((req.body||{}).online);await q('INSERT INTO nexo.presence(user_id,online,last_seen) VALUES($1,$2,NOW()) ON CONFLICT(user_id) DO UPDATE SET online=$2,last_seen=NOW()',[uid(req),online]);return{online};});
 app.get('/presence/:peerId',async(req)=>{const r=await q('SELECT online,last_seen FROM nexo.presence WHERE user_id=$1',[req.params.peerId]);return r.rows[0]||{online:false,last_seen:null};});
 
