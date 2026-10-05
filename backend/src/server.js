@@ -214,6 +214,7 @@ app.post('/auth/guest', async (req, reply) => {
       await q("INSERT INTO nexo.inventory(user_id,item_id,quantity) SELECT $1,id,$2 FROM nexo.gifts WHERE id=$3 ON CONFLICT(user_id,item_id) DO NOTHING",[u.id,quantity,itemId]);
     }
   }
+  await bumpActivity(q,u.id,'login',1);
   const token=app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'});
   return { token, user:publicUser(u) };
 });
@@ -224,7 +225,7 @@ app.post('/auth/register', async (req, reply) => {
   const hash=await bcrypt.hash(password,12);
   try{
     const r=await q('INSERT INTO nexo.users(id,username,email,password_hash,display_name) VALUES($1,$2,$3,$4,$5) RETURNING *',[randomUUID(),username,email,hash,username]);
-    const u=r.rows[0]; return {token:app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'}),user:publicUser(u)};
+    const u=r.rows[0]; await bumpActivity(q,u.id,'login',1); return {token:app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'}),user:publicUser(u)};
   }catch(_){ return reply.code(409).send({error:'ACCOUNT_EXISTS'}); }
 });
 
@@ -243,6 +244,7 @@ app.post('/auth/login', async (req, reply) => {
   } else {
     await q('UPDATE nexo.users SET last_active=NOW() WHERE id=$1',[u.id]);
   }
+  await bumpActivity(q,u.id,'login',1);
   return {token:app.jwt.sign({sub:u.id,username:u.username},{expiresIn:'30d'}),user:publicUser(u)};
 });
 
@@ -1178,7 +1180,8 @@ app.post('/pk/battles/:id/join',{preHandler:auth},async(req,reply)=>{
   if(String(rr.rows[0].host_id)!==String(uid(req)))return reply.code(403).send({error:'PK_HOST_ONLY'});
   if(battle.status!=='waiting'||battle.room_b_id)return reply.code(409).send({error:'PK_NOT_JOINABLE'});
   await q("UPDATE nexo.pk_battles SET room_b_id=$1,status='live',starts_at=NOW(),ends_at=NOW()+INTERVAL '5 minutes',updated_at=NOW() WHERE id=$2",[roomId,battle.id]);
-  await notify(battle.room_a_id,'pk','PK started','منافسة NEXO بدأت — ادخل وادعم فريقك',{battleId:battle.id});
+  const host=await q("SELECT host_id FROM nexo.voice_rooms WHERE id=$1",[battle.room_a_id]);
+  if(host.rowCount) await notify(host.rows[0].host_id,'pk','PK started','منافسة NEXO بدأت — ادخل وادعم فريقك',{battleId:battle.id});
   return pkView(battle.id,reply);
 });
 app.get('/pk/battles/:id',{preHandler:auth},async(req,reply)=>pkView(req.params.id,reply));
