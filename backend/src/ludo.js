@@ -81,7 +81,9 @@ async function registerLudo(app,auth,q){
   let captured=false;
   if(next<52&&!safe(cell(seat,next))){for(let s=0;s<4;s++){if(s===seat)continue;for(let p=0;p<4;p++){const op=Number(pawns[s][p]);if(op>=0&&op<52&&cell(s,op)===cell(seat,next)){pawns[s][p]=-1;captured=true;break;}}if(captured)break;}}
   let status=room.status,winner=null,turn=seat;if(winner(pawns[seat])){status="finished";winner=uid(req);}else if(!(dice===6||captured)){const members=(await q("SELECT seat FROM nexo.ludo_room_players WHERE room_id=$1 ORDER BY seat",[id])).rows.map(x=>Number(x.seat)),ix=members.indexOf(seat);turn=members.length?members[(ix+1)%members.length]:seat;}
-  await q("UPDATE nexo.ludo_rooms SET state=$1::jsonb,dice=0,status=$2,turn_seat=$3,winner_user_id=$4 WHERE id=$5",[JSON.stringify({...state,pawns}),status,turn,winner,id]);return view(q,id);
+  await q("UPDATE nexo.ludo_rooms SET state=$1::jsonb,dice=0,status=$2,turn_seat=$3,winner_user_id=$4 WHERE id=$5",[JSON.stringify({...state,pawns}),status,turn,winner,id]);
+  if(status==="finished"&&winner===uid(req)) await q("INSERT INTO nexo.activity_daily(user_id,activity_date,activity_type,count) VALUES($1,CURRENT_DATE,'ludo_win',1) ON CONFLICT(user_id,activity_date,activity_type) DO UPDATE SET count=nexo.activity_daily.count+1",[uid(req)]);
+  return view(q,id);
  });
  app.get("/games/ludo/rooms/:id",{preHandler:guard},async(req,reply)=>{
   const r=await q("SELECT host_id FROM nexo.ludo_rooms WHERE id=$1",[req.params.id]);if(!r.rowCount)return send(reply,404,{error:"LUDO_ROOM_NOT_FOUND"});

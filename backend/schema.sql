@@ -28,6 +28,10 @@ ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS market_visible BOOLEAN NOT NULL 
 ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS sort_order INT NOT NULL DEFAULT 0;
 ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS tags JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS featured BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS limited BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS nexo_gifts_featured_idx ON nexo.gifts(active,market_visible,featured,limited,sort_order);
+
 CREATE INDEX IF NOT EXISTS nexo_gifts_market_idx ON nexo.gifts(active,market_visible,item_type,sort_order,gems);
 
 CREATE TABLE IF NOT EXISTS nexo.inventory (
@@ -529,6 +533,23 @@ CREATE TABLE IF NOT EXISTS nexo.voice_room_seats (
   UNIQUE(room_id,user_id)
 );
 
+-- NEXO CHANGE 65 — Xena-compatible social battle loop, without copying Xena UI/assets.
+CREATE TABLE IF NOT EXISTS nexo.pk_battles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  invite_code TEXT NOT NULL UNIQUE,
+  room_a_id UUID NOT NULL REFERENCES nexo.voice_rooms(id) ON DELETE CASCADE,
+  room_b_id UUID REFERENCES nexo.voice_rooms(id) ON DELETE CASCADE,
+  team_a_score BIGINT NOT NULL DEFAULT 0 CHECK (team_a_score >= 0),
+  team_b_score BIGINT NOT NULL DEFAULT 0 CHECK (team_b_score >= 0),
+  status TEXT NOT NULL DEFAULT 'waiting',
+  winner_team TEXT,
+  starts_at TIMESTAMPTZ,
+  ends_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS nexo_pk_battles_status_idx ON nexo.pk_battles(status,updated_at DESC);
+
 
 -- NEXO FONT COLOR CATALOG — powers are presented as Font Color / Name Style in the product UI.
 INSERT INTO nexo.gifts(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata)
@@ -548,6 +569,34 @@ ON CONFLICT (id) DO UPDATE SET
   tagline=EXCLUDED.tagline,active=EXCLUDED.active,item_type=EXCLUDED.item_type,category=EXCLUDED.category,
   description=EXCLUDED.description,animation=EXCLUDED.animation,market_visible=EXCLUDED.market_visible,
   sort_order=EXCLUDED.sort_order,tags=EXCLUDED.tags,metadata=EXCLUDED.metadata;
+
+
+
+-- NEXO CHANGE 65 — curated discovery inventory inspired by social-party markets.
+INSERT INTO nexo.gifts
+(id,name,rarity,gems,tradeable,image,tagline,active,item_type,category,description,animation,market_visible,sort_order,tags,metadata,featured,limited)
+VALUES
+('purity-spark','Purity Spark','Rare',220,TRUE,'assets/nexo/gifts/purity.svg','Purity I • clean light',TRUE,'gift','featured','NEXO purity gift — entry tier.','shine',TRUE,31,'["purity","gift"]'::jsonb,'{"series":"purity","tier":1}'::jsonb,TRUE,FALSE),
+('purity-royal','Purity Royal','Legendary',1800,TRUE,'assets/nexo/gifts/purity.svg','Purity II • royal light',TRUE,'gift','featured','NEXO purity gift — premium tier.','shine',TRUE,32,'["purity","gift"]'::jsonb,'{"series":"purity","tier":2}'::jsonb,TRUE,FALSE),
+('purity-cosmic','Purity Cosmic','Mythic',6000,TRUE,'assets/nexo/gifts/purity.svg','Purity III • cosmic light',TRUE,'gift','limited','NEXO purity gift — mythic tier.','orbit',TRUE,33,'["purity","gift","limited"]'::jsonb,'{"series":"purity","tier":3}'::jsonb,TRUE,TRUE),
+('dragon-awakened','Dragon Awakened','Mythic',24000,TRUE,'assets/nexo/gifts/dragon.svg','Dragon II • awakened',TRUE,'gift','featured','NEXO dragon progression gift.','float',TRUE,34,'["dragon","gift"]'::jsonb,'{"series":"dragon","tier":2}'::jsonb,TRUE,FALSE),
+('dragon-cosmic','Dragon Cosmic','NEXO Exclusive',60000,FALSE,'assets/nexo/gifts/dragon.svg','Dragon III • cosmic',TRUE,'gift','limited','NEXO dragon prestige gift.','orbit',TRUE,35,'["dragon","gift","limited"]'::jsonb,'{"series":"dragon","tier":3}'::jsonb,TRUE,TRUE),
+('sky-plane','NEXO Sky Plane','Epic',5000,TRUE,'assets/nexo/assets/sky-plane.svg','Skyline arrival',TRUE,'gift','vehicles','طائرة NEXO لعرض الغرف والمناسبات.','float',TRUE,36,'["plane","vehicle","gift"]'::jsonb,'{"series":"vehicle","kind":"plane"}'::jsonb,FALSE,FALSE),
+('galaxy-burst','Galaxy Burst','Legendary',18000,TRUE,'assets/nexo/assets/galaxy.svg','Galaxy • room burst',TRUE,'gift','featured','انفجار مجري كهدية احتفالية.','orbit',TRUE,37,'["galaxy","gift"]'::jsonb,'{"series":"galaxy","tier":1}'::jsonb,TRUE,FALSE),
+('royal-battle-chest','Royal Battle Chest','Legendary',9000,TRUE,'assets/nexo/gifts/royal-chest.svg','Battle reward chest',TRUE,'gift','events','صندوق هدية مميز للفعاليات والـPK.','shine',TRUE,38,'["event","battle","gift"]'::jsonb,'{"event":"battle"}'::jsonb,TRUE,TRUE)
+ON CONFLICT(id) DO UPDATE SET
+  name=EXCLUDED.name,rarity=EXCLUDED.rarity,gems=EXCLUDED.gems,tradeable=EXCLUDED.tradeable,image=EXCLUDED.image,
+  tagline=EXCLUDED.tagline,active=EXCLUDED.active,item_type=EXCLUDED.item_type,category=EXCLUDED.category,
+  description=EXCLUDED.description,animation=EXCLUDED.animation,market_visible=EXCLUDED.market_visible,
+  sort_order=EXCLUDED.sort_order,tags=EXCLUDED.tags,metadata=EXCLUDED.metadata,featured=EXCLUDED.featured,limited=EXCLUDED.limited;
+
+UPDATE nexo.gifts
+SET featured=TRUE
+WHERE id IN ('dragon','nexo-car','royal-chest','font-gold','entrance-neon','room-galaxy','purity-royal');
+
+UPDATE nexo.gifts
+SET limited=TRUE
+WHERE id IN ('al-hurra','frame-exclusive','font-rainbow','power-nexo-exclusive','dragon-cosmic','purity-cosmic','royal-battle-chest');
 
 
 -- NEXO SIGNAL QUEUE — WebRTC signaling for private calls and Party rooms.

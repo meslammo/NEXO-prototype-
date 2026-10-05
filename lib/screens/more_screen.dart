@@ -4,6 +4,11 @@ import 'inventory_screen.dart';
 import 'recharge_screen.dart';
 import 'rewards_screen.dart';
 import 'font_color_screen.dart';
+import 'market_screen.dart';
+import 'room_screen.dart';
+import 'missions_screen.dart';
+import 'leaderboards_screen.dart';
+import 'pk_battle_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -15,11 +20,12 @@ class MoreScreen extends StatelessWidget {
       {'title': 'المخزون', 'subtitle': 'عرض كل العناصر والتذاكر', 'icon': Icons.inventory_2_rounded, 'color': Color(0xFF7B5CFF), 'screen': const InventoryScreen()},
       {'title': 'الشحن والعروض', 'subtitle': 'شراء تذاكر وعضوية VIP', 'icon': Icons.account_balance_wallet_rounded, 'color': Color(0xFFFFB300), 'screen': const RechargeScreen()},
       {'title': 'نظام المكافآت', 'subtitle': 'المكافآت اليومية ومكافآت النشاط', 'icon': Icons.card_giftcard_rounded, 'color': Color(0xFF00E676), 'screen': const RewardsScreen()},
-      {'title': 'السوق', 'subtitle': 'قريبًا', 'icon': Icons.storefront_rounded, 'color': Color(0xFF00BCD4), 'screen': null},
-      {'title': 'الصوت', 'subtitle': 'قريبًا', 'icon': Icons.mic_rounded, 'color': Color(0xFF536DFE), 'screen': null},
-      {'title': 'الفيديو', 'subtitle': 'قريبًا', 'icon': Icons.videocam_rounded, 'color': Color(0xFF651FFF), 'screen': null},
-      {'title': 'غرف VIP', 'subtitle': 'قريبًا', 'icon': Icons.workspace_premium_rounded, 'color': Color(0xFFFFD700), 'screen': null},
-      {'title': 'الإعدادات', 'subtitle': 'قريبًا', 'icon': Icons.settings_rounded, 'color': Color(0xFFB0B0C0), 'screen': null},
+      {'title': 'السوق', 'subtitle': 'Gifts • Identity • VIP • Limited', 'icon': Icons.storefront_rounded, 'color': Color(0xFF00BCD4), 'screen': const MarketScreen()},
+      {'title': 'غرف NEXO', 'subtitle': 'Voice • Seats • Games', 'icon': Icons.mic_rounded, 'color': Color(0xFF536DFE), 'screen': const VoiceRoomsScreen()},
+      {'title': 'المهمات', 'subtitle': 'Daily • Events • Tribe • VIP', 'icon': Icons.task_alt_rounded, 'color': Color(0xFF00E676), 'screen': const MissionsScreen()},
+      {'title': 'Leaderboards', 'subtitle': 'Wealth • Charm • Gifts • Games • Hosts', 'icon': Icons.emoji_events_rounded, 'color': Color(0xFFFFD700), 'screen': const LeaderboardsScreen()},
+      {'title': 'NEXO Battle', 'subtitle': 'PK بين غرفتين والهدايا نقاط', 'icon': Icons.sports_kabaddi_rounded, 'color': Color(0xFFFF4F91), 'screen': const PkBattleScreen()},
+      {'title': 'الإعدادات', 'subtitle': 'إعدادات التطبيق', 'icon': Icons.settings_rounded, 'color': Color(0xFFB0B0C0), 'screen': null},
     ];
 
     return SafeArea(
