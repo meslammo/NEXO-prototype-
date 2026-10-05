@@ -28,6 +28,27 @@ ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS market_visible BOOLEAN NOT NULL 
 ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS sort_order INT NOT NULL DEFAULT 0;
 ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS tags JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS featured BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE nexo.gifts ADD COLUMN IF NOT EXISTS limited BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS nexo_gifts_featured_idx ON nexo.gifts(active,market_visible,featured,limited,sort_order);
+
+-- NEXO CHANGE 65 — Xena-compatible social battle loop, without copying Xena UI/assets.
+CREATE TABLE IF NOT EXISTS nexo.pk_battles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  invite_code TEXT NOT NULL UNIQUE,
+  room_a_id UUID NOT NULL REFERENCES nexo.voice_rooms(id) ON DELETE CASCADE,
+  room_b_id UUID REFERENCES nexo.voice_rooms(id) ON DELETE CASCADE,
+  team_a_score BIGINT NOT NULL DEFAULT 0 CHECK (team_a_score >= 0),
+  team_b_score BIGINT NOT NULL DEFAULT 0 CHECK (team_b_score >= 0),
+  status TEXT NOT NULL DEFAULT 'waiting',
+  winner_team TEXT,
+  starts_at TIMESTAMPTZ,
+  ends_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS nexo_pk_battles_status_idx ON nexo.pk_battles(status,updated_at DESC);
+
 CREATE INDEX IF NOT EXISTS nexo_gifts_market_idx ON nexo.gifts(active,market_visible,item_type,sort_order,gems);
 
 CREATE TABLE IF NOT EXISTS nexo.inventory (
