@@ -118,8 +118,8 @@ if(image.startsWith('effect:'))return Container(width:size,height:size,decoratio
   @override
   Widget build(BuildContext context) {
     final cats = const [
-      ['featured', 'Featured'], ['gifts', 'Gifts'], ['frames', 'Profile Frames'], ['font', 'Font Color'],
-      ['entrance', 'Entrance Effects'], ['rooms', 'Room Backgrounds'], ['name_cards', 'Name Cards / Chat Style'],
+      ['featured', 'Featured'], ['gifts', 'Gifts'], ['frames', 'Profile Frames'], ['entrance', 'Entrance Effects'],
+      ['rooms', 'Room Backgrounds'], ['name_cards', 'Name Cards / Chat Style'], ['font', 'Font Color'],
       ['vip', 'VIP'], ['svip', 'SVIP'], ['aristocracy', 'Aristocracy'], ['all', 'All'],
     ];
     final shown = category == 'featured'
