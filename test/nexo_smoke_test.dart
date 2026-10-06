@@ -9,6 +9,6 @@ void main() {
     }
     final uri = Uri.parse(NexoApiConfig.websocketUrl);
     expect(uri.scheme, anyOf('wss', 'ws'));
-    expect(uri.path, '/ws');
+    expect(uri.path, '/api/nexo/ws');
   });
 }

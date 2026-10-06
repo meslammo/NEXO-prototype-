@@ -1,7 +1,7 @@
 {
   "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
   "name": "nexo-prototype",
-  "main": "src/index.js",
+  "main": "cloudflare/src/index.js",
   "compatibility_date": "2026-10-04",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {

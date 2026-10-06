@@ -1,3 +1,4 @@
+import { handleNativeCore } from "./native_core.js";
 const API_PREFIX = "/api/nexo";
 
 function json(data, status = 200, extra = {}) {
@@ -159,12 +160,16 @@ export default {
         db = "ok";
       } catch (_) {}
 
+      const nativeCore = String(env.NATIVE_CORE || "0") === "1";
       return withCors(json({
         ok: true,
         service: "nexo-cloudflare",
-        mode: "adapter",
+        mode: nativeCore ? "native-core" : "adapter",
         database: db,
-        realtime: "durable-objects",
+        nativeCore: nativeCore && db === "ok",
+        realtime: String(env.NATIVE_REALTIME || "0") === "1" ? "durable-objects-native" : "legacy-proxy",
+        games: String(env.NATIVE_GAMES || "0") === "1" ? "durable-objects-native" : "legacy-server",
+        payments: String(env.PAYMENTS_READY || "0") === "1" ? "ready" : "gated",
         assets: env.ASSETS ? "r2" : "unbound",
       }), request, env);
     }
@@ -173,6 +178,13 @@ export default {
 
     const assetResponse = await handleAssets(request, env, path);
     if (assetResponse) return withCors(assetResponse, request, env);
+
+    // Native D1 Core is feature-flagged. Unhandled routes continue through the
+    // compatibility proxy so login/economy/game clients are not broken during migration.
+    if (String(env.NATIVE_CORE || "0") === "1") {
+      const nativeResponse = await handleNativeCore(request, env, path);
+      if (nativeResponse) return withCors(nativeResponse, request, env);
+    }
 
     if (path === "/ws" || path === "/realtime") {
       // Keep the current Fastify WebSocket contract during migration.
