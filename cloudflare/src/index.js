@@ -160,12 +160,16 @@ export default {
         db = "ok";
       } catch (_) {}
 
+      const nativeCore = String(env.NATIVE_CORE || "0") === "1";
       return withCors(json({
         ok: true,
         service: "nexo-cloudflare",
-        mode: "adapter",
+        mode: nativeCore ? "native-core" : "adapter",
         database: db,
-        realtime: "durable-objects",
+        nativeCore: nativeCore && db === "ok",
+        realtime: String(env.NATIVE_REALTIME || "0") === "1" ? "durable-objects-native" : "legacy-proxy",
+        games: String(env.NATIVE_GAMES || "0") === "1" ? "durable-objects-native" : "legacy-server",
+        payments: String(env.PAYMENTS_READY || "0") === "1" ? "ready" : "gated",
         assets: env.ASSETS ? "r2" : "unbound",
       }), request, env);
     }
