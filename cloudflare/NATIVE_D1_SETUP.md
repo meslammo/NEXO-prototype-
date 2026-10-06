@@ -1,6 +1,6 @@
 # NEXO native D1 core — one-time Cloudflare activation
 
-This change keeps NATIVE_CORE=0 until D1 and JWT are actually bound.
+This change keeps NATIVE_CORE=0 until D1 and JWT are actually bound. Password storage uses the same pbkdf2sha256 format the Node backend already accepts, avoiding a JS bcrypt dependency inside the Worker.
 
 ## 1) Create D1
 Run from the cloudflare/ directory after authenticating Wrangler:
@@ -44,7 +44,7 @@ On the first successful login while native Core is enabled, an account that is n
 ## 6) QA gate
 
 Against:
-https://nexo-prototype.meslammoMohamed423.workers.dev/api/nexo
+https://nexo-prototype.meslammohamed423.workers.dev/api/nexo
 
 Test:
 POST /auth/register
