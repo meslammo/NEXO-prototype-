@@ -22,3 +22,7 @@ jobs:
           node-version: 22
       - name: Wrangler dry run
         run: npx wrangler@latest deploy --dry-run --outdir=.wrangler-dry-run
+
+      - name: Root Worker runtime dry run
+        working-directory: .
+        run: npx wrangler@latest deploy --dry-run --config wrangler.jsonc --outdir=.wrangler-root-dry-run
