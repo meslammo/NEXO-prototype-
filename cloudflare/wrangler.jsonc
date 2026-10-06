@@ -10,7 +10,8 @@
     "NATIVE_CORE": "0",
     "NATIVE_REALTIME": "0",
     "NATIVE_GAMES": "0",
-    "PAYMENTS_READY": "0"
+    "PAYMENTS_READY": "0",
+    "PBKDF2_ITERATIONS": "60000"
   },
   "durable_objects": {
     "bindings": [
