@@ -107,8 +107,8 @@ async function verifyLegacyPbkdf2(password, encoded) {
   }
 }
 
-async function hashPassword(password) {
-  const configured = Number.parseInt(String(globalThis.PBKDF2_ITERATIONS || "60000"), 10);
+async function hashPassword(password, env) {
+  const configured = Number.parseInt(String(env.PBKDF2_ITERATIONS || "60000"), 10);
   const iterations = Number.isInteger(configured) && configured >= 30000 ? Math.min(configured, 250000) : 60000;
   const salt = new Uint8Array(16);
   crypto.getRandomValues(salt);
@@ -288,7 +288,7 @@ async function syncLegacyUserState(env, legacyToken, legacyUser, password = "") 
     lastActive: nowIso(),
   };
 
-  const passwordHash = password ? await hashPassword(password) : null;
+  const passwordHash = password ? await hashPassword(password, env) : null;
   const userId = await upsertUser(env, merged, passwordHash);
 
   if (inventory.length) {
@@ -397,7 +397,7 @@ async function nativeRegister(request, env) {
   if (exists) return json({ error: "ACCOUNT_EXISTS" }, 409);
 
   const id = randomId();
-  const hash = await hashPassword(password);
+  const hash = await hashPassword(password, env);
   await run(env,
     "INSERT INTO users(id,username,email,password_hash,display_name,avatar,gems,energy,last_active) " +
     "VALUES (?,?,?,?,?,?,?,?,?)",
