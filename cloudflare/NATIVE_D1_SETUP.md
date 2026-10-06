@@ -39,7 +39,7 @@ PAYMENTS_READY=0
 
 ## 5) Existing-user migration
 
-On the first successful login while native Core is enabled, an account that is not yet in D1 is authenticated once against the legacy API. The Worker then copies the user/wallet/inventory/equipped state into D1 and hashes the submitted password with bcrypt. Future logins for that account are D1-native.
+On the first successful login while native Core is enabled, an account that is not yet in D1 is authenticated once against the legacy API. The Worker then copies the user/wallet/inventory/equipped state into D1 and hashes the submitted password with Worker PBKDF2. Future logins for that account are D1-native.
 
 ## 6) QA gate
 
