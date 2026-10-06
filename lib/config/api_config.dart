@@ -16,6 +16,6 @@ class NexoApiConfig {
     if (!configured) return '';
     final uri = Uri.parse(baseUrl);
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
-    return uri.replace(scheme: scheme, path: '/ws').toString();
+    return uri.replace(scheme: scheme, path: '${uri.path}/ws').toString();
   }
 }
