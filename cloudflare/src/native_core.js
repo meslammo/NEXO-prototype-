@@ -293,9 +293,10 @@ async function syncLegacyUserState(env, legacyToken, legacyUser, password = "") 
 
   if (inventory.length) {
     const statements = inventory.map(item => env.DB.prepare(
-      "INSERT INTO inventory(user_id,item_id,quantity) VALUES (?,?,?) " +
+      "INSERT INTO inventory(user_id,item_id,quantity) " +
+      "SELECT ?,id,? FROM catalog_items WHERE id=? " +
       "ON CONFLICT(user_id,item_id) DO UPDATE SET quantity=excluded.quantity"
-    ).bind(userId, String(item.id || ""), Number(item.quantity || 0)));
+    ).bind(userId, Number(item.quantity || 0), String(item.id || "")));
     await env.DB.batch(statements);
   }
 
@@ -432,7 +433,7 @@ async function nativeLogin(request, env) {
 
   // Gradual migration of an existing account:
   // legacy authenticates the credentials once; the password is immediately converted
-  // to a Worker-side bcrypt hash and future logins are D1-native.
+  // to a Worker-side PBKDF2 hash and future logins are D1-native.
   const legacy = await legacyJson(env, "/auth/login", { method: "POST", body });
   if (!legacy.response?.ok || !legacy.data?.user || !legacy.data?.token) {
     return json(
