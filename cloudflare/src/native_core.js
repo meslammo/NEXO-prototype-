@@ -1,6 +1,4 @@
 
-import bcrypt from "bcryptjs";
-
 const CORE_PATHS = new Set([
   "/auth/guest", "/auth/register", "/auth/login", "/me", "/wallet",
   "/inventory", "/catalog", "/gifts", "/profile/equipped",
@@ -109,11 +107,23 @@ async function verifyLegacyPbkdf2(password, encoded) {
   }
 }
 
+async function hashPassword(password) {
+  const configured = Number.parseInt(String(globalThis.PBKDF2_ITERATIONS || "60000"), 10);
+  const iterations = Number.isInteger(configured) && configured >= 30000 ? Math.min(configured, 250000) : 60000;
+  const salt = new Uint8Array(16);
+  crypto.getRandomValues(salt);
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations }, key, 256
+  );
+  const toHex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+  return "pbkdf2sha256$" + iterations + "$" + toHex(salt) + "$" + toHex(new Uint8Array(bits));
+}
+
 async function verifyPassword(password, encoded) {
-  if (String(encoded || "").startsWith("pbkdf2sha256$")) {
-    return verifyLegacyPbkdf2(password, encoded);
-  }
-  return bcrypt.compare(password, String(encoded || ""));
+  return verifyLegacyPbkdf2(password, encoded);
 }
 
 function publicUser(u) {
@@ -278,7 +288,7 @@ async function syncLegacyUserState(env, legacyToken, legacyUser, password = "") 
     lastActive: nowIso(),
   };
 
-  const passwordHash = password ? await bcrypt.hash(password, 12) : null;
+  const passwordHash = password ? await hashPassword(password) : null;
   const userId = await upsertUser(env, merged, passwordHash);
 
   if (inventory.length) {
@@ -387,7 +397,7 @@ async function nativeRegister(request, env) {
   if (exists) return json({ error: "ACCOUNT_EXISTS" }, 409);
 
   const id = randomId();
-  const hash = await bcrypt.hash(password, 12);
+  const hash = await hashPassword(password);
   await run(env,
     "INSERT INTO users(id,username,email,password_hash,display_name,avatar,gems,energy,last_active) " +
     "VALUES (?,?,?,?,?,?,?,?,?)",
