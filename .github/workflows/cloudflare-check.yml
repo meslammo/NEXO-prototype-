@@ -1,0 +1,24 @@
+name: NEXO Cloudflare Worker Check
+
+on:
+  pull_request:
+    paths:
+      - "cloudflare/**"
+  push:
+    branches:
+      - "nexo/change-67-native-d1-core"
+      - "nexo/cloudflare-adapter-20261004"
+
+jobs:
+  worker-dry-run:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Wrangler dry run
+        run: npx wrangler@latest deploy --dry-run --outdir=.wrangler-dry-run
