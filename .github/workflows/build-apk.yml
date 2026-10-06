@@ -13,6 +13,7 @@ on:
       - "nexo/release-qa-20261002"
       - "nexo/qa-online-games-20261002"
       - "nexo/cloudflare-adapter-20261004"
+      - "nexo/change-66-cloudflare-unification"
       - "nexo/xena-social-market-missions-20261006"
       - "nexo/complete-20261002"
   pull_request:
@@ -140,7 +141,7 @@ jobs:
             API_URL="$WORKER_URL/api/nexo"
           fi
           if [ -z "$API_URL" ]; then
-            API_URL="https://nexo-api-production-05d3.up.railway.app/api/nexo"
+            API_URL="https://nexo-prototype.meslammohamed423.workers.dev/api/nexo"
           fi
           echo "Building NEXO against: $API_URL"
           flutter build apk --release --dart-define=NEXO_API_URL="$API_URL"
