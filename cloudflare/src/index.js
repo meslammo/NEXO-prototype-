@@ -183,7 +183,10 @@ export default {
         mode: "adapter",
         database,
         schema,
-        realtime: "durable-objects",
+        realtime: String(env.NATIVE_REALTIME || "0") === "1" ? "durable-objects" : "legacy-proxy",
+        nativeCore: String(env.NATIVE_CORE || "0") === "1",
+        nativeGames: String(env.NATIVE_GAMES || "0") === "1",
+        paymentsReady: String(env.PAYMENTS_READY || "0") === "1",
         assets: env.ASSETS ? "bound" : "unbound",
       }), request, env);
     }
