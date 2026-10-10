@@ -13,6 +13,13 @@
     "PAYMENTS_READY": "0",
     "PBKDF2_ITERATIONS": "60000"
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nexo-production",
+      "database_id": "0c181357-1d32-4393-8375-6e5c5dc548f2"
+    }
+  ],
   "durable_objects": {
     "bindings": [
       { "name": "GAME_ROOMS", "class_name": "NexoGameRoom" }
