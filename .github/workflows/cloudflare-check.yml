@@ -1,0 +1,69 @@
+name: NEXO Cloudflare Worker + D1 Check
+
+on:
+  push:
+    branches:
+      - "nexo/cloudflare-worker-runtime-20261010"
+      - "main"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "wrangler.jsonc"
+      - ".assetsignore"
+      - "cloudflare/**"
+      - ".github/workflows/cloudflare-check.yml"
+
+jobs:
+  worker-and-local-d1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply initial migration to disposable local D1
+        run: npx wrangler@latest d1 migrations apply nexo-production --local --config wrangler.jsonc
+      - name: Verify core tables exist locally
+        run: npx wrangler@latest d1 execute nexo-production --local --config wrangler.jsonc --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('users','catalog_items','inventory','wallet_ledger') ORDER BY name"
+      - name: Validate Worker bundle and bindings
+        run: npx wrangler@latest deploy --dry-run --config wrangler.jsonc --outdir=.wrangler-root-dry-run
+
+  migrate-production-d1:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.CLOUDFLARE_API_TOKEN != ''
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: cad0851a8cee9e5a424bddc832475aa2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply reviewed initial schema to production D1
+        run: npx wrangler@latest d1 migrations apply nexo-production --remote --config wrangler.jsonc
+      - name: Verify production core schema
+        run: npx wrangler@latest d1 execute nexo-production --remote --config wrangler.jsonc --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('users','catalog_items','inventory','wallet_ledger') ORDER BY name"
+
+  production-health:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Worker runtime deployment and verify health + D1 binding
+        shell: bash
+        run: |
+          set -u
+          url="https://nexo-prototype.meslammohamed423.workers.dev/health"
+          for attempt in $(seq 1 30); do
+            response="$(curl --silent --show-error --max-time 12 "$url" || true)"
+            echo "Attempt $attempt: $response"
+            if echo "$response" | grep -q '"ok":true' && echo "$response" | grep -q '"database":"ok"'; then
+              if echo "$response" | grep -q '"schema":"ready"'; then
+                echo "Worker runtime, D1 connection, and core schema are ready."
+                exit 0
+              fi
+              echo "Worker and D1 are reachable, but the core schema is not ready yet."
+            fi
+            sleep 10
+          done
+          echo "Health check did not confirm database=ok and schema=ready. Inspect Cloudflare deployment and the production migration job."
+          exit 1
