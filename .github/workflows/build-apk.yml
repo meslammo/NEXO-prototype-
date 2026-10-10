@@ -15,6 +15,7 @@ on:
       - "nexo/cloudflare-adapter-20261004"
       - "nexo/xena-social-market-missions-20261006"
       - "nexo/complete-20261002"
+      - "nexo/change-69-api-cloudflare-unification-20261010"
   pull_request:
 
 jobs:
