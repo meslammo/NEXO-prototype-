@@ -129,7 +129,7 @@ class InventoryPreviewWidget extends StatelessWidget {
           const SizedBox(height: 12),
           Center(
             child: Text(
-              'Total Items: ${items.length}',
+              'Total Items: ${context.watch<EconomyService>().inventory.length}',
               style: const TextStyle(
                 color: Color(0xFF90a4ae),
                 fontSize: 11,

@@ -38,7 +38,7 @@ class _MarketScreenState extends State<MarketScreen>
     final price = items[index]['price'] as int;
 
     if (economy.spendTickets(price)) {
-      economy.addItem(items[index]['name']!, 1);
+      economy.addItem(items[index]['name'] as String, 1);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✅ Purchased ${items[index]['name']}'),

@@ -97,11 +97,9 @@ class _MiningScreenState extends State<MiningScreen>
                     AnimatedBuilder(
                       animation: _shakeController,
                       builder: (context, child) {
-                        final offset = (1 - _shakeController.value) *
-                            4 *
-                            (_shakeController.value * 30).round().isEven
-                                ? 4.0
-                                : -4.0;
+                        final direction =
+                            (_shakeController.value * 30).round().isEven ? 1.0 : -1.0;
+                        final offset = (1 - _shakeController.value) * 4 * direction;
                         return Transform.translate(
                           offset: Offset(_shakeController.isAnimating ? offset : 0, 0),
                           child: child,
