@@ -31,7 +31,7 @@ jobs:
         run: npx wrangler@latest deploy --dry-run --config wrangler.jsonc --outdir=.wrangler-root-dry-run
 
   migrate-production-d1:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_ACCOUNT_ID: cad0851a8cee9e5a424bddc832475aa2
