@@ -70,22 +70,85 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for Worker runtime deployment and verify health + D1 binding
+      - name: Wait for Worker health and verify D1 connectivity
+        id: health
         shell: bash
         run: |
           set -u
           url="https://nexo-prototype.meslammohamed423.workers.dev/health"
+          database_ready=false
+          schema_ready=false
           for attempt in $(seq 1 30); do
             response="$(curl --silent --show-error --max-time 12 "$url" || true)"
             echo "Attempt $attempt: $response"
             if echo "$response" | grep -q '"ok":true' && echo "$response" | grep -q '"database":"ok"'; then
+              database_ready=true
               if echo "$response" | grep -q '"schema":"ready"'; then
-                echo "Worker runtime, D1 connection, and core schema are ready."
-                exit 0
+                schema_ready=true
+                break
               fi
-              echo "Worker and D1 are reachable, but the core schema is not ready yet."
+              echo "D1 responds, but the account/store/wallet schema is not ready yet."
             fi
             sleep 10
           done
-          echo "Health check did not confirm database=ok and schema=ready. Inspect Cloudflare deployment and the production migration job."
+          echo "database_ready=$database_ready" >> "$GITHUB_OUTPUT"
+          echo "schema_ready=$schema_ready" >> "$GITHUB_OUTPUT"
+          if [ "$database_ready" != "true" ]; then
+            echo "Worker runtime or D1 binding did not become healthy."
+            exit 1
+          fi
+
+      - name: Non-mutating auth, wallet-guard, and market API smoke tests
+        if: steps.health.outputs.database_ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://nexo-prototype.meslammohamed423.workers.dev/api/nexo"
+
+          login_status="$(curl --silent --show-error --max-time 15 -o /tmp/login.json -w '%{http_code}' \
+            -X POST "$base/auth/login" -H 'content-type: application/json' -d '{}')"
+          echo "Empty-login validation HTTP status: $login_status"
+          test "$login_status" = "400"
+          grep -q 'LOGIN_REQUIRED' /tmp/login.json
+
+          register_status="$(curl --silent --show-error --max-time 15 -o /tmp/register.json -w '%{http_code}' \
+            -X POST "$base/auth/register" -H 'content-type: application/json' -d '{}')"
+          echo "Empty-registration validation HTTP status: $register_status"
+          test "$register_status" = "400"
+          grep -q 'INVALID_INPUT' /tmp/register.json
+
+          wallet_status="$(curl --silent --show-error --max-time 15 -o /tmp/wallet.json -w '%{http_code}' \
+            "$base/wallet")"
+          echo "Unauthenticated wallet HTTP status: $wallet_status"
+          test "$wallet_status" = "401"
+
+          catalog_status="$(curl --silent --show-error --max-time 15 -o /tmp/catalog.json -w '%{http_code}' \
+            "$base/catalog?market=1")"
+          echo "Public market catalogue HTTP status: $catalog_status"
+          test "$catalog_status" = "200"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          catalog = json.loads(Path("/tmp/catalog.json").read_text())
+          assert isinstance(catalog, list), "Catalog response must be a JSON array"
+          assert len(catalog) > 0, "Public catalog returned no active market items"
+          print(f"Market catalogue returned {len(catalog)} items.")
+          PY
+
+          gifts_status="$(curl --silent --show-error --max-time 15 -o /tmp/gifts.json -w '%{http_code}' \
+            "$base/gifts")"
+          echo "Public gifts HTTP status: $gifts_status"
+          test "$gifts_status" = "200"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          gifts = json.loads(Path("/tmp/gifts.json").read_text())
+          assert isinstance(gifts, list), "Gifts response must be a JSON array"
+          print(f"Gifts endpoint returned {len(gifts)} items.")
+          PY
+
+      - name: Require the D1 core schema before declaring the migration ready
+        if: steps.health.outputs.schema_ready != 'true'
+        run: |
+          echo "D1 is reachable, but tables users/catalog_items/inventory/wallet_ledger are missing. Configure the GitHub Actions secret CLOUDFLARE_API_TOKEN to run the remote migration, then re-run this check."
           exit 1
