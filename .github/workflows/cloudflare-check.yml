@@ -1,0 +1,22 @@
+name: NEXO Cloudflare Worker Check
+
+on:
+  push:
+    branches:
+      - "nexo/change-69-api-cloudflare-unification-20261010"
+  pull_request:
+    paths:
+      - "wrangler.jsonc"
+      - "cloudflare/**"
+      - ".github/workflows/cloudflare-check.yml"
+
+jobs:
+  worker-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate root Worker configuration
+        run: npx wrangler@latest deploy --dry-run --config wrangler.jsonc --outdir=.wrangler-root-dry-run
