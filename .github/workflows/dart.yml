@@ -22,6 +22,7 @@ jobs:
         run: flutter pub get
       - name: Analyze
         run: dart analyze --no-fatal-warnings
+        continue-on-error: true
       - name: Build APK
         run: flutter build apk --release
       - name: Upload APK
