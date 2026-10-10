@@ -80,6 +80,7 @@ class NexoCoreSchemaTests(unittest.TestCase):
             """INSERT INTO catalog_items (id, name, rarity, gems, item_type, category)
                VALUES ('ci-gift', 'CI Gift', 'Common', 250, 'gift', 'gifts')"""
         )
+        self.db.commit()
         # Exercise the intended transaction pattern against the local schema only.
         self.db.execute("BEGIN")
         cur = self.db.execute(
