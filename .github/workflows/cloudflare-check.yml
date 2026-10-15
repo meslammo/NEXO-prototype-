@@ -18,5 +18,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Test core schema contracts using isolated SQLite fixtures
+        run: python3 -m unittest cloudflare.tests.test_core_schema
+      - name: Apply initial migration to disposable local D1
+        run: npx wrangler@latest d1 migrations apply nexo-production --local --config wrangler.jsonc
+      - name: Verify core tables exist locally
+        run: npx wrangler@latest d1 execute nexo-production --local --config wrangler.jsonc --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('users','catalog_items','inventory','wallet_ledger') ORDER BY name"
       - name: Validate root Worker configuration
         run: npx wrangler@latest deploy --dry-run --config wrangler.jsonc --outdir=.wrangler-root-dry-run
