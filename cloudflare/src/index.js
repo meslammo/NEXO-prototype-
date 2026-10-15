@@ -153,19 +153,45 @@ export default {
     }
 
     if (url.pathname === "/health" || url.pathname === API_PREFIX + "/health") {
-      let db = "unbound";
-      try {
-        await env.DB.prepare("SELECT 1").first();
-        db = "ok";
-      } catch (_) {}
+      let database = env.DB ? "bound" : "unbound";
+      let schema = "unavailable";
 
+      if (env.DB) {
+        try {
+          await env.DB.prepare("SELECT 1").first();
+          database = "ok";
+        } catch (_) {
+          database = "error";
+        }
+
+        if (database === "ok") {
+          try {
+            const result = await env.DB.prepare(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('users','catalog_items','inventory','wallet_ledger')"
+            ).all();
+            const names = new Set((result.results || []).map(row => row.name));
+            schema = ["users", "catalog_items", "inventory", "wallet_ledger"].every(name => names.has(name))
+              ? "ready"
+              : "missing";
+          } catch (_) {
+            schema = "error";
+          }
+        }
+      }
+
+      const ready = database === "ok" && schema === "ready";
       return withCors(json({
         ok: true,
+        ready,
         service: "nexo-cloudflare",
         mode: "adapter",
-        database: db,
-        realtime: "durable-objects",
-        assets: env.ASSETS ? "r2" : "unbound",
+        database,
+        schema,
+        realtime: String(env.NATIVE_REALTIME || "0") === "1" ? "durable-objects" : "legacy-proxy",
+        nativeCore: String(env.NATIVE_CORE || "0") === "1",
+        nativeGames: String(env.NATIVE_GAMES || "0") === "1",
+        paymentsReady: String(env.PAYMENTS_READY || "0") === "1",
+        assets: env.ASSETS ? "bound" : "unbound",
       }), request, env);
     }
 
