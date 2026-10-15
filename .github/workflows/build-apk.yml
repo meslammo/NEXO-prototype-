@@ -20,6 +20,8 @@ on:
 
 jobs:
   cloudflare:
+    # Production deployments must be explicitly triggered from Actions, never from pull_request builds.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       worker_url: ${{ steps.deploy.outputs.worker_url }}
@@ -38,7 +40,7 @@ jobs:
             exit 0
           fi
 
-          npx --yes wrangler@latest deploy --config cloudflare/wrangler.jsonc 2>&1 | tee /tmp/nexo-cloudflare-deploy.log
+          npx --yes wrangler@latest deploy --config wrangler.jsonc 2>&1 | tee /tmp/nexo-cloudflare-deploy.log
           WORKER_URL="$(grep -Eo 'https://[A-Za-z0-9.-]+\.workers\.dev' /tmp/nexo-cloudflare-deploy.log | tail -1 || true)"
           if [ -z "$WORKER_URL" ]; then
             echo "Cloudflare deploy completed but no workers.dev URL was detected."
