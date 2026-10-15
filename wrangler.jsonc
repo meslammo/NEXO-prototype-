@@ -17,7 +17,8 @@
     {
       "binding": "DB",
       "database_name": "nexo-production",
-      "database_id": "0c181357-1d32-4393-8375-6e5c5dc548f2"
+      "database_id": "0c181357-1d32-4393-8375-6e5c5dc548f2",
+      "migrations_dir": "cloudflare/migrations"
     }
   ],
   "durable_objects": {
