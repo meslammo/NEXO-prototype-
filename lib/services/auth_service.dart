@@ -6,9 +6,6 @@ import 'api_client.dart';
 class AuthService extends ChangeNotifier {
   static const _tokenKey='nexo.auth.token';
   static const _guestDeviceKey='nexo.guest.device';
-  static const _demoToken='nexo-local-demo-session';
-  static const _demoUsername='nexo_demo';
-  static const _demoPassword='12345678';
 
   final ApiClient api;
   final FlutterSecureStorage storage;
@@ -29,9 +26,12 @@ class AuthService extends ChangeNotifier {
 
     if(!NexoApiConfig.configured){
       try{
-        final token=await storage.read(key:_tokenKey);
-        if(token==_demoToken) _setLocalDemoUser();
-      }catch(_){}
+        await _clear();
+      }catch(_){
+        api.token=null;
+        _user=null;
+        _online=false;
+      }
       _initialized=true;
       notifyListeners();
       return;
@@ -69,44 +69,11 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  void _setLocalDemoUser({
-    String? username,
-    String? displayName,
-  }){
-    _user={
-      'id':'00000000-0000-4000-8000-000000000001',
-      'username':username??_demoUsername,
-      'displayName':displayName??'NEXO Demo',
-      'avatar':'',
-      'gems':12450,
-      'energy':50,
-      'level':10,
-      'experience':2500,
-      'reputation':100,
-      'vipLevel':1,
-      'nameColor':'cyan',
-      'glow':'nexo',
-      'role':'user',
-      'banned':false,
-    };
-    api.token=null;
-    _online=true;
-    notifyListeners();
-  }
-
   Future<void> login(String identifier,String password) async {
     _busy=true;
     notifyListeners();
     try{
-      if(!NexoApiConfig.configured){
-        final id=identifier.trim().toLowerCase();
-        if((id==_demoUsername || id=='nexo demo') && password==_demoPassword){
-          await storage.write(key:_tokenKey,value:_demoToken);
-          _setLocalDemoUser();
-          return;
-        }
-        throw StateError('INVALID_CREDENTIALS');
-      }
+      if(!NexoApiConfig.configured) throw StateError('NEXO_API_NOT_CONFIGURED');
 
       final r=await api.postJson('/auth/login',{
         'identifier':identifier.trim(),
@@ -132,19 +99,7 @@ class AuthService extends ChangeNotifier {
     _busy=true;
     notifyListeners();
     try{
-      if(!NexoApiConfig.configured){
-        if(username.trim().isEmpty||email.trim().isEmpty||password.length<8){
-          throw StateError('INVALID_ACCOUNT_INPUT');
-        }
-        await storage.write(key:_tokenKey,value:_demoToken);
-        _setLocalDemoUser(
-          username:username.trim(),
-          displayName:displayName.trim().isEmpty
-              ? username.trim()
-              : displayName.trim(),
-        );
-        return;
-      }
+      if(!NexoApiConfig.configured) throw StateError('NEXO_API_NOT_CONFIGURED');
 
       final r=await api.postJson('/auth/register',{
         'username':username.trim(),
@@ -167,14 +122,7 @@ class AuthService extends ChangeNotifier {
     _busy=true;
     notifyListeners();
     try{
-      if(!NexoApiConfig.configured){
-        await storage.write(key:_tokenKey,value:_demoToken);
-        _setLocalDemoUser(
-          username:'guest_local',
-          displayName:'NEXO Guest',
-        );
-        return;
-      }
+      if(!NexoApiConfig.configured) throw StateError('NEXO_API_NOT_CONFIGURED');
 
       var device=await storage.read(key:_guestDeviceKey);
       if(device==null||device.trim().isEmpty){
